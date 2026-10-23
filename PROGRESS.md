@@ -4,9 +4,9 @@
 - **Package:** `com.zaaam.zcut`
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
-- **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup selesai menunggu
-  ACC, Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
-  diterbitkan. UI Android belum dimulai sampai ACC.
+- **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
+  Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
+  diterbitkan. **Tahap 3 (UI Android) dimulai 2026-10-23.**
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
   Sisa temuan Medium/Low ada di bagian Backlog re-audit, bukan penghalang.
 
@@ -17,18 +17,56 @@
 - Preview: `http://127.0.0.1:8080/` · peta layar: `/?view=map`
 - Cakupan: 42 layar untuk 31 area fitur, termasuk semua panel editor, AI,
   capture, export, share, dan settings.
-- Status: **menunggu ACC via Telegram**. UI Android belum dimulai.
+- Status: **di-ACC 2026-10-23**. Lanjut ke Tahap 3 (UI Android).
 
 ## Status tahap
 
 | Tahap | Status | Catatan |
 |---|---|---|
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
-| 2. MOCKUP | ✅ Selesai, menunggu ACC | 42 layar · 31 area · HTML interaktif |
+| 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | ⛔ Diblokir | mulai setelah ACC Telegram |
-| 4. BUILD/TEST | ✅ Selesai | CI hijau: test + signed release di GitHub Actions |
-| 5. RELEASE | 🟡 Sebagian | `v0.1.0` signed APK sudah di GitHub Releases; fitur belum lengkap |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0 selesai) |
+| 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
+| 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
+
+## Tahap 3 — Milestone
+
+Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
+
+| # | Milestone | Fitur | Layar mockup | Status |
+|---|---|---|---|---|
+| M0 | Fondasi Compose, shell navigasi, daftar draft | F01/F20 (parsial) | splash, onboarding, home, projects | ✅ |
+| M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | [ ] |
+| M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | [ ] |
+| M3 | Preview player Media3 | F03 | (editor) | [ ] |
+| M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | [ ] |
+| M5 | Speed, reverse, curve, motion | F05 | speed | [ ] |
+| M6 | Keyframe | F06 | keyframe | [ ] |
+| M7 | Transisi | F07 | transition | [ ] |
+| M8 | Filter & color | F08 | filters, adjust | [ ] |
+| M9 | Efek | F09 | effects | [ ] |
+| M10 | Mask & chroma | F10 | mask | [ ] |
+| M11 | Teks & tipografi | F14 | text | [ ] |
+| M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | [ ] |
+| M13 | Export & render (Media3 Transformer) | F19 | export, export-done | [ ] |
+| M14 | Matting/cutout (ML Kit) | F11 | matting | [ ] |
+| M15 | Retouch & beauty | F12 | beauty | [ ] |
+| M16 | Sticker + Lottie | F13 | stickers | [ ] |
+| M17 | Caption & speech lokal | F15 | captions | [ ] |
+| M18 | AI music prosedural | F18 | ai-music | [ ] |
+| M19 | Template & CutSame | F21 | templates, template-detail, discover | [ ] |
+| M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | [ ] |
+| M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | [ ] |
+| M22 | Digital human (BUTUH BACKEND) | F25 | digital-human | [ ] |
+| M23 | Kamera + photo editor (CameraX) | F26 | camera, photo-editor | [ ] |
+| M24 | Share & publish | F27 | share | [ ] |
+| M25 | Split screen, gameplay, live photo | F30 | split-screen, gameplay, live-photo | [ ] |
+| M26 | Ad maker | F31 | ad-maker | [ ] |
+| M27 | Draft lanjutan: rename, trash, backup lokal | F20 | drafts | [ ] |
+| M28 | Polish: aksesibilitas, lokalisasi, audit akhir | cross-cutting | — | [ ] |
+
+Peta rute ↔ layar ↔ milestone ada di [`docs/ui-map.md`](docs/ui-map.md).
 
 ## Aturan implementasi
 
@@ -478,19 +516,19 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 
 ## Cross-cutting
 
-- [ ] Design system Zcut (warna, tipografi, komponen)
-- [ ] Navigation graph semua layar
+- [x] Design system Zcut (warna, tipografi, komponen)
+- [x] Navigation graph semua layar (42 rute; badan layar per milestone)
 - [ ] Permission flow (media, camera, mic, notification)
 - [ ] File provider + scoped storage
-- [ ] Error handling + empty/loading state
-- [ ] Accessibility (content description, touch target)
+- [x] Error handling + empty/loading state (layar M0)
+- [ ] Accessibility (content description, touch target) — audit penuh di M28
 - [ ] Lokalisasi Indonesia + Inggris
-- [ ] Unit test core (model, timeline, export plan)
+- [x] Unit test core (model, timeline, export plan)
 - [ ] Instrumentation test alur utama
-- [ ] CI build + test
-- [ ] Release signing via GitHub Secrets
-- [ ] GitHub Release APK
-- [ ] Tidak ada secret/keystore di repo
+- [x] CI build + test
+- [x] Release signing via GitHub Secrets
+- [x] GitHub Release APK
+- [x] Tidak ada secret/keystore di repo
 
 ## Backend / model yang ditandai
 
@@ -511,7 +549,10 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 ## Build & release
 
 - [x] Workflow `.github/workflows/android.yml`
-- [x] `assembleRelease` + unit test di Actions
+- [x] Unit test di Actions untuk setiap push/PR
+- [x] `assembleRelease` di Actions saat tag `v*` (commit fitur tidak
+      menghabiskan kuota build release)
+- [x] Versi APK mengikuti nama tag (`ZCUT_VERSION_NAME` → `versionName`)
 - [x] Signing dari secrets `ZCUT_KEYSTORE_BASE64`, `ZCUT_KEYSTORE_PASSWORD`,
       `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
 - [x] Upload APK ke GitHub Releases
@@ -520,8 +561,8 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 - [x] Verifikasi signature: `apksigner verify --print-certs` →
       `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`
 
-Catatan release `v0.1.0`: ini APK scaffold non-UI, bukan hasil akhir. Fitur
-editor dan UI menyusul setelah ACC.
+Catatan release `v0.1.0`: ini APK scaffold non-UI, bukan hasil akhir. Rilis
+berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.0`.
 
 ## Commit log
 
@@ -564,6 +605,55 @@ penghalang commit; jadi backlog untuk Tahap 3.
   saat layer lain (repo/UI) butuh invarian yang sama.
 - **`quarantinedProjects` menyimpan dua bentuk** (dokumen mentah vs elemen
   project) tanpa penanda — beri diskriminator saat fitur recovery dibuat.
+
+### Temuan reviewer M0 (2026-10-23)
+
+Dibetulkan sebelum commit M0:
+
+- **Build-breaker:** `zcutViewModelFactory` itu `@Composable` tapi dipanggil di
+  dalam lambda `remember` → Compose compiler menolak. Sekarang dipanggil
+  langsung.
+- **Navigasi:** `popUpTo(findStartDestination())` menunjuk `splash` yang sudah
+  di-pop → tab nav menumbuhkan back stack tanpa batas dan filter/pencarian reset
+  tiap pindah tab. Sekarang anchor `Home`; lambda `navigateToTab` dibuat stabil
+  supaya graph 42 node tidak dibangun ulang tiap navigasi.
+- **Nama draft duplikat:** `nextDraftName()` menghitung dari daftar hasil filter.
+  Sekarang membaca nama yang tersimpan lewat `repository.projects.first()`.
+- **Hitungan di top bar ikut terfilter** → tambah `ProjectsUiState.totalCount`.
+- **Hapus draft permanen tanpa konfirmasi** → `AlertDialog` konfirmasi.
+- **Empty state salah saat error** → `isEmpty && error == null`.
+- **`FileSizeFormat`** bisa mencetak `1000.0 KB` → unit dipilih setelah
+  pembulatan; test batas ditambah.
+- **Ikon splash tak terlihat** (glyph gelap di latar gelap) →
+  `windowSplashScreenIconBackgroundColor` lime.
+- **media3 (4 modul) belum dipakai** tapi ikut masuk APK → dihapus, ditambah
+  kembali di M3.
+- **GitHub Actions di-pin ke commit SHA** + gate "manifest rilis tidak boleh
+  dapat permission `INTERNET`", sesuai keputusan di `DECISIONS.md`.
+
+Backlog dari reviewer M0 (non-blocking, untuk M1+):
+
+- **`CorruptionException` DataStore** disamarkan jadi "tidak ada draft" oleh
+  `catch { IOException -> emptyPreferences() }`, dan `upsert`/`delete` bisa
+  melempar keluar `viewModelScope`. Tambah `CorruptionHandler` eksplisit.
+- **Tombol "Coba lagi"** saat error belum ada; `catch` mengakhiri flow sehingga
+  tidak ada jalur pulih.
+- **`@Preview`** untuk komponen/layar bersama belum ada (dokumen desain sudah
+  disesuaikan).
+- **Label waktu** (`nowMs`) tidak menua sendiri saat layar diam; butuh ticker.
+- **`Icons.Filled.ArrowBack`** deprecated → pindah ke `AutoMirrored` saat
+  menyentuh file itu lagi.
+- **Scope state terlalu tinggi**: `pagerState.currentPage` di root
+  `OnboardingScreen`; `menuForDraftId` dipakai di dalam item `LazyColumn`.
+- **`DraftSummaries.from`** (sort + map) jalan di main thread; pindahkan ke
+  `flowOn(Dispatchers.Default)` kalau daftar tumbuh besar.
+- **Latency splash 700 ms** ditambahkan di atas splash sistem; pertimbangkan gate
+  berbasis kesiapan data.
+- **Path file di draft** (`FilterConfig.lutAssetPath`, `MediaAsset.thumbnailPath`)
+  harus dikanonikalisasi + dipastikan di dalam app-private storage sebelum dibaca
+  (mulai relevan di M3).
+- **Hapus draft masih hard delete**; soft delete/trash + restore adalah P0 di
+  `docs/features/20-draft-cloud.md` → dikerjakan di M27.
 
 ## Ringkasan akhir
 

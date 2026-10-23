@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 val releaseKeystorePath = System.getenv("ZCUT_KEYSTORE_PATH")
@@ -24,7 +25,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = System.getenv("ZCUT_VERSION_NAME")?.removePrefix("v") ?: "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -65,6 +66,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
 
     packaging {
@@ -80,11 +82,23 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
-    // Local render stack. The actual engine is wired in Stage 3.
-    implementation("androidx.media3:media3-common:1.5.1")
-    implementation("androidx.media3:media3-exoplayer:1.5.1")
-    implementation("androidx.media3:media3-transformer:1.5.1")
-    implementation("androidx.media3:media3-effect:1.5.1")
+    // Compose UI stack
+    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+    implementation(composeBom)
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Render stack (media3) is added in M3, when the preview player is wired.
+    // Shipping unused ExoPlayer/Transformer modules now only grows the APK.
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

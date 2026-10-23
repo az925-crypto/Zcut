@@ -4,9 +4,19 @@
         <item name="android:fontFamily">sans</item>
         <item name="android:windowBackground">@color/zcut_background</item>
         <item name="android:colorAccent">@color/zcut_lime</item>
-        <item name="android:statusBarColor">@color/zcut_background</item>
-        <item name="android:navigationBarColor">@color/zcut_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <!-- System splash shown before the Compose graph is ready. -->
+    <style name="Theme.Zcut.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/zcut_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- The launcher glyph is filled with the background colour, so it needs
+             a contrasting plate or it disappears. -->
+        <item name="windowSplashScreenIconBackgroundColor">@color/zcut_lime</item>
+        <item name="postSplashScreenTheme">@style/Theme.Zcut</item>
     </style>
 </resources>

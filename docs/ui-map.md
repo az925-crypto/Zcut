@@ -1,0 +1,85 @@
+# Peta UI — Mockup ke Android
+
+Menjembatani mockup Stage 2 (42 layar) dengan implementasi Compose di
+`app/src/main/java/com/zaaam/zcut/`. Setiap layar mockup punya satu rute di
+`ui/navigation/ZcutDestinations.kt`, dan rute itu dipakai sebagai
+`route` di `NavHost`.
+
+Paritas dijaga oleh unit test `ZcutDestinationsTest`: kalau ada layar di
+mockup tanpa rute Android (atau sebaliknya), CI gagal.
+
+## Kebijakan placeholder
+
+Rute yang milestone-nya belum selesai diarahkan ke `PlaceholderScreen`, yang
+menampilkan judul, ID fitur, dan badge **BUTUH BACKEND** bila relevan. Tidak ada
+layar yang disembunyikan atau dikunci di balik paywall — hanya belum dibangun.
+
+## Layar
+
+Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
+
+| Rute | Mockup | Milestone | Status | Composable |
+|---|---|---|---|---|
+| `splash` | splash | M0 | ✅ | `feature/splash/ZcutSplashScreen` |
+| `onboarding` | onboarding | M0 | ✅ | `feature/onboarding/OnboardingScreen` |
+| `home` | home | M0 | ✅ | `feature/home/HomeScreen` |
+| `projects` | projects | M0 | ✅ | `feature/projects/ProjectsScreen` |
+| `templates` | templates | M19 | ⏳ | placeholder |
+| `template-detail` | template-detail | M19 | ⏳ | placeholder |
+| `discover` | discover | M19 | ⏳ | placeholder |
+| `ai-studio` | ai-studio | M20 | ⏳ | placeholder |
+| `editor` | editor | M2 | ⏳ | placeholder |
+| `media-picker` | media-picker | M2 | ⏳ | placeholder |
+| `trim` | trim | M4 | ⏳ | placeholder |
+| `speed` | speed | M5 | ⏳ | placeholder |
+| `keyframe` | keyframe | M6 | ⏳ | placeholder |
+| `transition` | transition | M7 | ⏳ | placeholder |
+| `filters` | filters | M8 | ⏳ | placeholder |
+| `adjust` | adjust | M8 | ⏳ | placeholder |
+| `effects` | effects | M9 | ⏳ | placeholder |
+| `mask` | mask | M10 | ⏳ | placeholder |
+| `matting` | matting | M14 | ⏳ | placeholder |
+| `beauty` | beauty | M15 | ⏳ | placeholder |
+| `stickers` | stickers | M16 | ⏳ | placeholder |
+| `text` | text | M11 | ⏳ | placeholder |
+| `captions` | captions | M17 | ⏳ | placeholder |
+| `audio` | audio | M12 | ⏳ | placeholder |
+| `tts` | tts | M12 | ⏳ | placeholder |
+| `ai-music` | ai-music | M18 | ⏳ | placeholder |
+| `export` | export | M13 | ⏳ | placeholder |
+| `export-done` | export-done | M13 | ⏳ | placeholder |
+| `drafts` | drafts | M27 | ⏳ | placeholder |
+| `ai-clipper` | ai-clipper | M20 | ⏳ | placeholder |
+| `ai-agent` | ai-agent | M20 | ⏳ | placeholder |
+| `ai-generate` | ai-generate | M21 | ⏳ | placeholder |
+| `digital-human` | digital-human | M22 | ⏳ | placeholder |
+| `camera` | camera | M23 | ⏳ | placeholder |
+| `photo-editor` | photo-editor | M23 | ⏳ | placeholder |
+| `share` | share | M24 | ⏳ | placeholder |
+| `profile` | profile | M1 | ⏳ | placeholder |
+| `settings` | settings | M1 | ⏳ | placeholder |
+| `split-screen` | split-screen | M25 | ⏳ | placeholder |
+| `gameplay` | gameplay | M25 | ⏳ | placeholder |
+| `live-photo` | live-photo | M25 | ⏳ | placeholder |
+| `ad-maker` | ad-maker | M26 | ⏳ | placeholder |
+
+## Navigasi
+
+- `ZcutBottomNav` menampilkan lima tab: `home`, `templates`, `projects`,
+  `ai-studio`, `profile`.
+- Tab tanpa milestone selesai tetap bisa dibuka dan menampilkan placeholder.
+- Layar non-tab menampilkan tombol kembali di `ZcutTopBar`.
+
+## Komponen bersama
+
+| File | Isi |
+|---|---|
+| `ui/theme/` | `Color.kt`, `Type.kt`, `Shape.kt`, `ZcutTokens.kt`, `Theme.kt` |
+| `ui/components/ZcutScaffold.kt` | `ZcutScaffold`, `ZcutTopBar`, `ZcutBottomNav` |
+| `ui/components/ZcutSurfaces.kt` | `ZcutCard`, `ZcutChip`, `BackendBadge`, `MetaRow`, `CoverPlaceholder` |
+| `ui/components/ZcutLayout.kt` | `SectionHeader`, `EmptyState`, `HeroBanner` |
+| `ui/components/ZcutControls.kt` | tombol primer/sekunder/ghost, `ZcutIconButton`, `ZcutSlider` |
+| `ui/components/ProjectCard.kt` | `DraftCover`, `ProjectRailCard`, `ProjectRowCard` |
+| `ui/LocalAppContainer.kt` | `LocalAppContainer` + `zcutViewModelFactory` |
+
+Spesifikasi desain M0 ada di [`ui-m0-design.md`](ui-m0-design.md).

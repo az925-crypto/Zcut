@@ -1,42 +1,35 @@
 package com.zaaam.zcut
 
-import android.app.Activity
 import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
-import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.zaaam.zcut.ui.navigation.ZcutNavHost
+import com.zaaam.zcut.ui.theme.ZcutTheme
 
 /**
- * Stage 2 scaffold. The real Compose navigation graph replaces this activity
- * only after the mockup receives explicit ACC via Telegram.
+ * Single-activity Compose host. The whole Stage 3 UI lives behind
+ * [ZcutNavHost]; the app never talks to a first-party server.
  */
-class MainActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+class MainActivity : ComponentActivity() {
 
-        val title = TextView(this).apply {
-            text = getString(R.string.scaffold_title)
-            textSize = 38f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#C9FF4A"))
-            gravity = Gravity.CENTER
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
+
+        val container = (application as ZcutApplication).container
+
+        setContent {
+            ZcutTheme {
+                ZcutNavHost(container = container)
+            }
         }
-        val message = TextView(this).apply {
-            text = getString(R.string.scaffold_message)
-            textSize = 14f
-            setTextColor(Color.parseColor("#8A8F9C"))
-            gravity = Gravity.CENTER
-            setPadding(48, 24, 48, 0)
-        }
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#08090D"))
-            addView(title)
-            addView(message)
-        }
-        setContentView(root)
     }
 }
