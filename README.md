@@ -6,8 +6,10 @@ from the reverse-engineering notes for CapCut 19.8.0.
 - **Package:** `com.zaaam.zcut`
 - **Stack:** Kotlin, Jetpack Compose, Material 3, Media3, Room, DataStore
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
-- **Status:** Stage 1 (specs) complete · Stage 2 (mockup) awaiting ACC
+- **Status:** Stage 1 (specs) complete · Stage 2 (mockup) awaiting ACC ·
+  Stage 2b (non-UI scaffold) complete · CI green · signed release `v0.1.0`
 - **Repo:** https://github.com/az925-crypto/Zcut
+- **Latest release:** [v0.1.0](https://github.com/az925-crypto/Zcut/releases/tag/v0.1.0)
 
 ## Product rules
 
@@ -29,8 +31,8 @@ docs/                 feature specs, architecture, evidence index
 docs/features/        31 feature specs
 PROGRESS.md           1:1 parity checklist, backend flags, build/release log
 mockup/               Stage 2 interactive HTML mockup
-app/                  Android application (created during Stage 3)
-.github/workflows/    CI + signed release build (created during Stage 3)
+app/                  Android application: core model, data layer, render contract
+.github/workflows/    CI + signed release build
 ```
 
 ## Stage 2 mockup
@@ -65,6 +67,13 @@ Approval is collected via Telegram. Android UI work starts only after explicit
 All heavy builds and tests run in GitHub Actions, never locally. The release
 workflow builds a signed APK using secrets stored in GitHub and attaches it to a
 GitHub Release. Keystore, passwords, and tokens are never committed.
+
+- Workflow: `.github/workflows/android.yml` (read-only `test` job, write-scoped
+  `release` job)
+- Signed scaffold APK: [v0.1.0](https://github.com/az925-crypto/Zcut/releases/tag/v0.1.0)
+  (`app-release.apk`, signature `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`)
+- Note: `v0.1.0` is the non-UI scaffold, not the final build. Editor and UI land
+  after `ACC`.
 
 ## Legal
 

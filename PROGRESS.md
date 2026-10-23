@@ -4,7 +4,9 @@
 - **Package:** `com.zaaam.zcut`
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
-- **Status sekarang:** Tahap 1 selesai, Tahap 2 menunggu ACC, non-UI dikerjakan.
+- **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup selesai menunggu
+  ACC, Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
+  diterbitkan. UI Android belum dimulai sampai ACC.
 
 ## Mockup Stage 2
 
@@ -21,10 +23,10 @@
 |---|---|---|
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, menunggu ACC | 42 layar · 31 area · HTML interaktif |
-| 2b. Non-UI | 🟡 Dikerjakan | model, data layer, render contract, CI |
+| 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
 | 3. KODE UI | ⛔ Diblokir | mulai setelah ACC Telegram |
-| 4. BUILD/TEST | ⬜ Belum | GitHub Actions, release APK |
-| 5. RELEASE | ⬜ Belum | GitHub Releases + ringkasan akhir |
+| 4. BUILD/TEST | ✅ Selesai | CI hijau: test + signed release di GitHub Actions |
+| 5. RELEASE | 🟡 Sebagian | `v0.1.0` signed APK sudah di GitHub Releases; fitur belum lengkap |
 
 ## Aturan implementasi
 
@@ -506,19 +508,28 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 
 ## Build & release
 
-- [ ] Workflow `.github/workflows/android.yml`
-- [ ] `assembleRelease` + unit test di Actions
-- [ ] Signing dari secrets `ZCUT_KEYSTORE_BASE64`, `ZCUT_KEYSTORE_PASSWORD`,
+- [x] Workflow `.github/workflows/android.yml`
+- [x] `assembleRelease` + unit test di Actions
+- [x] Signing dari secrets `ZCUT_KEYSTORE_BASE64`, `ZCUT_KEYSTORE_PASSWORD`,
       `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
-- [ ] Upload APK ke GitHub Releases
-- [ ] CI hijau
-- [ ] Link release dicatat di sini
+- [x] Upload APK ke GitHub Releases
+- [x] CI hijau
+- [x] Link release: <https://github.com/az925-crypto/Zcut/releases/tag/v0.1.0>
+- [x] Verifikasi signature: `apksigner verify --print-certs` →
+      `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`
+
+Catatan release `v0.1.0`: ini APK scaffold non-UI, bukan hasil akhir. Fitur
+editor dan UI menyusul setelah ACC.
 
 ## Commit log
 
 | Tanggal | Commit | Isi |
 |---|---|---|
-| — | — | — |
+| 2026-10-23 | `dadff9c` | Spesifikasi 31 fitur + mockup Stage 2 interaktif |
+| 2026-10-23 | `c34923a` | Scaffold Android non-UI + workflow signed release |
+| 2026-10-23 | `6102ad2` | CI pakai Android SDK bawaan runner |
+| 2026-10-23 | `4cc000a` | Perbaiki fixture test quarantine; CI hijau |
+| 2026-10-23 | `v0.1.0` | Signed release APK di GitHub Releases |
 
 ## Ringkasan akhir
 
