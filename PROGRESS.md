@@ -508,8 +508,8 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 
 - [ ] Workflow `.github/workflows/android.yml`
 - [ ] `assembleRelease` + unit test di Actions
-- [ ] Signing dari secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
-      `KEY_ALIAS`, `KEY_PASSWORD`
+- [ ] Signing dari secrets `ZCUT_KEYSTORE_BASE64`, `ZCUT_KEYSTORE_PASSWORD`,
+      `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
 - [ ] Upload APK ke GitHub Releases
 - [ ] CI hijau
 - [ ] Link release dicatat di sini

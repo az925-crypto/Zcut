@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zcut</string>
+    <string name="scaffold_title">zcut.</string>
+    <string name="scaffold_message">Local-first video studio\nUI implementation starts after ACC</string>
+</resources>

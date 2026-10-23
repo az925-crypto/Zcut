@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zcut_background">#08090D</color>
+    <color name="zcut_surface">#11131A</color>
+    <color name="zcut_lime">#C9FF4A</color>
+    <color name="zcut_coral">#FF6B57</color>
+    <color name="zcut_text">#F4F5F7</color>
+    <color name="zcut_muted">#8A8F9C</color>
+</resources>

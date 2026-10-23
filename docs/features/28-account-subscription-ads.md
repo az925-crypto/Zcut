@@ -75,53 +75,21 @@ boleh mendebit ulang.
 Reward ad dipakai untuk membuka template AI atau menambah credit. Ada
 `AITemplateRewardAdComponent` dan `AITemplateRewardCacheData`.
 
-## Implementasi referensi (clean-room)
+## Keputusan implementasi Zcut
 
-```kotlin
-data class Entitlement(
-    val isPro: Boolean,
-    val plan: Plan?,
-    val expiresAt: Instant?,
-    val credits: Int,
-)
+Bagian ini **tidak direkonstruksi**. Tidak ada login wajib, paywall,
+subscription, credit, reward ad, billing, atau gate fitur Pro di Zcut.
+Semua fitur yang tersedia tetap terbuka dan tidak memanggil server CapCut.
 
-interface BillingProvider {
-    suspend fun purchase(productId: String): PurchaseResult
-    suspend fun restore(): List<PurchaseResult>
-}
-
-class SubscriptionManager(
-    private val provider: BillingProvider,
-    private val backend: EntitlementApi,
-    private val cache: EntitlementCache,
-) {
-    suspend fun buy(productId: String): Entitlement {
-        val purchase = provider.purchase(productId)
-        val verified = backend.verify(purchase.token, productId)
-        cache.put(verified)
-        return verified
-    }
-
-    suspend fun consumeCredit(cost: Int, taskId: String): Boolean {
-        val e = cache.get() ?: return false
-        if (e.credits < cost) return false
-        return backend.debit(taskId, cost)     // server-authoritative
-    }
-}
-```
-
-Paywall harus selalu menyediakan:
-- harga + periode + auto-renew disclosure,
-- restore purchase,
-- manage/cancel subscription,
-- tombol close.
-
-## Catatan paritas
-
-- **P0**: login, paywall statis, satu produk, restore, gate fitur Pro.
-- **P1**: free trial, credit, reward ad, riwayat transaksi.
-- **P2**: multi-channel payment, regional pricing, family/team plan,
-  enterprise.
+- **Tidak dibuat**: paywall, checkout, Google Play Billing, GlobalPay,
+  PayPal/Paylution, credit ledger, reward ad, splash/interstitial/banner ad.
+- **Tidak dibuat**: server entitlement, account token, ban/deleted account
+  dialog, trade record, dan restore purchase.
+- **Pengganti lokal**: pengaturan profil lokal, riwayat ekspor lokal, dan
+  backup zip manual. Tidak ada telemetry atau iklan.
+- **Fitur yang secara teknis butuh model/cloud** tetap ditandai
+  `BUTUH BACKEND` dan memakai fallback lokal bila memungkinkan; tidak ada
+  pembelian atau kredit yang menghalangi akses.
 
 ## Unknown
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Zcut" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/zcut_background</item>
+        <item name="android:colorAccent">@color/zcut_lime</item>
+        <item name="android:statusBarColor">@color/zcut_background</item>
+        <item name="android:navigationBarColor">@color/zcut_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>
