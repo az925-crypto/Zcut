@@ -533,6 +533,7 @@ editor dan UI menyusul setelah ACC.
 | 2026-10-23 | `4cc000a` | Perbaiki fixture test quarantine; CI hijau |
 | 2026-10-23 | `6a71910` | Dokumentasi status 2b, CI hijau, release `v0.1.0` |
 | 2026-10-23 | `e50e137` | Re-audit fix: cegah draft hilang saat payload korup + hardening sanitize |
+| 2026-10-23 | `a3ec4e6` | Bersihkan API mati + catatan backlog reviewer di PROGRESS |
 | 2026-10-23 | `v0.1.0` | Signed release APK di GitHub Releases |
 
 ## Backlog re-audit
