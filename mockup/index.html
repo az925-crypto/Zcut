@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090d">
+  <title>Zcut — Stage 2 Mockup</title>
+  <meta name="description" content="Zcut interactive product mockup: 31 feature areas, 42 screens, local-first video editor.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">Z</div>
+        <div><div class="brand-name">zcut<span>.</span></div><div class="brand-sub">Stage 2 · Product mockup</div></div>
+      </div>
+      <div class="topbar-divider"></div>
+      <nav class="top-tabs" aria-label="Mockup views">
+        <button class="top-tab active" id="tabPrototype">Prototype</button>
+        <button class="top-tab" id="tabMap">Screen map</button>
+        <button class="top-tab" id="tabNotes">Design notes</button>
+      </nav>
+      <div class="top-right">
+        <span class="pill"><span class="dot"></span> NO PAYWALL</span>
+        <span class="pill cyan"><span class="dot"></span> LOCAL-FIRST</span>
+        <span class="pill coral"><span class="dot"></span> AWAITING ACC</span>
+        <button class="btn primary" id="approveBtn">Review / ACC</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside class="rail" id="rail" aria-label="Screens"></aside>
+
+      <main class="stage">
+        <div class="stage-head">
+          <div>
+            <div class="eyebrow">Interactive prototype · <span id="screenCounter">02 / 42</span></div>
+            <h1 class="stage-title" id="stageTitle">Home</h1>
+            <p class="stage-sub" id="stageSub">Ruang mulai cepat: project baru, draft terakhir, template, dan tool AI.</p>
+          </div>
+          <div class="stage-actions">
+            <button class="btn" data-tab="map">Screen map</button>
+            <button class="btn primary" data-action="request-acc">Request ACC</button>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone" aria-label="Zcut app mockup">
+            <div class="phone-screen" id="phoneScreen"></div>
+          </div>
+        </div>
+        <div class="hint" style="max-width:420px">Klik elemen di dalam layar untuk berpindah. Ini mockup HTML — bukan UI Android final. Approval dilakukan via Telegram.</div>
+      </main>
+
+      <aside class="inspector" id="inspector" aria-label="Screen details"></aside>
+    </div>
+
+    <section class="gallery" id="gallery">
+      <div class="gallery-head">
+        <div>
+          <div class="eyebrow">All screens · 31 feature areas</div>
+          <h1>Screen map.</h1>
+          <p>Setiap layar di bawah ini bisa diklik. Warna badge menandai implementasi lokal, campuran, atau backend. Tidak ada layar paywall karena monetisasi sengaja dihapus.</p>
+        </div>
+        <div class="stage-actions">
+          <button class="btn" data-tab="prototype">Back to prototype</button>
+          <button class="btn primary" data-action="request-acc">Review / ACC</button>
+        </div>
+      </div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Review</h3>
+      <div id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+      <button class="icon-btn" id="closeModal" aria-label="Close" style="position:absolute;right:16px;top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+  </div>
+
+  <script src="assets/core.js"></script>
+  <script src="assets/screens.js"></script>
+  <script src="assets/screens-core.js"></script>
+  <script src="assets/screens-tools.js"></script>
+  <script src="assets/screens-ai.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
