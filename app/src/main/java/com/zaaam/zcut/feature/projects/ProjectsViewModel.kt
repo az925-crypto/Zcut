@@ -62,8 +62,8 @@ class ProjectsViewModel(
         viewModelScope.launch {
             // Read the persisted names, not the filtered UI state: filtering used
             // to produce duplicate "Draft 1" names.
-            val taken = repository.projects.first().map { it.name }.toSet()
-            val project = ProjectFactory.create(name = nextDraftName(taken))
+            val taken = repository.summaries().map { it.name }.toSet()
+            val project = ProjectFactory.create(name = DraftSummaries.nextName(taken))
             repository.upsert(project)
             onCreated(project.id)
         }
@@ -75,10 +75,5 @@ class ProjectsViewModel(
 
     fun delete(projectId: String) {
         viewModelScope.launch { repository.delete(projectId) }
-    }
-
-    private fun nextDraftName(): String {
-        val count = uiState.value.drafts.size + 1
-        return "Draft $count"
     }
 }

@@ -20,6 +20,18 @@ object DraftSummaries {
     fun from(projects: List<Project>): List<DraftSummary> =
         projects.sortedWith(projectOrder).map { it.toSummary() }
 
+    /**
+     * First free "Draft N" for the given set of stored names.
+     *
+     * Counts stored names, not the visible list: creating a draft while a filter
+     * is active used to reuse a number that already existed.
+     */
+    fun nextName(taken: Set<String>): String {
+        var index = taken.size + 1
+        while ("Draft $index" in taken) index++
+        return "Draft $index"
+    }
+
     fun Project.toSummary(): DraftSummary = DraftSummary(
         id = id,
         name = name,

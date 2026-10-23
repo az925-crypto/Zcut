@@ -102,4 +102,27 @@ class DraftSummariesTest {
         assertEquals(0, ProjectsFilter.apply(drafts, "zzz", null).size)
         assertEquals(0, ProjectsFilter.apply(drafts, "", AspectRatio.PORTRAIT_4_5).size)
     }
+
+    @Test
+    fun nextNameStartsAtOneForAnEmptyProjectsList() {
+        assertEquals("Draft 1", DraftSummaries.nextName(emptySet()))
+    }
+
+    @Test
+    fun nextNameSkipsNumbersAlreadyTaken() {
+        assertEquals(
+            "Draft 4",
+            DraftSummaries.nextName(setOf("Draft 1", "Draft 2", "Draft 3"))
+        )
+    }
+
+    @Test
+    fun nextNameFillsGapsLeftByRenamedOrDeletedDrafts() {
+        assertEquals("Draft 2", DraftSummaries.nextName(setOf("Draft 1", "Draft 5")))
+    }
+
+    @Test
+    fun nextNameIgnoresUnrelatedNames() {
+        assertEquals("Draft 2", DraftSummaries.nextName(setOf("Draft 1", "Night walk")))
+    }
 }
