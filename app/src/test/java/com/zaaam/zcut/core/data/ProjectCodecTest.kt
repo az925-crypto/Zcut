@@ -65,16 +65,12 @@ class ProjectCodecTest {
 
     @Test
     fun damagedProjectIsQuarantinedWithoutLosingValidOnes() {
-        val valid = ProjectFactory.create("Good")
-        val encoded = ProjectCodec.encodeProjects(listOf(valid))
-        val array = encoded.substringAfter("\"projects\":").removeSuffix("}")
-        val inner = array.removePrefix("[").removeSuffix("]")
-        val raw = """{"schemaVersion":1,"projects":[$inner,{"bad":true}]}"""
+        val raw = """{"schemaVersion":1,"projects":[{},{"frameRate":"not-an-int"}]}"""
 
         val decoded = ProjectCodec.decode(raw)
 
         assertEquals(1, decoded.projects.size)
-        assertEquals("Good", decoded.projects.single().name)
+        assertEquals("Untitled", decoded.projects.single().name)
         assertEquals(1, decoded.quarantinedProjects.size)
     }
 }
