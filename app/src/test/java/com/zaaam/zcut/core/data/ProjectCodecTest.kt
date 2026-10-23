@@ -25,7 +25,7 @@ class ProjectCodecTest {
         )
 
         val decoded = ProjectCodec.decode(
-            ProjectCodec.encodeProjects(listOf(project))
+            ProjectCodec.encode(ProjectDocument(projects = listOf(project)))
         ).projects
 
         assertEquals(1, decoded.size)

@@ -7,6 +7,8 @@
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup selesai menunggu
   ACC, Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
   diterbitkan. UI Android belum dimulai sampai ACC.
+- **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
+  Sisa temuan Medium/Low ada di bagian Backlog re-audit, bukan penghalang.
 
 ## Mockup Stage 2
 
@@ -529,7 +531,38 @@ editor dan UI menyusul setelah ACC.
 | 2026-10-23 | `c34923a` | Scaffold Android non-UI + workflow signed release |
 | 2026-10-23 | `6102ad2` | CI pakai Android SDK bawaan runner |
 | 2026-10-23 | `4cc000a` | Perbaiki fixture test quarantine; CI hijau |
+| 2026-10-23 | `6a71910` | Dokumentasi status 2b, CI hijau, release `v0.1.0` |
+| 2026-10-23 | `e50e137` | Re-audit fix: cegah draft hilang saat payload korup + hardening sanitize |
 | 2026-10-23 | `v0.1.0` | Signed release APK di GitHub Releases |
+
+## Backlog re-audit
+
+Catatan non-blocking dari reviewer (semua reviewer: `BLOCKING: no`). Bukan
+penghalang commit; jadi backlog untuk Tahap 3.
+
+- **Speed curve belum jadi sumber kebenaran** (`TimelineEditor.splitClip`):
+  offset sumber dihitung dari `speed` skalar, sementara `curve` hanya di-remap.
+  Butuh keputusan semantik curve sebelum diimplementasikan.
+- **Seam keyframe pakai nilai keyframe terakhir, bukan interpolasi di titik
+  potong** — animasi yang melewati titik potong masih "dibekukan" di paruh kiri.
+- **Erasure clip di decode tidak dikarantina** — clip invalid dibuang, bukan
+  disimpan mentah; dibuat konsisten dengan karantina project saat sanitize
+  sudah punya jalur karantina.
+- **`schemaVersion` belum divalidasi/migrasi** (baru dibawa, belum ditolak).
+- **Ordering draft** bisa salah saat `updatedAtMs` sama (tanpa tie-break).
+- **Trim handle mentok** di batas sumber: edit ditolak, bukan di-clamp.
+- **Pin actions ke commit SHA** dan gate job `release` di Environment
+  ber-reviewer (hardening workflow).
+- **`normalize`→`sanitize` menambah sort per track di jalur decode** — tidak
+  signifikan, tapi bisa dilewati bila data sudah urut.
+- **Duplikasi saturating-add** (`TimelineEditor.safeAdd` vs
+  `ProjectFactory.advanceCursor`) — satukan saat math drag/trim UI ditulis.
+- **`splitClip` sudah ~68 baris** — pisah seam-keyframe/trim/clamp ke helper
+  saat salah satu concern berubah.
+- **`Clip.isValid()` masih private di `TimelineEditor`** — angkat ke `Clip`
+  saat layer lain (repo/UI) butuh invarian yang sama.
+- **`quarantinedProjects` menyimpan dua bentuk** (dokumen mentah vs elemen
+  project) tanpa penanda — beri diskriminator saat fitur recovery dibuat.
 
 ## Ringkasan akhir
 

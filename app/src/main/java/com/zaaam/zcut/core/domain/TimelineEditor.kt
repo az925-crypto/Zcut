@@ -16,9 +16,6 @@ import kotlin.math.roundToLong
  */
 object TimelineEditor {
 
-    fun durationMs(clips: List<Clip>): Long =
-        clips.maxOfOrNull { it.endMs.coerceAtLeast(0L) } ?: 0L
-
     fun recalculate(timeline: Timeline): Timeline {
         val duration = timeline.tracks
             .flatMap { it.clips }

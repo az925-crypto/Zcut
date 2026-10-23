@@ -84,9 +84,6 @@ object ProjectCodec {
         )
     }
 
-    fun encodeProjects(projects: List<Project>): String =
-        encode(ProjectDocument(projects = projects))
-
     private fun normalize(project: Project): Project =
         project.copy(timeline = TimelineEditor.sanitize(project.timeline))
 }
