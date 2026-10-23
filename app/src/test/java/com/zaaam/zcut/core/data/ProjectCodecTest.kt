@@ -5,7 +5,6 @@ import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.FilterConfig
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProjectCodecTest {
@@ -25,9 +24,9 @@ class ProjectCodecTest {
             timeline = TimelineEditor.addClip(base.timeline, videoTrack.id, clip)
         )
 
-        val decoded = ProjectCodec.decodeProjects(
+        val decoded = ProjectCodec.decode(
             ProjectCodec.encodeProjects(listOf(project))
-        )
+        ).projects
 
         assertEquals(1, decoded.size)
         assertEquals("Night walk", decoded[0].name)
@@ -44,16 +43,45 @@ class ProjectCodecTest {
     }
 
     @Test
-    fun invalidJsonFallsBackToEmptyDocument() {
+    fun invalidJsonFallsBackToEmptyDocumentAndKeepsRawPayload() {
         val decoded = ProjectCodec.decode("not-json")
+
         assertEquals(0, decoded.projects.size)
-        assertTrue(decoded.schemaVersion >= 1)
+        assertEquals(1, decoded.schemaVersion)
+        assertEquals(listOf("not-json"), decoded.quarantinedProjects)
+    }
+
+    @Test
+    fun quarantinedPayloadSurvivesDecodeEncodeRoundTrip() {
+        val first = ProjectCodec.decode("not-json")
+
+        val second = ProjectCodec.decode(ProjectCodec.encode(first))
+
+        assertEquals(0, second.projects.size)
+        assertEquals(listOf("not-json"), second.quarantinedProjects)
+    }
+
+    @Test
+    fun semanticallyInvalidClipsAreDroppedOnDecode() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{"timeline":{"tracks":[
+              {"type":"VIDEO","clips":[{"startMs":-100,"durationMs":50},
+                                       {"startMs":0,"durationMs":100}]}
+            ]}}]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw)
+        val clips = decoded.projects.single().timeline.tracks.first().clips
+
+        assertEquals(1, clips.size)
+        assertEquals(0L, clips.single().startMs)
+        assertEquals(100L, decoded.projects.single().timeline.durationMs)
     }
 
     @Test
     fun emptyPayloadReturnsEmptyDocument() {
-        val decoded = ProjectCodec.decodeProjects(null)
-        assertEquals(0, decoded.size)
+        val decoded = ProjectCodec.decode(null)
+        assertEquals(0, decoded.projects.size)
     }
 
     @Test
@@ -61,6 +89,16 @@ class ProjectCodecTest {
         val decoded = ProjectCodec.decode("""{"schemaVersion":"x","projects":{}}""")
         assertEquals(0, decoded.projects.size)
         assertEquals(1, decoded.schemaVersion)
+    }
+
+    @Test
+    fun damagedQuarantineFieldIsPreservedNotDropped() {
+        val raw = """{"projects":[],"quarantinedProjects":"oops"}"""
+
+        val decoded = ProjectCodec.decode(raw)
+
+        assertEquals(0, decoded.projects.size)
+        assertEquals(listOf(raw), decoded.quarantinedProjects)
     }
 
     @Test

@@ -88,8 +88,10 @@ object TimelineEditor {
         } else {
             Long.MAX_VALUE
         }
-        val requestedSourceStart = clip.sourceStartMs +
+        val requestedSourceStart = safeAdd(
+            clip.sourceStartMs,
             (deltaStartMs.toDouble() * speed).roundToLong()
+        )
         val sourceStartMs = requestedSourceStart.coerceIn(0L, sourceEndMs)
         if (clip.sourceDurationMs > 0L && sourceStartMs >= sourceEndMs) return timeline
 
@@ -148,7 +150,13 @@ object TimelineEditor {
                     val (leftCurve, rightCurve) = splitCurve(clip.speed, fraction)
                     val leftKeyframes = clip.keyframes
                         .filter { it.timeMs <= leftDurationMs }
-                    val rightKeyframes = clip.keyframes
+                    // Re-seed the right half with each property's value at the cut so
+                    // the animation does not jump at the seam.
+                    val seamKeyframes = leftKeyframes
+                        .groupBy { it.property }
+                        .map { (_, keyframes) -> keyframes.maxBy { it.timeMs } }
+                        .map { it.copy(timeMs = 0L) }
+                    val rightKeyframes = seamKeyframes + clip.keyframes
                         .filter { it.timeMs > leftDurationMs }
                         .map { it.copy(timeMs = it.timeMs - leftDurationMs) }
 
@@ -232,6 +240,22 @@ object TimelineEditor {
                 track.copy(clips = track.clips.sortedBy { it.startMs })
             }
         )
+
+    /**
+     * Drops clips a track cannot hold or that fail [isValid], then recalculates.
+     * Used for untrusted input (decoded drafts, imported assets) so a damaged clip
+     * cannot linger in a permanently uneditable state.
+     */
+    fun sanitize(timeline: Timeline): Timeline {
+        val tracks = timeline.tracks.map { track ->
+            track.copy(
+                clips = track.clips
+                    .filter { track.type.accepts(it.type) && it.isValid() }
+                    .sortedBy { it.startMs }
+            )
+        }
+        return recalculate(timeline.copy(tracks = tracks))
+    }
 
     fun trackOf(timeline: Timeline, clipId: String): Track? =
         timeline.tracks.firstOrNull { track ->

@@ -66,7 +66,7 @@ object ProjectFactory {
                         durationMs = duration,
                         sourceDurationMs = duration
                     )
-                    audioCursorMs += duration
+                    audioCursorMs = advanceCursor(audioCursorMs, duration)
                 }
 
                 MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.GIF, MediaKind.LIVE_PHOTO -> {
@@ -78,21 +78,26 @@ object ProjectFactory {
                         durationMs = duration,
                         sourceDurationMs = duration
                     )
-                    videoCursorMs += duration
+                    videoCursorMs = advanceCursor(videoCursorMs, duration)
                 }
             }
         }
 
-        val timeline = base.timeline.copy(
-            tracks = base.timeline.tracks.map { track ->
-                when (track.id) {
-                    videoTrack.id -> track.copy(clips = videoClips)
-                    audioTrack.id -> track.copy(clips = audioClips)
-                    else -> track
+        val timeline = TimelineEditor.sanitize(
+            base.timeline.copy(
+                tracks = base.timeline.tracks.map { track ->
+                    when (track.id) {
+                        videoTrack.id -> track.copy(clips = videoClips)
+                        audioTrack.id -> track.copy(clips = audioClips)
+                        else -> track
+                    }
                 }
-            },
-            durationMs = TimelineEditor.durationMs(videoClips + audioClips)
+            )
         )
         return base.copy(timeline = timeline)
     }
+
+    /** Saturates instead of wrapping so one bogus asset duration cannot poison the track. */
+    private fun advanceCursor(cursorMs: Long, durationMs: Long): Long =
+        if (cursorMs > Long.MAX_VALUE - durationMs) Long.MAX_VALUE else cursorMs + durationMs
 }

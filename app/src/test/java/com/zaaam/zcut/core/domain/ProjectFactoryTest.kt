@@ -55,4 +55,22 @@ class ProjectFactoryTest {
         assertEquals(1_000L, clip.durationMs)
         assertEquals(1_000L, project.timeline.durationMs)
     }
+
+    @Test
+    fun bogusAssetDurationDoesNotPoisonTheTrack() {
+        val project = ProjectFactory.fromAssets(
+            name = "Audio",
+            assets = listOf(
+                asset(MediaKind.AUDIO, Long.MAX_VALUE, "huge.m4a"),
+                asset(MediaKind.AUDIO, 1_000L, "after.m4a")
+            )
+        )
+        val audio = project.timeline.tracks.first { it.type == TrackType.AUDIO }.clips
+
+        // The cursor saturates instead of wrapping, and the clip that would have
+        // started past Long.MAX_VALUE is dropped rather than stored invalid.
+        assertEquals(1, audio.size)
+        assertEquals(0L, audio.single().startMs)
+        assertEquals(Long.MAX_VALUE, project.timeline.durationMs)
+    }
 }

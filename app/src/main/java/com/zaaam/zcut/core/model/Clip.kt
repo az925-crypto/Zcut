@@ -121,7 +121,7 @@ data class SpeedConfig(
     val curve: List<SpeedPoint> = emptyList()
 ) {
     val safeSpeed: Float
-        get() = speed.coerceIn(0.1f, 8f)
+        get() = if (speed.isNaN()) 1f else speed.coerceIn(0.1f, 8f)
 }
 
 @Serializable

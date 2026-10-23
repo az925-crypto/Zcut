@@ -170,9 +170,58 @@ class TimelineEditorTest {
         assertNull(clips[0].transitionOut)
         assertNull(clips[1].transitionIn)
         assertEquals(1, clips[0].keyframes.size)
-        assertEquals(300L, clips[1].keyframes.single().timeMs)
+        // The right half is re-seeded with the left half's value at the cut (t = 0)
+        // so the animation is continuous, then keeps the later keyframe.
+        assertEquals(2, clips[1].keyframes.size)
+        assertEquals(0L, clips[1].keyframes.first().timeMs)
+        assertEquals(300L, clips[1].keyframes.last().timeMs)
         assertEquals(0L, clips[0].audio.fadeOutMs)
         assertEquals(0L, clips[1].audio.fadeInMs)
+    }
+
+    @Test
+    fun trimWithHugeOffsetDoesNotWrapSourceStart() {
+        val (timeline, videoId, _) = baseTimeline()
+        val source = Clip(
+            startMs = 0L,
+            durationMs = 1_000L,
+            sourceStartMs = 1_000L,
+            speed = SpeedConfig(speed = 8f)
+        )
+        val withClip = TimelineEditor.addClip(timeline, videoId, source)
+
+        val trimmed = TimelineEditor.trimClip(
+            withClip,
+            source.id,
+            1_200_000_000_000_000_000L,
+            1_200_000_000_000_001_000L
+        )
+        val result = trimmed.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(0L, result.startMs)
+        assertEquals(1_000L, result.sourceStartMs)
+    }
+
+    @Test
+    fun sanitizeDropsInvalidAndMismatchedClips() {
+        val corrupt = Timeline(
+            tracks = listOf(
+                Track(
+                    type = TrackType.VIDEO,
+                    clips = listOf(
+                        Clip(startMs = -100L, durationMs = 50L),
+                        Clip(startMs = 0L, durationMs = 200L),
+                        Clip(type = com.zaaam.zcut.core.model.ClipType.TEXT, startMs = 0L, durationMs = 100L)
+                    )
+                )
+            )
+        )
+
+        val fixed = TimelineEditor.sanitize(corrupt)
+        val clips = fixed.tracks.single().clips
+
+        assertEquals(1, clips.size)
+        assertEquals(200L, fixed.durationMs)
     }
 
     @Test
