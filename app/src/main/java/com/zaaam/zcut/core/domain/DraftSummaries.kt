@@ -21,13 +21,14 @@ object DraftSummaries {
         projects.sortedWith(projectOrder).map { it.toSummary() }
 
     /**
-     * First free "Draft N" for the given set of stored names.
+     * First free "Draft N", scanning from 1.
      *
-     * Counts stored names, not the visible list: creating a draft while a filter
-     * is active used to reuse a number that already existed.
+     * Uses the stored names rather than the visible list: creating a draft while
+     * a filter is active used to reuse a number that already existed. Scanning
+     * from 1 also fills gaps left by renamed or deleted drafts.
      */
     fun nextName(taken: Set<String>): String {
-        var index = taken.size + 1
+        var index = 1
         while ("Draft $index" in taken) index++
         return "Draft $index"
     }
