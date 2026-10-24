@@ -557,7 +557,8 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
       `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
 - [x] Upload APK ke GitHub Releases
 - [x] CI hijau
-- [x] Link release: <https://github.com/az925-crypto/Zcut/releases/tag/v0.1.0>
+- [x] Link release terbaru: <https://github.com/az925-crypto/Zcut/releases/tag/v0.4.0>
+      (riwayat: `v0.1.0` scaffold, `v0.2.0` M0, `v0.3.0` M1, `v0.4.0` M2)
 - [x] Verifikasi signature: `apksigner verify --print-certs` →
       `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`
 
@@ -576,6 +577,9 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-23 | `e50e137` | Re-audit fix: cegah draft hilang saat payload korup + hardening sanitize |
 | 2026-10-23 | `a3ec4e6` | Bersihkan API mati + catatan backlog reviewer di PROGRESS |
 | 2026-10-23 | `v0.1.0` | Signed release APK di GitHub Releases |
+| 2026-10-24 | `900cbb4` | M1 preferensi lokal, onboarding tersimpan, Profil & Pengaturan; release `v0.3.0` |
+| 2026-10-24 | `c129da5` | M2 editor shell, kanvas timeline, impor media; CI hijau |
+| 2026-10-24 | `7c14b3b` | versionCode 4 + tag `v0.4.0`; signed release APK terbit |
 
 ## Backlog re-audit
 
