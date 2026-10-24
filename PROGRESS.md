@@ -26,7 +26,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0 selesai) |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0–M1 selesai) |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
 
@@ -37,7 +37,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | # | Milestone | Fitur | Layar mockup | Status |
 |---|---|---|---|---|
 | M0 | Fondasi Compose, shell navigasi, daftar draft | F01/F20 (parsial) | splash, onboarding, home, projects | ✅ |
-| M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | [ ] |
+| M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | ✅ |
 | M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | [ ] |
 | M3 | Preview player Media3 | F03 | (editor) | [ ] |
 | M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | [ ] |
@@ -680,6 +680,42 @@ performance **BLOCKING: no**. Temuan non-blocking yang langsung dibereskan:
 Catatan performance (Low, sengaja tidak diubah): `initialValue` yang sempat
 menampilkan progress bar 1–2 frame, `MetaRow` yang membangun list kecil per
 recompose, dan `clip()` ganda di atas `Surface(shape=...)`.
+
+### Temuan reviewer M1 (2026-10-24)
+
+Gate M1: security **BLOCKING: no**, performance **BLOCKING: no**, bug
+**BLOCKING: yes** → 3 Medium + 3 Low, semuanya diperbaiki dalam satu pass
+sebelum commit `900cbb4`:
+
+- **`ZcutRoutes.Settings` belum ada** padahal dipakai `ProfileScreen` dan
+  `ZcutNavHost` (build gagal). → konstanta ditambahkan.
+- **Back dari Settings mendarat di Home**: Profil memakai `navigateToTab`, yang
+  `popUpTo(Home)`, sehingga entri Profil ikut ter-pop. → `openFromProfile`:
+  route tab tetap lewat `navigateToTab`, non-tab di-push biasa.
+- **Onboarding ditulis fire-and-forget tanpa `catch`** → exception tak
+  tertangkap bisa crash, dan navigasi mendahului write. → `scope.launch {
+  runCatching { … }; navigate(…) }` + `launchSingleTop`.
+- **Setter `SettingsViewModel` bisa crash saat write gagal** → semua lewat
+  `write { }` berbalut `runCatching`; `clearCache`/`refreshStorage` juga.
+- **Traversal storage mengikuti symlink** (`deleteRecursively`/`walkTopDown`)
+  → NIO `walkFileTree` tanpa FOLLOW_LINKS; symlink dihapus sebagai link, tidak
+  diikuti. Dua unit test regresi ditambahkan.
+- **Splash bisa crash/stuck saat flow preferensi error** → baca dibungkus
+  `withTimeoutOrNull(3_000)` + `runCatching`, fallback `AppPreferences()`.
+- **Isi `AlertDialog` bisa overflow** → `verticalScroll(rememberScrollState())`
+  di kedua dialog.
+
+Re-review commit `900cbb4`: **BLOCKING: no**. Backlog non-blocking baru:
+
+- **Editor dibuka lewat `navigateToTab`** (`ProjectsScreen` → Editor) sehingga
+  back dari Editor mendarat di Home, bukan Draft. Pre-existing; diperbaiki di
+  M2 saat rute editor disentuh.
+- **`runCatching` menelan `CancellationException`** di `onFinish`; dampak user
+  belum terbukti (controller lama dibuang).
+- **`refreshStorage` vs `clearCache` tidak diserialisasi**: hasil `usedBytes`
+  yang lambat bisa menimpa angka pasca-clear sampai layar dibuka ulang.
+- **`getOrDefault(0L)`** menampilkan "0 B" bila traversal melempar
+  non-`IOException` (mis. `SecurityException`).
 
 ## Ringkasan akhir
 

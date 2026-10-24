@@ -19,3 +19,7 @@ ada keputusan yang tidak boleh diambil sendiri atau ketika ada konflik aturan.
 | 2026-10-23 | Subagent `design` sedang tidak tersedia (model down) → spesifikasi desain ditulis langsung sebagai dokumen di `docs/` | Menjaga prinsip "desain dulu sebelum build" tanpa memblokir progres. |
 | 2026-10-23 | Dependency media3 ditunda ke M3 (dihapus dari `build.gradle.kts` di M0) | Belum ada satu pun pemakaian; `isMinifyEnabled=false` bikin module yang tidak dipakai ikut masuk APK. |
 | 2026-10-23 | Layar dengan milestone belum selesai diarahkan ke `PlaceholderScreen`, bukan disembunyikan | Semua fitur bebas; "belum dibangun" bukan "dikunci". |
+| 2026-10-24 | Preferensi disimpan di DataStore terpisah (`zcut_preferences`), bukan di dokumen draft | Payload draft yang rusak tidak boleh ikut menghapus tema/bahasa/default ekspor; dua store juga membuat audit migrasi draft tidak menyentuh setelan. |
+| 2026-10-24 | Pilihan bahasa disimpan di M1, resource terjemahan menyusul di M28 | Menghindari dua kali sentuh seluruh layar; M28 memang milestone lokalisasi. Sampai saat itu copy tetap Indonesia. |
+| 2026-10-24 | Kegagalan tulis preferensi ditelan (UI tetap menampilkan nilai tersimpan), error ke pengguna masuk backlog | Layar pengaturan tidak boleh crash karena disk penuh; menampilkan nilai yang benar-benar persisten lebih jujur daripada state optimistis. |
+| 2026-10-24 | Splash menunggu preferensi maksimal 3 detik lalu jatuh ke default | Lebih baik pengguna lama melihat onboarding sekali (fail-open) daripada splash menggantung selamanya saat DataStore error/lambat. |
