@@ -69,7 +69,7 @@ fun ProjectsScreen(
         onAspectChange = viewModel::onAspectChange,
         onDuplicate = viewModel::duplicate,
         onDelete = viewModel::delete,
-        onCreate = { viewModel.createProject { onNavigate(ZcutRoutes.Editor) } }
+        onCreate = { onNavigate(ZcutRoutes.mediaPicker()) }
     )
 }
 
@@ -205,7 +205,7 @@ private fun ProjectsContent(
                             ProjectRowCard(
                                 draft = draft,
                                 nowMs = nowMs,
-                                onClick = { onNavigate(ZcutRoutes.Editor) },
+                                onClick = { onNavigate(ZcutRoutes.editor(draft.id)) },
                                 onMore = { menuForDraftId = draft.id }
                             )
                             DropdownMenu(

@@ -4,6 +4,8 @@ import com.zaaam.zcut.core.domain.ProjectFactory
 import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.FilterConfig
+import com.zaaam.zcut.core.model.MediaAsset
+import com.zaaam.zcut.core.model.MediaKind
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -110,5 +112,90 @@ class ProjectCodecTest {
         assertEquals(1, decoded.projects.size)
         assertEquals("Untitled", decoded.projects.single().name)
         assertEquals(1, decoded.quarantinedProjects.size)
+    }
+
+    @Test
+    fun assetsRoundTripWithTheirPrivatePaths() {
+        val asset = MediaAsset(
+            uri = "content://media/1",
+            displayName = "clip.mp4",
+            mimeType = "video/mp4",
+            kind = MediaKind.VIDEO,
+            durationMs = 1_200L,
+            localPath = "/data/files/media/1.mp4",
+            thumbnailPath = "thumbs/1.jpg",
+            rotationDegrees = 90
+        )
+        val project = ProjectFactory.fromAssets("Assets", listOf(asset))
+
+        val decoded = ProjectCodec.decode(
+            ProjectCodec.encode(ProjectDocument(projects = listOf(project)))
+        ).projects.single()
+
+        val stored = decoded.assets.single()
+        assertEquals(asset.id, stored.id)
+        assertEquals("/data/files/media/1.mp4", stored.localPath)
+        assertEquals("thumbs/1.jpg", stored.thumbnailPath)
+        assertEquals(90, stored.rotationDegrees)
+        assertEquals(asset.id, decoded.timeline.tracks.flatMap { it.clips }.single().assetId)
+    }
+
+    @Test
+    fun legacyDocumentsWithoutAssetsStillDecode() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{"id":"p1","timeline":{"tracks":[
+              {"type":"VIDEO","clips":[{"assetId":"gone","startMs":0,"durationMs":500}]}
+            ]}}]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+
+        assertEquals(0, decoded.assets.size)
+        assertEquals(500L, decoded.timeline.durationMs)
+        assertEquals("gone", decoded.timeline.tracks.flatMap { it.clips }.single().assetId)
+    }
+
+    @Test
+    fun unusableAndDuplicateAssetsAreDroppedButTheirClipsAreKept() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{
+              "id":"p1",
+              "assets":[
+                {"id":"a1","uri":"content://a","displayName":"a","kind":"VIDEO"},
+                {"id":"a1","uri":"content://b","displayName":"b","kind":"VIDEO"},
+                {"id":"","uri":"content://c","displayName":"c","kind":"VIDEO"},
+                {"id":"a2","displayName":"no-source","kind":"VIDEO"}
+              ],
+              "timeline":{"tracks":[
+                {"type":"VIDEO","clips":[{"assetId":"missing","startMs":0,"durationMs":500}]}
+              ]}
+            }]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+
+        assertEquals(1, decoded.assets.size)
+        assertEquals("a1", decoded.assets.single().id)
+        // Missing media is a UI placeholder, never a reason to delete user clips.
+        assertEquals(1, decoded.timeline.tracks.flatMap { it.clips }.size)
+    }
+
+    @Test
+    fun assetWithOnlyAPrivateCopyIsStillUsable() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{
+              "id":"p1",
+              "assets":[{
+                "id":"a1",
+                "displayName":"clip.mp4",
+                "kind":"VIDEO",
+                "localPath":"/data/files/media/a1.mp4"
+              }]
+            }]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+
+        assertEquals("/data/files/media/a1.mp4", decoded.assets.single().localPath)
     }
 }

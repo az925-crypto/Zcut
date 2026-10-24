@@ -38,7 +38,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 |---|---|---|---|---|
 | M0 | Fondasi Compose, shell navigasi, daftar draft | F01/F20 (parsial) | splash, onboarding, home, projects | ✅ |
 | M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | ✅ |
-| M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | [ ] |
+| M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | ✅ |
 | M3 | Preview player Media3 | F03 | (editor) | [ ] |
 | M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | [ ] |
 | M5 | Speed, reverse, curve, motion | F05 | speed | [ ] |
@@ -110,9 +110,9 @@ Peta rute ↔ layar ↔ milestone ada di [`docs/ui-map.md`](docs/ui-map.md).
 Spek: [`docs/features/01-draft-timeline.md`](docs/features/01-draft-timeline.md)
 
 - [x] Spek perilaku, model data, algoritma
-- [ ] Model `Draft`, `Track`, `Segment`, `Material`, `TimeRange`
-- [ ] Serialization JSON + schema version + migration
-- [ ] CRUD track/segment + target/source time range
+- [x] Model `Draft`, `Track`, `Segment`, `Material`, `TimeRange` (`Project`, `Track`, `Clip`, `MediaAsset`; rentang waktu = field start/duration/source pada `Clip`)
+- [x] Serialization JSON + schema version + migration (field `assets` aditif, tanpa bump skema)
+- [x] CRUD track/segment + target/source time range (`TimelineEditor`, `MediaAppender`)
 - [ ] Transaction, undo, redo, snapshot
 - [ ] Autosave atomic (temp + rename)
 - [ ] Canvas/rasio/background
@@ -124,15 +124,15 @@ Spek: [`docs/features/01-draft-timeline.md`](docs/features/01-draft-timeline.md)
 Spek: [`docs/features/02-media-import-gallery.md`](docs/features/02-media-import-gallery.md)
 
 - [x] Spek
-- [ ] Android Photo Picker + multi-select
-- [ ] Copy ke workspace privat + metadata
-- [ ] Probe durasi/resolusi/codec
-- [ ] Thumbnail + waveform
+- [x] Android Photo Picker + multi-select (Photo Picker maks 10, SAF tanpa batas 10)
+- [x] Copy ke workspace privat + metadata
+- [ ] Probe durasi/resolusi/codec (durasi/resolusi/rotasi/audio sudah; codec belum)
+- [ ] Thumbnail + waveform (thumbnail sudah; waveform di M3)
 - [ ] Proxy/transcode untuk device lemah
-- [ ] Dukungan HEIF/WebP/GIF
-- [ ] Import dari folder lokal / SAF
+- [ ] Dukungan HEIF/WebP/GIF (MIME diterima; decode bergantung platform)
+- [x] Import dari folder lokal / SAF
 - [!] Cloud import (BUTUH BACKEND; fallback SAF)
-- [ ] Unit test import + metadata
+- [x] Unit test import + metadata (kebijakan MIME, penempatan klip, sanitasi aset; jalur Android diuji lewat kompilasi CI)
 
 ## F03 — Preview Player
 
@@ -716,6 +716,39 @@ Re-review commit `900cbb4`: **BLOCKING: no**. Backlog non-blocking baru:
   yang lambat bisa menimpa angka pasca-clear sampai layar dibuka ulang.
 - **`getOrDefault(0L)`** menampilkan "0 B" bila traversal melempar
   non-`IOException` (mis. `SecurityException`).
+
+### Temuan reviewer M2 (2026-10-24)
+
+Gate M2 **dijalankan manual**, bukan lewat subagent: tiga panggilan reviewer
+otomatis gagal dengan `Free usage limit reached` dari harness. Ini bukan
+"BLOCKING: no" — tidak ada verdict otomatis. Penggantinya: audit manual
+security/bug/performance atas diff M2 + CI (`:app:testDebugUnitTest`) sebagai
+verifikasi kompilasi dan tes. Exception ini dicatat di `DECISIONS.md`.
+
+Temuan manual yang diperbaiki sebelum commit:
+
+- **`ProjectCodec` memakai `MediaAsset` tanpa impor** (build gagal). → impor.
+- **Provider melaporkan ukuran `-1`/`0`** untuk file valid → impor ditolak
+  sebagai "terlalu besar". → ukuran `<= 0` dianggap tidak diketahui, batas
+  ruang tetap dicek saat menyalin.
+- **File 0 byte** bisa masuk sebagai aset "valid" → ditolak di importer.
+- **Ruang penyimpanan bisa habis di tengah salinan** → cek sisa ruang berkala
+  selama copy, file parsial dihapus saat gagal.
+- **Metadata/thumbnail gagal membuat seluruh impor gagal** → sekarang
+  non-fatal; aset tetap bisa dipakai dengan nilai fallback.
+- **Cache thumbnail tidak membedakan ukuran** → kunci cache menyertakan
+  `sizePx`; pratinjau besar memakai salinan privat (JPEG 320px terlalu lunak).
+- **Label klip di atas thumbnail kontras rendah** → teks putih saat thumbnail
+  ada, warna primer saat placeholder.
+- **Ruler timeline membangun label tak terbatas** → batas 120 label.
+- **Pratinjau editor bisa mendesak timeline habis di layar pendek** → tinggi
+  pratinjau dibatasi 42% dan kolom bisa scroll.
+- **Double-tap pada picker/impor** → guard `writeInFlight` sinkron.
+- **Back dari Editor mendarat di Home** (backlog M1) → `openRoute`: tab lewat
+  `navigateToTab`, non-tab di-push biasa; picker `launchSingleTop`.
+
+Backlog M2 (non-blocking): file yatim bila upsert gagal / draft dihapus (M27),
+waveform (M3), probe codec, decode HEIF/WebP/GIF bergantung platform.
 
 ## Ringkasan akhir
 

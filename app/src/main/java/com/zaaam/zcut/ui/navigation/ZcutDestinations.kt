@@ -9,10 +9,41 @@ object ZcutRoutes {
     const val Home = "home"
     const val Projects = "projects"
     const val Editor = "editor"
+    const val MediaPicker = "media-picker"
+    const val Trim = "trim"
+    const val Speed = "speed"
+    const val Audio = "audio"
+    const val Text = "text"
+    const val Stickers = "stickers"
+    const val Effects = "effects"
+    const val Filters = "filters"
+    const val Adjust = "adjust"
+    const val Mask = "mask"
+    const val Export = "export"
     const val Templates = "templates"
     const val AiStudio = "ai-studio"
     const val Profile = "profile"
     const val Settings = "settings"
+
+    /** NavHost pattern; the destination id itself stays `editor` for parity. */
+    const val EditorPattern = "editor/{projectId}"
+
+    /** `projectId` is absent when the picker starts a brand-new draft. */
+    const val MediaPickerPattern = "media-picker?projectId={projectId}"
+
+    const val ArgProjectId = "projectId"
+
+    fun editor(projectId: String): String = "$Editor/${encode(projectId)}"
+
+    fun mediaPicker(projectId: String? = null): String =
+        if (projectId.isNullOrBlank()) {
+            MediaPicker
+        } else {
+            "$MediaPicker?$ArgProjectId=${encode(projectId)}"
+        }
+
+    private fun encode(value: String): String =
+        java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 }
 
 /**
@@ -41,8 +72,8 @@ object ZcutDestinations {
         ZcutDestination("template-detail", "Detail template", "F21"),
         ZcutDestination("discover", "Discover", "F21"),
         ZcutDestination("ai-studio", "AI Studio", "F23"),
-        ZcutDestination("editor", "Editor", "F01"),
-        ZcutDestination("media-picker", "Tambah media", "F02"),
+        ZcutDestination("editor", "Editor", "F01", implemented = true),
+        ZcutDestination("media-picker", "Tambah media", "F02", implemented = true),
         ZcutDestination("trim", "Trim & split", "F04"),
         ZcutDestination("speed", "Speed & curve", "F05"),
         ZcutDestination("keyframe", "Keyframe", "F06"),

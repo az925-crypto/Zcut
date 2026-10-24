@@ -91,7 +91,7 @@ private fun HomeContent(
                     title = "Edit video tanpa batas",
                     message = "Semua fitur terbuka, diproses di perangkat, hasil tanpa watermark.",
                     actionLabel = "Project baru",
-                    onAction = { onNavigate(ZcutRoutes.Editor) }
+                    onAction = { onNavigate(ZcutRoutes.mediaPicker()) }
                 )
             }
 
@@ -113,7 +113,7 @@ private fun HomeContent(
                         title = "Belum ada draft",
                         message = "Mulai project baru untuk membuat draft pertama di perangkat ini.",
                         actionLabel = "Project baru",
-                        onAction = { onNavigate(ZcutRoutes.Editor) }
+                        onAction = { onNavigate(ZcutRoutes.mediaPicker()) }
                     )
                 }
             } else {
@@ -125,7 +125,7 @@ private fun HomeContent(
                             ProjectRailCard(
                                 draft = draft,
                                 nowMs = nowMs,
-                                onClick = { onNavigate(ZcutRoutes.Editor) }
+                                onClick = { onNavigate(ZcutRoutes.editor(draft.id)) }
                             )
                         }
                     }

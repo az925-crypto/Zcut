@@ -6,7 +6,6 @@ import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.domain.DraftSummaries
 import com.zaaam.zcut.core.domain.ProjectsFilter
 import com.zaaam.zcut.core.model.AspectRatio
-import com.zaaam.zcut.core.domain.ProjectFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -56,28 +55,6 @@ class ProjectsViewModel(
 
     fun onAspectChange(value: AspectRatio?) {
         aspectRatio.value = if (aspectRatio.value == value) null else value
-    }
-
-    // viewModelScope runs on Dispatchers.Main.immediate, so this check-and-set is
-    // atomic. It only guards the read-then-write window: two fast taps on "Project
-    // baru" would otherwise create two drafts with the same name.
-    private var creating = false
-
-    fun createProject(onCreated: (String) -> Unit) {
-        if (creating) return
-        creating = true
-        viewModelScope.launch {
-            try {
-                // Read the persisted names, not the filtered UI state: filtering
-                // used to produce duplicate "Draft 1" names.
-                val taken = repository.summaries().map { it.name }.toSet()
-                val project = ProjectFactory.create(name = DraftSummaries.nextName(taken))
-                repository.upsert(project)
-                onCreated(project.id)
-            } finally {
-                creating = false
-            }
-        }
     }
 
     fun duplicate(projectId: String) {

@@ -1,11 +1,8 @@
 package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.AspectRatio
-import com.zaaam.zcut.core.model.Clip
-import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.ExportPreset
 import com.zaaam.zcut.core.model.MediaAsset
-import com.zaaam.zcut.core.model.MediaKind
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.ProjectSettings
 import com.zaaam.zcut.core.model.Timeline
@@ -46,58 +43,5 @@ object ProjectFactory {
         assets: List<MediaAsset>,
         aspectRatio: AspectRatio = AspectRatio.PORTRAIT_9_16,
         frameRate: Int = 30
-    ): Project {
-        val base = create(name, aspectRatio, frameRate)
-        val videoTrack = base.timeline.tracks.first { it.type == TrackType.VIDEO }
-        val audioTrack = base.timeline.tracks.first { it.type == TrackType.AUDIO }
-        var videoCursorMs = 0L
-        var audioCursorMs = 0L
-        val videoClips = mutableListOf<Clip>()
-        val audioClips = mutableListOf<Clip>()
-
-        assets.forEach { asset ->
-            when (asset.kind) {
-                MediaKind.AUDIO -> {
-                    val duration = asset.durationMs.takeIf { it > 0L } ?: 1_000L
-                    audioClips += Clip(
-                        assetId = asset.id,
-                        type = ClipType.AUDIO,
-                        startMs = audioCursorMs,
-                        durationMs = duration,
-                        sourceDurationMs = duration
-                    )
-                    audioCursorMs = advanceCursor(audioCursorMs, duration)
-                }
-
-                MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.GIF, MediaKind.LIVE_PHOTO -> {
-                    val duration = asset.durationMs.takeIf { it > 0L } ?: 3_000L
-                    videoClips += Clip(
-                        assetId = asset.id,
-                        type = if (asset.kind == MediaKind.IMAGE) ClipType.IMAGE else ClipType.VIDEO,
-                        startMs = videoCursorMs,
-                        durationMs = duration,
-                        sourceDurationMs = duration
-                    )
-                    videoCursorMs = advanceCursor(videoCursorMs, duration)
-                }
-            }
-        }
-
-        val timeline = TimelineEditor.sanitize(
-            base.timeline.copy(
-                tracks = base.timeline.tracks.map { track ->
-                    when (track.id) {
-                        videoTrack.id -> track.copy(clips = videoClips)
-                        audioTrack.id -> track.copy(clips = audioClips)
-                        else -> track
-                    }
-                }
-            )
-        )
-        return base.copy(timeline = timeline)
-    }
-
-    /** Saturates instead of wrapping so one bogus asset duration cannot poison the track. */
-    private fun advanceCursor(cursorMs: Long, durationMs: Long): Long =
-        if (cursorMs > Long.MAX_VALUE - durationMs) Long.MAX_VALUE else cursorMs + durationMs
+    ): Project = MediaAppender.append(create(name, aspectRatio, frameRate), assets)
 }

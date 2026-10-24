@@ -1,6 +1,7 @@
 package com.zaaam.zcut.core.data
 
 import com.zaaam.zcut.core.domain.TimelineEditor
+import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -85,5 +86,21 @@ object ProjectCodec {
     }
 
     private fun normalize(project: Project): Project =
-        project.copy(timeline = TimelineEditor.sanitize(project.timeline))
+        project.copy(
+            assets = sanitizeAssets(project.assets),
+            timeline = TimelineEditor.sanitize(project.timeline)
+        )
+
+    /**
+     * Drops unusable material entries (blank id, no source) and duplicate ids.
+     * Clips that reference a dropped asset are kept on purpose: deleting user
+     * clips because a file went missing would be silent data loss. The editor
+     * renders them as "media hilang" instead.
+     */
+    private fun sanitizeAssets(assets: List<MediaAsset>): List<MediaAsset> {
+        val seen = HashSet<String>()
+        return assets.filter { asset ->
+            asset.isUsable && seen.add(asset.id)
+        }
+    }
 }

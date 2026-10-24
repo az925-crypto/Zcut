@@ -6,7 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zaaam.zcut.core.AppContainer
+import com.zaaam.zcut.feature.editor.EditorViewModel
 import com.zaaam.zcut.feature.home.HomeViewModel
+import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
@@ -35,6 +37,34 @@ fun zcutViewModelFactory(container: AppContainer): ViewModelProvider.Factory = r
                 preferencesRepository = container.preferencesRepository,
                 repository = container.projectRepository,
                 storage = container.storage
+            )
+        }
+    }
+}
+
+/** Editor is scoped to one draft, so its factory carries the id. */
+@Composable
+fun editorViewModelFactory(
+    container: AppContainer,
+    projectId: String
+): ViewModelProvider.Factory = remember(container, projectId) {
+    viewModelFactory {
+        initializer { EditorViewModel(projectId, container.projectRepository) }
+    }
+}
+
+/** `projectId` is null when the picker starts a new draft. */
+@Composable
+fun mediaPickerViewModelFactory(
+    container: AppContainer,
+    projectId: String?
+): ViewModelProvider.Factory = remember(container, projectId) {
+    viewModelFactory {
+        initializer {
+            MediaPickerViewModel(
+                projectId = projectId,
+                repository = container.projectRepository,
+                importer = container.mediaImporter
             )
         }
     }

@@ -6,6 +6,8 @@ import com.zaaam.zcut.core.data.DataStorePreferencesRepository
 import com.zaaam.zcut.core.data.JsonProjectRepository
 import com.zaaam.zcut.core.data.PreferencesRepository
 import com.zaaam.zcut.core.data.ProjectRepository
+import com.zaaam.zcut.core.media.MediaImporter
+import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
 import com.zaaam.zcut.core.render.MediaProbe
@@ -22,6 +24,7 @@ import com.zaaam.zcut.core.render.UnavailableSubjectSegmenter
 import com.zaaam.zcut.core.render.UnavailableThumbnailGenerator
 import com.zaaam.zcut.core.render.UnavailableVideoRenderEngine
 import com.zaaam.zcut.core.render.VideoRenderEngine
+import java.io.File
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -33,6 +36,17 @@ class AppContainer(context: Context) {
     }
 
     val storage: AppStorage by lazy { AppStorage(appContext.filesDir, appContext.cacheDir) }
+
+    private val mediaDir: File by lazy { File(appContext.filesDir, "media") }
+    private val thumbnailDir: File by lazy { File(appContext.cacheDir, "thumbs") }
+
+    val mediaThumbnails: MediaThumbnails by lazy {
+        MediaThumbnails(appContext, thumbnailDir)
+    }
+
+    val mediaImporter: MediaImporter by lazy {
+        MediaImporter(appContext, mediaDir, thumbnailDir)
+    }
 
     // Stage 3 replaces these with Media3, CameraX, ML Kit, and Android TTS
     // implementations. Until then every missing capability fails honestly.

@@ -7,13 +7,17 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.core.data.AppPreferences
+import com.zaaam.zcut.feature.editor.EditorScreen
 import com.zaaam.zcut.feature.home.HomeScreen
+import com.zaaam.zcut.feature.media.MediaPickerScreen
 import com.zaaam.zcut.feature.onboarding.OnboardingScreen
 import com.zaaam.zcut.feature.placeholder.PlaceholderScreen
 import com.zaaam.zcut.feature.profile.ProfileScreen
@@ -64,9 +68,10 @@ fun ZcutNavHost(
         }
 
         // Bottom-nav tabs save/restore state and anchor at Home. Pushing a
-        // non-tab screen (Settings) from a tab must NOT pop that tab, or "back"
-        // would land on Home instead of where the user came from.
-        val openFromProfile: (String) -> Unit = remember(navController) {
+        // non-tab screen (Settings, Editor, a tool panel) from a tab must NOT
+        // pop that tab, or "back" would land on Home instead of where the user
+        // came from.
+        val openRoute: (String) -> Unit = remember(navController) {
             { route ->
                 if (route in ZcutDestinations.bottomNav) {
                     navigateToTab(route)
@@ -114,19 +119,69 @@ fun ZcutNavHost(
             }
 
             composable(ZcutRoutes.Home) {
-                HomeScreen(currentRoute = currentRoute, onNavigate = navigateToTab)
+                HomeScreen(currentRoute = currentRoute, onNavigate = openRoute)
             }
 
             composable(ZcutRoutes.Projects) {
-                ProjectsScreen(currentRoute = currentRoute, onNavigate = navigateToTab)
+                ProjectsScreen(currentRoute = currentRoute, onNavigate = openRoute)
             }
 
             composable(ZcutRoutes.Profile) {
-                ProfileScreen(currentRoute = currentRoute, onNavigate = openFromProfile)
+                ProfileScreen(currentRoute = currentRoute, onNavigate = openRoute)
             }
 
             composable(ZcutRoutes.Settings) {
                 SettingsScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = ZcutRoutes.EditorPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType }
+                )
+            ) { entry ->
+                val projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty()
+                EditorScreen(
+                    projectId = projectId,
+                    onBack = { navController.popBackStack() },
+                    onNavigate = openRoute,
+                    onAddMedia = {
+                        navController.navigate(ZcutRoutes.mediaPicker(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.MediaPickerPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                val projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId)
+                MediaPickerScreen(
+                    projectId = projectId,
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { id ->
+                        if (projectId != null) {
+                            // Returning to the editor that opened the picker; the
+                            // editor observes the repository and refreshes itself.
+                            navController.popBackStack()
+                        } else {
+                            // Pop the picker first, then push the editor on top of
+                            // the tab that started the draft. Using popUpTo on the
+                            // optional-arg pattern would have to resolve a route
+                            // string; popping the current entry cannot misfire.
+                            navController.popBackStack()
+                            navController.navigate(ZcutRoutes.editor(id))
+                        }
+                    }
+                )
             }
 
             ZcutDestinations.placeholders.forEach { destination ->

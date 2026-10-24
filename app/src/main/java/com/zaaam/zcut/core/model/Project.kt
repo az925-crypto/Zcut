@@ -14,6 +14,11 @@ data class Project(
     val timeline: Timeline = Timeline(),
     val settings: ProjectSettings = ProjectSettings(),
     val coverAssetId: String? = null,
+    /**
+     * Materials referenced by clip.assetId. Additive field: documents written by
+     * M0/M1 decode with an empty list, so no schema bump is needed.
+     */
+    val assets: List<MediaAsset> = emptyList(),
     val schemaVersion: Int = 1
 ) {
     companion object {
