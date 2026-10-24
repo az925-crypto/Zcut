@@ -102,8 +102,11 @@ jobs:
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           AAPT2=$(ls -d "$SDK"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
           APK=app/build/outputs/apk/release/app-release.apk
-          "$AAPT2" dump permissions "$APK"
-          if "$AAPT2" dump permissions "$APK" | grep -q "android.permission.INTERNET"; then
+          # Dump to a file first: piping into `grep -q` lets grep exit early and
+          # SIGPIPE aapt2, which `pipefail` would report as "no match".
+          "$AAPT2" dump permissions "$APK" > "$RUNNER_TEMP/permissions.txt"
+          cat "$RUNNER_TEMP/permissions.txt"
+          if grep -q "android.permission.INTERNET" "$RUNNER_TEMP/permissions.txt"; then
             echo "::error::INTERNET permission leaked into the merged manifest"
             exit 1
           fi

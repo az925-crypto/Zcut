@@ -655,6 +655,32 @@ Backlog dari reviewer M0 (non-blocking, untuk M1+):
 - **Hapus draft masih hard delete**; soft delete/trash + restore adalah P0 di
   `docs/features/20-draft-cloud.md` → dikerjakan di M27.
 
+### Re-review M0 setelah CI hijau (2026-10-23)
+
+CI M0 sempat merah dua kali. Penyebab dan perbaikannya:
+
+1. **Kompilasi** (`39940710477`): `ProjectCard.kt` memakai `Color` tanpa impor;
+   `ProjectsViewModel.kt` memanggil `repository.projects.first()` (butuh impor
+   `first`, dan tetap salah karena `projects` adalah `Flow`). → impor ditambah,
+   pembacaan nama pindah ke `repository.summaries()` yang sudah ada.
+2. **Unit test** (`39941272667`): `DraftSummaries.nextName` mulai dari
+   `taken.size + 1`, jadi draft yang di-rename/dihapus meninggalkan lubang nomor
+   dan tes menangkapnya. → sekarang memindai dari 1 (nomor bebas pertama).
+
+Verdict gate final: security **BLOCKING: no**, bug **BLOCKING: no**,
+performance **BLOCKING: no**. Temuan non-blocking yang langsung dibereskan:
+
+- **Dua tap cepat "Project baru"** bisa membuat dua draft bernama sama karena
+  `summaries()` (baca) dan `upsert` (tulis) bukan satu transaksi. → guard
+  `creating` di `ProjectsViewModel` (check-and-set di `Dispatchers.Main.immediate`).
+- **Gate permission `INTERNET`** memakai `aapt2 ... | grep -q`: `grep` keluar
+  lebih awal dan `pipefail` bisa membaca SIGPIPE sebagai "tidak ada match".
+  → dump ke `$RUNNER_TEMP/permissions.txt` dulu, baru `grep` file itu.
+
+Catatan performance (Low, sengaja tidak diubah): `initialValue` yang sempat
+menampilkan progress bar 1–2 frame, `MetaRow` yang membangun list kecil per
+recompose, dan `clip()` ganda di atas `Surface(shape=...)`.
+
 ## Ringkasan akhir
 
 Diisi setelah semua fitur selesai dan release sukses.

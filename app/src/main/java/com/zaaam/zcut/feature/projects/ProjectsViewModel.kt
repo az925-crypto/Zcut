@@ -58,14 +58,25 @@ class ProjectsViewModel(
         aspectRatio.value = if (aspectRatio.value == value) null else value
     }
 
+    // viewModelScope runs on Dispatchers.Main.immediate, so this check-and-set is
+    // atomic. It only guards the read-then-write window: two fast taps on "Project
+    // baru" would otherwise create two drafts with the same name.
+    private var creating = false
+
     fun createProject(onCreated: (String) -> Unit) {
+        if (creating) return
+        creating = true
         viewModelScope.launch {
-            // Read the persisted names, not the filtered UI state: filtering used
-            // to produce duplicate "Draft 1" names.
-            val taken = repository.summaries().map { it.name }.toSet()
-            val project = ProjectFactory.create(name = DraftSummaries.nextName(taken))
-            repository.upsert(project)
-            onCreated(project.id)
+            try {
+                // Read the persisted names, not the filtered UI state: filtering
+                // used to produce duplicate "Draft 1" names.
+                val taken = repository.summaries().map { it.name }.toSet()
+                val project = ProjectFactory.create(name = DraftSummaries.nextName(taken))
+                repository.upsert(project)
+                onCreated(project.id)
+            } finally {
+                creating = false
+            }
         }
     }
 
