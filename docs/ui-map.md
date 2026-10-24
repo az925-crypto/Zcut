@@ -56,8 +56,8 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `camera` | camera | M23 | ⏳ | placeholder |
 | `photo-editor` | photo-editor | M23 | ⏳ | placeholder |
 | `share` | share | M24 | ⏳ | placeholder |
-| `profile` | profile | M1 | ⏳ | placeholder |
-| `settings` | settings | M1 | ⏳ | placeholder |
+| `profile` | profile | M1 | ✅ | `feature/profile/ProfileScreen` |
+| `settings` | settings | M1 | ✅ | `feature/settings/SettingsScreen` |
 | `split-screen` | split-screen | M25 | ⏳ | placeholder |
 | `gameplay` | gameplay | M25 | ⏳ | placeholder |
 | `live-photo` | live-photo | M25 | ⏳ | placeholder |
@@ -80,6 +80,29 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `ui/components/ZcutLayout.kt` | `SectionHeader`, `EmptyState`, `HeroBanner` |
 | `ui/components/ZcutControls.kt` | tombol primer/sekunder/ghost, `ZcutIconButton`, `ZcutSlider` |
 | `ui/components/ProjectCard.kt` | `DraftCover`, `ProjectRailCard`, `ProjectRowCard` |
+| `ui/components/ZcutRows.kt` | `ListRow`, `StatusBadge` |
 | `ui/LocalAppContainer.kt` | `LocalAppContainer` + `zcutViewModelFactory` |
 
 Spesifikasi desain M0 ada di [`ui-m0-design.md`](ui-m0-design.md).
+
+## Preferensi (M1)
+
+Semua preferensi disimpan di DataStore terpisah (`zcut_preferences`), bukan di
+dokumen draft, supaya payload draft yang rusak tidak ikut menghapus setelan.
+
+| Kunci | Tipe | Default | Dipakai oleh |
+|---|---|---|---|
+| `onboarding_seen` | Boolean | `false` | gerbang splash |
+| `theme_mode` | `DARK` / `LIGHT` / `SYSTEM` | `DARK` | `MainActivity` → `ZcutTheme` |
+| `language` | `ID` / `EN` | `ID` | disimpan; resource terjemahan menyusul di M28 |
+| `export_resolution` | `Resolution` | `FHD_1080` | default ekspor (M13) |
+| `export_frame_rate` | `24` / `30` / `60` | `30` | default ekspor (M13) |
+| `export_audio_sample_rate` | `44_100` / `48_000` | `48_000` | default ekspor (M13) |
+
+Nilai yang tidak dikenal/rusak jatuh ke default (`AppPreferences.fromStored`),
+bukan memicu crash. Onboarding baru ditandai selesai setelah pengguna menekan
+"Mulai"/"Lewati", jadi app yang dimatikan di tengah onboarding akan
+menampilkannya lagi.
+
+"Bersihkan" di Pengaturan hanya mengosongkan `cacheDir`; draft di `filesDir`
+tidak disentuh (dijaga unit test `AppStorageTest`).

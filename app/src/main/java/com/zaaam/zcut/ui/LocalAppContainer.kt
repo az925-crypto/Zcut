@@ -7,7 +7,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.feature.home.HomeViewModel
+import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
+import com.zaaam.zcut.feature.settings.SettingsViewModel
 
 /**
  * Manual dependency injection, in the same spirit as [AppContainer]: one
@@ -22,5 +24,18 @@ fun zcutViewModelFactory(container: AppContainer): ViewModelProvider.Factory = r
     viewModelFactory {
         initializer { HomeViewModel(container.projectRepository) }
         initializer { ProjectsViewModel(container.projectRepository) }
+        initializer {
+            ProfileViewModel(
+                repository = container.projectRepository,
+                storage = container.storage
+            )
+        }
+        initializer {
+            SettingsViewModel(
+                preferencesRepository = container.preferencesRepository,
+                repository = container.projectRepository,
+                storage = container.storage
+            )
+        }
     }
 }

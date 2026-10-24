@@ -12,6 +12,7 @@ object ZcutRoutes {
     const val Templates = "templates"
     const val AiStudio = "ai-studio"
     const val Profile = "profile"
+    const val Settings = "settings"
 }
 
 /**
@@ -68,8 +69,8 @@ object ZcutDestinations {
         ZcutDestination("camera", "Kamera", "F26"),
         ZcutDestination("photo-editor", "Photo editor", "F26"),
         ZcutDestination("share", "Bagikan", "F27"),
-        ZcutDestination("profile", "Profil", "F28"),
-        ZcutDestination("settings", "Pengaturan", "F29"),
+        ZcutDestination("profile", "Profil", "F28", implemented = true),
+        ZcutDestination("settings", "Pengaturan", "F29", implemented = true),
         ZcutDestination("split-screen", "Split screen", "F30"),
         ZcutDestination("gameplay", "Gameplay", "F30"),
         ZcutDestination("live-photo", "Live photo", "F30"),

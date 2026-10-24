@@ -6,9 +6,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.zaaam.zcut.core.data.ThemeMode
 import com.zaaam.zcut.ui.navigation.ZcutNavHost
 import com.zaaam.zcut.ui.theme.ZcutTheme
+import com.zaaam.zcut.ui.theme.systemPrefersDark
+import kotlinx.coroutines.flow.map
 
 /**
  * Single-activity Compose host. The whole Stage 3 UI lives behind
@@ -27,7 +34,27 @@ class MainActivity : ComponentActivity() {
         val container = (application as ZcutApplication).container
 
         setContent {
-            ZcutTheme {
+            val themeMode by remember(container) {
+                container.preferencesRepository.preferences.map { it.themeMode }
+            }.collectAsStateWithLifecycle(initialValue = ThemeMode.DARK)
+
+            val darkTheme = when (themeMode) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.SYSTEM -> systemPrefersDark()
+            }
+
+            // Bar icons must follow the effective theme, not the system one.
+            LaunchedEffect(darkTheme) {
+                val style = if (darkTheme) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+            }
+
+            ZcutTheme(darkTheme = darkTheme) {
                 ZcutNavHost(container = container)
             }
         }

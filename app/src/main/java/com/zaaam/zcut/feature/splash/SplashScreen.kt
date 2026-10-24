@@ -9,6 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -19,13 +23,28 @@ import kotlinx.coroutines.delay
 
 /**
  * Brand splash. The system splash (Theme.Zcut.Splash) shows first; this keeps
- * the same background while the graph warms up.
+ * the same background while the graph and stored preferences warm up.
+ *
+ * [ready] lets the host hold the splash until preferences have been read, so a
+ * slow disk can never route a returning user through onboarding again.
  */
 @Composable
-fun ZcutSplashScreen(onDone: () -> Unit) {
+fun ZcutSplashScreen(
+    onDone: () -> Unit,
+    ready: Boolean = true
+) {
+    var minimumElapsed by remember { mutableStateOf(false) }
+    var fired by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         delay(700)
-        onDone()
+        minimumElapsed = true
+    }
+    LaunchedEffect(minimumElapsed, ready) {
+        if (minimumElapsed && ready && !fired) {
+            fired = true
+            onDone()
+        }
     }
     Box(
         modifier = Modifier

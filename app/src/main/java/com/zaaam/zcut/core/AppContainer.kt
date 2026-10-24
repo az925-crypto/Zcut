@@ -1,7 +1,10 @@
 package com.zaaam.zcut.core
 
 import android.content.Context
+import com.zaaam.zcut.core.data.AppStorage
+import com.zaaam.zcut.core.data.DataStorePreferencesRepository
 import com.zaaam.zcut.core.data.JsonProjectRepository
+import com.zaaam.zcut.core.data.PreferencesRepository
 import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
@@ -24,6 +27,12 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
     val projectRepository: ProjectRepository by lazy { JsonProjectRepository(appContext) }
+
+    val preferencesRepository: PreferencesRepository by lazy {
+        DataStorePreferencesRepository(appContext)
+    }
+
+    val storage: AppStorage by lazy { AppStorage(appContext.filesDir, appContext.cacheDir) }
 
     // Stage 3 replaces these with Media3, CameraX, ML Kit, and Android TTS
     // implementations. Until then every missing capability fails honestly.
