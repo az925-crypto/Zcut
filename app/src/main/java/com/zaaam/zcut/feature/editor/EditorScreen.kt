@@ -625,7 +625,7 @@ private fun TimelineFooter(
         }
         FooterChip(label = "Trim", onClick = { onOpenTool(ZcutRoutes.Trim) })
         FooterChip(label = "Speed", onClick = { onOpenTool(ZcutRoutes.Speed) })
-        FooterChip(label = "Volume", onClick = onOpenTool(ZcutRoutes.Audio))
+        FooterChip(label = "Volume", onClick = { onOpenTool(ZcutRoutes.Audio) })
     }
 }
 

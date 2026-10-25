@@ -95,7 +95,7 @@ class ClipToolViewModel(
 
     fun delete(ripple: Boolean, onDone: () -> Unit = {}) {
         val id = clipId ?: return
-        edit({ TimelineEditor.deleteClip(it, id, ripple) }, onDone)
+        edit(onDone = onDone) { TimelineEditor.deleteClip(it, id, ripple) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {
@@ -104,12 +104,12 @@ class ClipToolViewModel(
     }
 
     fun editTimeline(transform: (Timeline) -> Timeline) {
-        edit(transform)
+        edit(transform = transform)
     }
 
     private fun edit(
-        transform: (Timeline) -> Timeline,
-        onDone: (() -> Unit)? = null
+        onDone: (() -> Unit)? = null,
+        transform: (Timeline) -> Timeline
     ) {
         viewModelScope.launch {
             editMutex.withLock {
