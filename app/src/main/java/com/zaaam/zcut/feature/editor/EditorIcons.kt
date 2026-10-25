@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 /**
@@ -46,9 +45,9 @@ object ZcutIcons {
             viewportWidth = 24f,
             viewportHeight = 24f
         )
-            .path(
-                fill = SolidColor(Color.Black),
-                pathData = addPathNodes(pathData)
+            .addPath(
+                pathData = addPathNodes(pathData),
+                fill = SolidColor(Color.Black)
             )
             .build()
 }
