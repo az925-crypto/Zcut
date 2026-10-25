@@ -61,7 +61,6 @@ class MlKitFaceDetector : FaceDetector {
                         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
                         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
                         .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
-                        .setTrackingEnabled(false)
                         .setMinFaceSize(MIN_FACE_FRACTION)
                         .build()
                 )
