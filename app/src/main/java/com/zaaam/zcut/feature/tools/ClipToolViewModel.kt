@@ -10,6 +10,7 @@ import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ColorAdjustments
 import com.zaaam.zcut.core.model.Easing
+import com.zaaam.zcut.core.model.EffectConfig
 import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedPoint
@@ -172,6 +173,11 @@ class ClipToolViewModel(
     fun setColor(color: ColorAdjustments) {
         val id = clipId ?: return
         edit { TimelineEditor.setColor(it, id, color) }
+    }
+
+    fun setEffects(effects: List<EffectConfig>) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setEffects(it, id, effects) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

@@ -145,6 +145,7 @@ fun ToolPreviewCard(
     modifier: Modifier = Modifier,
     label: String? = null,
     colorFilter: ColorFilter? = null,
+    imageModifier: Modifier = Modifier,
     overlay: @Composable BoxScope.() -> Unit = {}
 ) {
     val asset = clip.assetId?.let { assetId ->
@@ -167,7 +168,9 @@ fun ToolPreviewCard(
                 contentDescription = "Pratinjau klip",
                 contentScale = ContentScale.Crop,
                 colorFilter = colorFilter,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(imageModifier)
             )
         } else {
             Text(

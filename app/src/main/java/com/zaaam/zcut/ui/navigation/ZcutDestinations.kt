@@ -42,7 +42,7 @@ object ZcutRoutes {
      * the honest placeholder instead of navigating to an unregistered route.
      */
     private val argToolRoutes: Set<String> =
-        setOf(Trim, Speed, Keyframe, Transition, Filters, Adjust)
+        setOf(Trim, Speed, Keyframe, Transition, Filters, Adjust, Effects)
 
     fun isClipTool(route: String): Boolean = route in argToolRoutes
 
@@ -132,7 +132,7 @@ object ZcutDestinations {
         ZcutDestination("transition", "Transisi", "F07", implemented = true),
         ZcutDestination("filters", "Filter", "F08", implemented = true),
         ZcutDestination("adjust", "Adjust", "F08", implemented = true),
-        ZcutDestination("effects", "Efek", "F09"),
+        ZcutDestination("effects", "Efek", "F09", implemented = true),
         ZcutDestination("mask", "Mask & chroma", "F10"),
         ZcutDestination("matting", "Cutout", "F11"),
         ZcutDestination("beauty", "Retouch", "F12"),
