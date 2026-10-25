@@ -355,7 +355,7 @@ private fun PreviewPanel(
     val preview by previewState.collectAsStateWithLifecycle()
     val player by previewPlayer.collectAsStateWithLifecycle()
     val cover = remember(project.id, project.assets, project.timeline) {
-        coverAsset(project)
+        project.coverAsset()
     }
     val thumbnail by rememberThumbnail(key = cover?.id) {
         if (cover == null) null else thumbnails.load(cover, 720)
