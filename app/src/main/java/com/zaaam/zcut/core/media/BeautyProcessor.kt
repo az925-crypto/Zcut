@@ -241,7 +241,10 @@ object BeautyProcessor {
         val out = source.copy(Bitmap.Config.ARGB_8888, true) ?: source
         Canvas(out).drawBitmap(layer, 0f, 0f, alphaPaint(mix))
 
-        blurred.recycle()
+        // `blurred` can be the same instance as `out` on a degenerate frame (or
+        // when the copy above failed and fell back to `source`), and `out` is
+        // what the caller gets back.
+        if (blurred !== out) blurred.recycle()
         mask.recycle()
         layer.recycle()
         if (out !== source) source.recycle()

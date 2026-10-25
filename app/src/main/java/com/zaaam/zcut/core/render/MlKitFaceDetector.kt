@@ -47,8 +47,11 @@ class MlKitFaceDetector : FaceDetector {
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (error: Exception) {
+                // Same treatment as the segmenter: a failed inference means the
+                // model cannot be used right now, which must not be reported as
+                // "this frame has no face".
                 Log.w(TAG, "face detection failed", error)
-                return@withContext emptyList()
+                return@withContext null
             }
             faces
                 .take(MAX_FACES)

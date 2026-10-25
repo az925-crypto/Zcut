@@ -200,9 +200,9 @@ private fun FaceTab(
 
             probe == FaceProbe.Unavailable ->
                 ToolHint(
-                    "Model deteksi wajah (ML Kit, dibundel APK) gagal dimuat di perangkat ini. " +
-                        "Fitur tetap terbuka dan slider tetap bisa digeser, tapi hasilnya belum " +
-                        "bisa ditampilkan sampai model tersedia."
+                    "Model deteksi wajah (ML Kit, dibundel APK) tidak bisa dijalankan di " +
+                        "perangkat ini. Fitur tetap terbuka dan slider tetap bisa digeser, tapi " +
+                        "hasilnya belum bisa ditampilkan sampai model tersedia."
                 )
 
             subject == null && probe !is FaceProbe.Pending ->
