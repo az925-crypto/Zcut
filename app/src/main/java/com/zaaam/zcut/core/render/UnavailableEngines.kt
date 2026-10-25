@@ -33,10 +33,6 @@ class UnavailableSpeechEngine : SpeechEngine {
     ): Boolean = false
 }
 
-class UnavailableSubjectSegmenter : SubjectSegmenter {
-    override suspend fun segment(inputUri: String, outputMaskPath: String): Boolean = false
-}
-
 class UnavailableEffectPipeline : EffectPipeline {
     override fun supports(effectId: String): Boolean = false
 }

@@ -106,6 +106,15 @@ class ZcutDestinationsTest {
     }
 
     @Test
+    fun mattingRouteIsAClipTool() {
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Matting)?.implemented == true)
+        assertEquals(
+            "matting?projectId={projectId}&clipId={clipId}",
+            ZcutRoutes.clipToolPattern(ZcutRoutes.Matting)
+        )
+    }
+
+    @Test
     fun exportRoutesAreImplementedAndCarryTheProject() {
         val route = ZcutRoutes.export("p 1")
 

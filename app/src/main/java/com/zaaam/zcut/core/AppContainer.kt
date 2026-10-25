@@ -14,6 +14,7 @@ import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
 import com.zaaam.zcut.core.render.Media3ExportEngine
 import com.zaaam.zcut.core.render.Media3PreviewEngine
+import com.zaaam.zcut.core.render.MlKitSubjectSegmenter
 import com.zaaam.zcut.core.render.MediaProbe
 import com.zaaam.zcut.core.render.PreviewEngine
 import com.zaaam.zcut.core.render.SpeechEngine
@@ -22,7 +23,6 @@ import com.zaaam.zcut.core.render.ThumbnailGenerator
 import com.zaaam.zcut.core.render.UnavailableAudioMixer
 import com.zaaam.zcut.core.render.UnavailableEffectPipeline
 import com.zaaam.zcut.core.render.UnavailableMediaProbe
-import com.zaaam.zcut.core.render.UnavailableSubjectSegmenter
 import com.zaaam.zcut.core.render.UnavailableThumbnailGenerator
 import com.zaaam.zcut.core.render.VideoRenderEngine
 import java.io.File
@@ -55,13 +55,18 @@ class AppContainer(context: Context) {
         MediaImporter(appContext, mediaDir, thumbnailDir)
     }
 
-    // Stage 3 replaces these with CameraX and ML Kit implementations. Until
-    // then every missing capability fails honestly.
+    // Stage 3 replaces these with CameraX implementations. Until then every
+    // missing capability fails honestly.
     val mediaProbe: MediaProbe by lazy { UnavailableMediaProbe() }
     val thumbnailGenerator: ThumbnailGenerator by lazy { UnavailableThumbnailGenerator() }
     val audioMixer: AudioMixer by lazy { UnavailableAudioMixer() }
     val speechEngine: SpeechEngine by lazy { AndroidSpeechEngine(appContext) }
-    val subjectSegmenter: SubjectSegmenter by lazy { UnavailableSubjectSegmenter() }
+
+    /**
+     * ML Kit's selfie model is bundled in the APK and loaded once per process,
+     * so the segmenter is app-scoped rather than per-screen.
+     */
+    val subjectSegmenter: SubjectSegmenter by lazy { MlKitSubjectSegmenter() }
     val effectPipeline: EffectPipeline by lazy { UnavailableEffectPipeline() }
 
     /**

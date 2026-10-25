@@ -116,3 +116,40 @@ gl_FragColor = mix(bg, fg, matte);
 - Apakah hasil disimpan per frame (PNG) atau video alpha; path API menunjukkan
   folder, bukan file.
 - Resolusi pemrosesan matting tidak terbaca.
+
+## Status implementasi Zcut (M14)
+
+Engine: `core/render/MlKitSubjectSegmenter` (`SubjectSegmenter`) memakai
+`com.google.mlkit:segmentation-selfie` (model dibundel di APK, ±4,5 MB).
+Satu client per proses; mode `SINGLE_IMAGE_MODE` karena yang disegmentasi
+adalah satu frame klip, bukan stream kamera.
+
+- **Kontrak**: `SubjectSegmenter.segment(frame: Bitmap): SubjectMask?`.
+  `SubjectMask` hanya data (`FloatArray` + ukuran, satu nilai confidence per
+  piksel). Kontrak lama berbasis path (`inputUri`/`outputMaskPath`) dihapus
+  supaya tidak ada tulis-baca PNG mask per frame; null berarti perangkat tidak
+  bisa mensegmentasi dan UI harus mengatakannya.
+- **Komposisi**: `core/media/MattingComposer` membuat stencil alpha dari matte
+  (`MattingEditor.matteAlpha`), menerapkannya ke frame lewat
+  `PorterDuff.Mode.DST_IN`, lalu menggambar latar: transparan, warna, blur
+  (turun-naik skala sebagai blur murah), atau frame asli untuk IMAGE/AI.
+- **Model config**: `MattingConfig` di `Clip` (`enabled`, `background`,
+  `colorArgb`, `blur`, `edgeRefine`, `shadow`, `imageAssetId`, `aiPrompt`),
+  aditif — draft sebelum M14 decode dengan `null`, tanpa naik `schemaVersion`.
+  Clamp di `MattingEditor.normalize` dipanggil dari
+  `TimelineEditor.setMatting` supaya draft impor tidak bisa membawa NaN/∞.
+- **UI**: `feature/tools/MattingScreen` (rute `matting`, clip tool) mengikuti
+  mockup: checkerboard + frame composite, tombol Remove BG / Blur BG, chip
+  warna Studio/Forest/Sunset, chip AI, slider Edge refine + Shadow (+ Blur).
+
+Catatan jujur / belum ada:
+
+- Matte per frame **seluruh video** saat export belum ada; pratinjau memakai
+  satu frame klip dan batasnya disebutkan di layar (sama seperti M13 yang belum
+  membakar teks/efek/mask ke video final).
+- Generate latar AI dan gambar latar pilihan user belum dirender (BUTUH
+  BACKEND / butuh pemilih aset); latar transparan memakai frame sebagai latar
+  sementara.
+- Hair detail, temporal consistency, dan brush eraser belum ada.
+- Segmentasi butuh frame ≥ 256 px; thumbnail 720 px dipakai supaya memenuhi
+  syarat ML Kit.

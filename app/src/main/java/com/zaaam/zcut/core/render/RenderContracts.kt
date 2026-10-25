@@ -119,8 +119,38 @@ interface SpeechEngine {
     fun stop() = Unit
 }
 
+/**
+ * A per-pixel foreground matte. Values are 0 (background) to 1 (subject), row
+ * major, `width * height` long. Plain data: no Android types, so the matte maths
+ * can be exercised off-device.
+ */
+class SubjectMask(
+    val confidence: FloatArray,
+    val width: Int,
+    val height: Int
+) {
+    init {
+        require(width > 0 && height > 0) { "mask must not be empty" }
+        require(confidence.size >= width * height) {
+            "mask has ${confidence.size} values for ${width}x$height"
+        }
+    }
+
+    /** Confidence at a pixel; out-of-range coordinates are clamped. */
+    fun at(x: Int, y: Int): Float {
+        val px = x.coerceIn(0, width - 1)
+        val py = y.coerceIn(0, height - 1)
+        return confidence[py * width + px]
+    }
+}
+
+/**
+ * On-device subject segmentation for a single still frame. Null means the
+ * device could not segment (unsupported hardware or a failed model load) — the
+ * caller must say so instead of drawing a guess.
+ */
 interface SubjectSegmenter {
-    suspend fun segment(inputUri: String, outputMaskPath: String): Boolean
+    suspend fun segment(frame: android.graphics.Bitmap): SubjectMask?
 }
 
 interface EffectPipeline {

@@ -22,6 +22,7 @@ object ZcutRoutes {
     const val Filters = "filters"
     const val Adjust = "adjust"
     const val Mask = "mask"
+    const val Matting = "matting"
     const val Export = "export"
     const val ExportDone = "export-done"
     const val Templates = "templates"
@@ -201,7 +202,7 @@ object ZcutDestinations {
         ZcutDestination("adjust", "Adjust", "F08", implemented = true),
         ZcutDestination("effects", "Efek", "F09", implemented = true),
         ZcutDestination("mask", "Mask & chroma", "F10", implemented = true),
-        ZcutDestination("matting", "Cutout", "F11"),
+        ZcutDestination("matting", "Cutout", "F11", implemented = true),
         ZcutDestination("beauty", "Retouch", "F12"),
         ZcutDestination("stickers", "Sticker", "F13"),
         ZcutDestination("text", "Teks", "F14", implemented = true),

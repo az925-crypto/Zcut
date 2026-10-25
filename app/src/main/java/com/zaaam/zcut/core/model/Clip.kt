@@ -95,6 +95,7 @@ data class Clip(
     val text: TextConfig? = null,
     val mask: MaskConfig? = null,
     val chroma: ChromaConfig? = null,
+    val matting: MattingConfig? = null,
     val audio: AudioConfig = AudioConfig(),
     val isReversed: Boolean = false,
     val metadata: Map<String, String> = emptyMap()
@@ -286,6 +287,43 @@ data class ChromaConfig(
     val similarity: Float = 0.4f,
     val smoothness: Float = 0.1f,
     val spillSuppression: Float = 0.5f
+)
+
+/** What replaces the background the on-device matte removes. */
+@Serializable
+enum class MattingBackground {
+    /** Real transparency; the editor shows a checkerboard behind it. */
+    TRANSPARENT,
+    COLOR,
+    BLUR,
+
+    /** A still image the user picked from the device. */
+    IMAGE,
+
+    /** Needs a backend: the prompt is kept, nothing is generated locally. */
+    AI
+}
+
+/**
+ * Subject cutout for one clip. The matte itself is produced on-device by
+ * [com.zaaam.zcut.core.render.SubjectSegmenter]; this only describes what to do
+ * with it. Additive: drafts written before M14 decode with `null`.
+ */
+@Serializable
+data class MattingConfig(
+    val enabled: Boolean = true,
+    val background: MattingBackground = MattingBackground.TRANSPARENT,
+    val colorArgb: Long = 0xFF1D4ED8,
+    /** Background blur strength, 0..1 (BLUR only). */
+    val blur: Float = 0.5f,
+    /** Raises the matte confidence threshold: 0 = soft edge, 1 = hard edge. */
+    val edgeRefine: Float = 0.5f,
+    /** Extra darkening of the background, 0..1. */
+    val shadow: Float = 0.2f,
+    /** Local image used by [MattingBackground.IMAGE]; null until one is picked. */
+    val imageAssetId: String? = null,
+    /** Prompt for [MattingBackground.AI]; only meaningful with a backend. */
+    val aiPrompt: String = ""
 )
 
 @Serializable

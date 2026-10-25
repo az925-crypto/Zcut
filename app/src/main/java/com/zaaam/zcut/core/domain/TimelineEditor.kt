@@ -9,6 +9,7 @@ import com.zaaam.zcut.core.model.EffectConfig
 import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Keyframe
 import com.zaaam.zcut.core.model.MaskConfig
+import com.zaaam.zcut.core.model.MattingConfig
 import com.zaaam.zcut.core.model.SpeedConfig
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -477,6 +478,12 @@ object TimelineEditor {
 
     fun setChroma(timeline: Timeline, clipId: String, chroma: ChromaConfig?): Timeline =
         editClip(timeline, clipId) { it.copy(chroma = chroma) }
+
+    /** Matting arrives from a draft file as well as the UI, so it is clamped here. */
+    fun setMatting(timeline: Timeline, clipId: String, matting: MattingConfig?): Timeline =
+        editClip(timeline, clipId) {
+            it.copy(matting = matting?.let(MattingEditor::normalize))
+        }
 
     fun setTransition(
         timeline: Timeline,

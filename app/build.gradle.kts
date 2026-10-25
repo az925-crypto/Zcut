@@ -104,6 +104,10 @@ dependencies {
     implementation("androidx.media3:media3-effect:1.9.0")
     implementation("androidx.media3:media3-ui:1.9.0")
 
+    // On-device subject segmentation for the cutout screen; the model is
+    // bundled in the APK (~4.5 MB) and never calls a server.
+    implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }

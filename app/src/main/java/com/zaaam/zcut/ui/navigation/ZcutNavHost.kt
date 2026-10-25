@@ -33,6 +33,7 @@ import com.zaaam.zcut.feature.tools.EffectsScreen
 import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
 import com.zaaam.zcut.feature.tools.MaskScreen
+import com.zaaam.zcut.feature.tools.MattingScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TextScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
@@ -259,6 +260,14 @@ fun ZcutNavHost(
 
             clipTool(ZcutRoutes.Mask) { projectId, clipId ->
                 MaskScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Matting) { projectId, clipId ->
+                MattingScreen(
                     projectId = projectId,
                     clipId = clipId,
                     onBack = { navController.popBackStack() }

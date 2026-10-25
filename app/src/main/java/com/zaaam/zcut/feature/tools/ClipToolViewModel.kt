@@ -14,6 +14,7 @@ import com.zaaam.zcut.core.model.Easing
 import com.zaaam.zcut.core.model.EffectConfig
 import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.MaskConfig
+import com.zaaam.zcut.core.model.MattingConfig
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -191,6 +192,11 @@ class ClipToolViewModel(
     fun setChroma(chroma: ChromaConfig?) {
         val id = clipId ?: return
         edit { TimelineEditor.setChroma(it, id, chroma) }
+    }
+
+    fun setMatting(matting: MattingConfig?) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setMatting(it, id, matting) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

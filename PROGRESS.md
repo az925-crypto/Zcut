@@ -6,7 +6,7 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M13 selesai; batch M4–M10
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M14 selesai; batch M4–M10
   sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
   Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
@@ -29,7 +29,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M13 selesai · batch M11–M15 berjalan |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M14 selesai · batch M11–M15 berjalan |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
 
@@ -53,7 +53,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M11 | Teks & tipografi | F14 | text | ✅ |
 | M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | ✅ |
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | ✅ |
-| M14 | Matting/cutout (ML Kit) | F11 | matting | [ ] |
+| M14 | Matting/cutout (ML Kit) | F11 | matting | ✅ |
 | M15 | Retouch & beauty | F12 | beauty | [ ] |
 | M16 | Sticker + Lottie | F13 | stickers | [ ] |
 | M17 | Caption & speech lokal | F15 | captions | [ ] |
@@ -242,12 +242,13 @@ Spek: [`docs/features/10-mask-chroma.md`](docs/features/10-mask-chroma.md)
 Spek: [`docs/features/11-matting-background.md`](docs/features/11-matting-background.md)
 
 - [x] Spek
-- [ ] Subject segmentation lokal (ML Kit)
-- [ ] Background blur
-- [ ] Background replace
-- [ ] Smart crop/auto reframe
-- [ ] AI background
-- [ ] Unit test mask/composite
+- [x] Subject segmentation lokal (ML Kit selfie, model dibundel; satu frame)
+- [x] Background blur (turun-naik skala; latar transparan/warna juga ada)
+- [~] Background replace gambar pilihan user (config siap, pemilih aset belum)
+- [ ] Smart crop/auto reframe (F30)
+- [!] AI background (BUTUH BACKEND; prompt disimpan di draft)
+- [x] Unit test mask/composite (`MattingEditorTest`)
+- [ ] Matte per frame saat export (batas render M13)
 
 ## F12 — Retouch & Beauty
 
@@ -620,6 +621,10 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `f36af6f` | M9 efek lokal + katalog + intensity |
 | 2026-10-25 | `5d735a9` `b7192a6` | M10 mask bentuk + chroma key lokal |
 | 2026-10-25 | `2af6eb8` | Review gate batch M4–M10: fix trim-snap, split/retime keyframe, repair transisi, sanitize overflow, mask draft, thumbnail gate/dedup, hot-path speed, ruler cap |
+| 2026-10-25 | `a63e970` `212f7cc` | M11 teks & tipografi: TextStyle/TextEditor/TextAnimator + TextScreen |
+| 2026-10-25 | `0e5d5e0` `3f3d199` `e675f79` | M12 audio dasar & TTS sistem: envelope gain, beat/loudness lokal, voiceover, TtsScreen |
+| 2026-10-25 | `90bd3b5` | M13 export & render: Media3ExportEngine, ExportPlan, layar export/export-done, FileProvider + MediaStore |
+| 2026-10-25 | `TBD` | M14 matting & cutout: MlKitSubjectSegmenter, MattingComposer, MattingScreen, MattingConfig |
 
 ## Backlog re-audit
 
@@ -997,6 +1002,43 @@ Batasan yang diakui di UI dan docs:
   `ProjectSettings.exportPreset` milik draft (backlog).
 
 `docs/ui-m13-design.md` ditulis manual (subagent `design` masih unavailable).
+
+### Catatan M14 — matting & cutout (2026-10-25)
+
+Lingkup yang selesai:
+
+- `MattingConfig` aditif di `Clip` (`enabled`, `background`, `colorArgb`,
+  `blur`, `edgeRefine`, `shadow`, `imageAssetId`, `aiPrompt`) +
+  `MattingBackground` (TRANSPARENT/COLOR/BLUR/IMAGE/AI). Draft lama decode
+  dengan `null`, tanpa naik `schemaVersion`.
+- `SubjectSegmenter.segment(Bitmap): SubjectMask?` — kontrak lama berbasis
+  path dihapus (tidak ada tulis-baca PNG mask); `SubjectMask` hanya data.
+- `MlKitSubjectSegmenter` memakai ML Kit selfie segmentation
+  (`com.google.mlkit:segmentation-selfie:16.0.0-beta6`, model dibundel ±4,5 MB),
+  satu client per proses, `SINGLE_IMAGE_MODE`; null = perangkat tidak bisa
+  segmentasi (dan UI mengatakannya, bukan menggambar tebakan).
+- `MattingEditor` (domain murni): clamp config dari draft tak terpercaya,
+  remap confidence→alpha lewat ambang edge refine, confidence subjek, label.
+  Dipanggil dari `TimelineEditor.setMatting`.
+- `MattingComposer`: stencil alpha → `DST_IN` pada frame → latar (transparan,
+  warna, blur turun-naik skala, atau frame untuk IMAGE/AI) → shadow.
+- `MattingScreen` (rute `matting`, clip tool) mengikuti mockup: checkerboard +
+  frame composite, chip label kepercayaan subjek yang jujur, Remove BG / Blur
+  BG, chip warna Studio/Forest/Sunset, chip AI (BUTUH BACKEND), slider Edge
+  refine/Shadow/Blur dengan commit saat jari dilepas.
+- Uji: `MattingEditorTest` (clamp, prompt, remap alpha, confidence subjek,
+  label, needs-backend) + `ZcutDestinationsTest` (rute `matting`).
+- `docs/ui-map.md` menandai baris `matting` ✅.
+
+Batasan yang diakui di UI dan docs:
+
+- Matte per frame seluruh video saat export belum ada (batas render M13);
+  pratinjau memakai satu frame klip dan hal itu ditulis di layar.
+- Latar gambar pilihan user belum dirender (config ada, pemilih aset belum);
+  latar AI tetap BUTUH BACKEND dan memakai frame asli sebagai latar sementara.
+- Hair detail, temporal consistency, dan brush eraser belum ada.
+
+`docs/ui-m14-design.md` ditulis manual (subagent `design` masih unavailable).
 
 ## Ringkasan akhir
 
