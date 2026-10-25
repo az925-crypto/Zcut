@@ -23,6 +23,7 @@ object ZcutRoutes {
     const val Adjust = "adjust"
     const val Mask = "mask"
     const val Matting = "matting"
+    const val Beauty = "beauty"
     const val Export = "export"
     const val ExportDone = "export-done"
     const val Templates = "templates"
@@ -70,9 +71,13 @@ object ZcutRoutes {
      * Tool panels whose route pattern already carries `projectId`/`clipId`.
      * Grows one milestone at a time so a half-built panel still falls through to
      * the honest placeholder instead of navigating to an unregistered route.
+     *
+     * Every route registered with `clipTool(...)` in the NavHost must be listed
+     * here, otherwise the editor navigates to the bare route and the panel can
+     * never open (regression covered by `ZcutDestinationsTest`).
      */
     private val argToolRoutes: Set<String> =
-        setOf(Trim, Speed, Keyframe, Transition, Filters, Adjust, Effects, Mask)
+        setOf(Trim, Speed, Keyframe, Transition, Filters, Adjust, Effects, Mask, Matting, Beauty)
 
     fun isClipTool(route: String): Boolean = route in argToolRoutes
 
@@ -203,7 +208,7 @@ object ZcutDestinations {
         ZcutDestination("effects", "Efek", "F09", implemented = true),
         ZcutDestination("mask", "Mask & chroma", "F10", implemented = true),
         ZcutDestination("matting", "Cutout", "F11", implemented = true),
-        ZcutDestination("beauty", "Retouch", "F12"),
+        ZcutDestination("beauty", "Retouch", "F12", implemented = true),
         ZcutDestination("stickers", "Sticker", "F13"),
         ZcutDestination("text", "Teks", "F14", implemented = true),
         ZcutDestination("captions", "Caption", "F15"),

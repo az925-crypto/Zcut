@@ -13,7 +13,9 @@ import com.zaaam.zcut.core.media.VoiceoverRecorder
 import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
 import com.zaaam.zcut.core.render.Media3ExportEngine
+import com.zaaam.zcut.core.render.FaceDetector
 import com.zaaam.zcut.core.render.Media3PreviewEngine
+import com.zaaam.zcut.core.render.MlKitFaceDetector
 import com.zaaam.zcut.core.render.MlKitSubjectSegmenter
 import com.zaaam.zcut.core.render.MediaProbe
 import com.zaaam.zcut.core.render.PreviewEngine
@@ -67,6 +69,12 @@ class AppContainer(context: Context) {
      * so the segmenter is app-scoped rather than per-screen.
      */
     val subjectSegmenter: SubjectSegmenter by lazy { MlKitSubjectSegmenter() }
+
+    /**
+     * Face geometry for the retouch sliders. Like the segmenter, the bundled
+     * model is loaded once per process, so one instance is app-scoped.
+     */
+    val faceDetector: FaceDetector by lazy { MlKitFaceDetector() }
     val effectPipeline: EffectPipeline by lazy { UnavailableEffectPipeline() }
 
     /**

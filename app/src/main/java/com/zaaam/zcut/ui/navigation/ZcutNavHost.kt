@@ -29,6 +29,7 @@ import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
 import com.zaaam.zcut.feature.tools.AdjustScreen
 import com.zaaam.zcut.feature.tools.AudioScreen
+import com.zaaam.zcut.feature.tools.BeautyScreen
 import com.zaaam.zcut.feature.tools.EffectsScreen
 import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
@@ -268,6 +269,14 @@ fun ZcutNavHost(
 
             clipTool(ZcutRoutes.Matting) { projectId, clipId ->
                 MattingScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Beauty) { projectId, clipId ->
+                BeautyScreen(
                     projectId = projectId,
                     clipId = clipId,
                     onBack = { navController.popBackStack() }

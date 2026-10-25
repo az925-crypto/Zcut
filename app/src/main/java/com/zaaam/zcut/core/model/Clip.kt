@@ -96,6 +96,7 @@ data class Clip(
     val mask: MaskConfig? = null,
     val chroma: ChromaConfig? = null,
     val matting: MattingConfig? = null,
+    val beauty: BeautyConfig? = null,
     val audio: AudioConfig = AudioConfig(),
     val isReversed: Boolean = false,
     val metadata: Map<String, String> = emptyMap()
@@ -324,6 +325,40 @@ data class MattingConfig(
     val imageAssetId: String? = null,
     /** Prompt for [MattingBackground.AI]; only meaningful with a backend. */
     val aiPrompt: String = ""
+)
+
+/**
+ * Retouch/beauty for one clip.
+ *
+ * The slider keys, their admissible ranges and the slider scale are taken from
+ * the shipped local-beauty config of the analysed artifact
+ * (`assets/local_beauty_all.json` → `beauty_all_info.category[].items[]`): every
+ * item carries a `key`, `relative_min_value`, `relative_max_value` and a
+ * `_ui_value` that is a 0–100 slider position. Only those names/ranges are
+ * reused so a draft means the same thing the original meant; no original code
+ * or asset is copied.
+ *
+ * Values here are the 0–100 slider positions, like `_ui_value`.
+ * [com.zaaam.zcut.core.domain.BeautyEditor] converts them to the engine value
+ * and holds the full shipped table (including the keys the approved mockup does
+ * not have a slot for yet).
+ */
+@Serializable
+data class BeautyConfig(
+    /** `auto_buffing` — skin smoothing. */
+    val smooth: Float = 0f,
+    /** `auto_balance_skin` — whitening. */
+    val whiten: Float = 0f,
+    /** `thin_face` — face slimming. */
+    val faceSlim: Float = 0f,
+    /** `eye_size` — eye enlargement. */
+    val eyes: Float = 0f,
+    /** `nose_wing` — nose slimming. */
+    val nose: Float = 0f,
+    /** `type_lips` — lipstick. */
+    val lips: Float = 0f,
+    /** Keeps pore detail instead of a plastic look. */
+    val preserveTexture: Boolean = true
 )
 
 @Serializable

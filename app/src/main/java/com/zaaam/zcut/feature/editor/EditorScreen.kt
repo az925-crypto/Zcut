@@ -688,5 +688,11 @@ private val EditorTools = listOf(
     EditorTool("Adjust", ZcutRoutes.Adjust),
     EditorTool("Mask", ZcutRoutes.Mask),
     EditorTool("Keyframe", ZcutRoutes.Keyframe),
-    EditorTool("Transisi", ZcutRoutes.Transition)
+    EditorTool("Transisi", ZcutRoutes.Transition),
+    // The approved mockup draws Cutout as a Mask-panel shortcut and lists
+    // Retouch among the mockup screens; the rail is the editor's single entry
+    // point for clip tools (same pattern as Keyframe/Transisi), so both get a
+    // chip here — otherwise the panels would exist but be unreachable.
+    EditorTool("Cutout", ZcutRoutes.Matting),
+    EditorTool("Retouch", ZcutRoutes.Beauty)
 )

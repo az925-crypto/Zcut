@@ -115,6 +115,56 @@ class ZcutDestinationsTest {
     }
 
     @Test
+    fun beautyRouteIsAClipTool() {
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Beauty)?.implemented == true)
+        assertEquals(
+            "beauty?projectId={projectId}&clipId={clipId}",
+            ZcutRoutes.clipToolPattern(ZcutRoutes.Beauty)
+        )
+    }
+
+    /**
+     * Regression for the M14/M15 bug where a panel was registered in the NavHost
+     * with `clipTool(...)` but missing from `argToolRoutes`: the editor then
+     * navigated to the bare route and the panel could never open. Pinning the set
+     * forces a conscious update here whenever a clip tool is added or removed.
+     */
+    @Test
+    fun clipToolRoutesAreExactlyTheOnesTheEditorPassesArgumentsTo() {
+        val clipTools = ZcutDestinations.all
+            .map { it.route }
+            .filter { ZcutRoutes.isClipTool(it) }
+            .toSet()
+
+        assertEquals(
+            setOf(
+                ZcutRoutes.Trim, ZcutRoutes.Speed, ZcutRoutes.Keyframe,
+                ZcutRoutes.Transition, ZcutRoutes.Filters, ZcutRoutes.Adjust,
+                ZcutRoutes.Effects, ZcutRoutes.Mask, ZcutRoutes.Matting,
+                ZcutRoutes.Beauty
+            ),
+            clipTools
+        )
+    }
+
+    @Test
+    fun everyClipToolCarriesTheProjectAndTheSelectedClip() {
+        ZcutDestinations.all
+            .map { it.route }
+            .filter { ZcutRoutes.isClipTool(it) }
+            .forEach { route ->
+                val target = ZcutRoutes.toolRoute(route, "p 1", "c/1")
+                assertTrue("$route did not carry the project", target.startsWith("$route?projectId="))
+                assertTrue("$route did not carry the clip", target.contains("clipId=c%2F1"))
+
+                // A clip tool opened without a selection still carries the draft.
+                val withoutClip = ZcutRoutes.toolRoute(route, "p1", null)
+                assertTrue(withoutClip.startsWith("$route?projectId=p1"))
+                assertTrue("$route should omit an absent clip", !withoutClip.contains("clipId"))
+            }
+    }
+
+    @Test
     fun exportRoutesAreImplementedAndCarryTheProject() {
         val route = ZcutRoutes.export("p 1")
 

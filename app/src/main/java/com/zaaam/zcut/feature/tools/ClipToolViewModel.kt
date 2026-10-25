@@ -7,6 +7,7 @@ import com.zaaam.zcut.core.domain.KeyframeEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.domain.TransitionSide
 import com.zaaam.zcut.core.model.AnimatableProperty
+import com.zaaam.zcut.core.model.BeautyConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ChromaConfig
 import com.zaaam.zcut.core.model.ColorAdjustments
@@ -197,6 +198,11 @@ class ClipToolViewModel(
     fun setMatting(matting: MattingConfig?) {
         val id = clipId ?: return
         edit { TimelineEditor.setMatting(it, id, matting) }
+    }
+
+    fun setBeauty(beauty: BeautyConfig?) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setBeauty(it, id, beauty) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

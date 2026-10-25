@@ -81,6 +81,52 @@ fun applyBeauty(src: Bitmap, landmarks: FaceLandmarks, p: BeautyParams): Bitmap 
 Untuk video, parameter harus stabil antar frame; gunakan smoothing temporal
 pada landmark (One Euro Filter) agar tidak bergetar.
 
+## Bukti terverifikasi (M15)
+
+Koordinat artefak yang dipakai apa adanya (bukan tebakan):
+
+- **Key + rentang slider** — `assets/local_beauty_all.json` →
+  `beauty_all_info.category[].items[]`; tiap item membawa `key`,
+  `relative_min_value`, `relative_max_value`, dan `_ui_value` (posisi slider
+  0–100). Grup: `Smooth skin`, `Concealer`, `Shape`, `Makeup`.
+  Yang dipakai M15: `auto_buffing` 0–0.8, `auto_balance_skin` 0–0.8,
+  `thin_face` 0.5–0.8, `eye_size` 0.5–0.8, `nose_wing` 0.5–0.6,
+  `type_lips` 0–1.
+  Terbaca tapi belum dipakai di UI (tanpa slot di mockup ACC):
+  `auto_dark_circle` 0–1, `auto_eye_bright` 0–0.6, `auto_oil_remove` 0–0.8,
+  `face_little_head` 0–0.6, `type_makeup_all` 0–1, `type_blush` 0–1.
+- **Objek parameter engine** — `libmiddle-bridge.so` → simbol SWIG
+  `Java_..._BeautyAdjustParamModuleJNI_BeautyAdjustParam_1name_1get/1value_1get`:
+  `BeautyAdjustParam` adalah pasangan nama/nilai generik, bukan struct bernama.
+  `BeautyFacePreset` membawa `head_reshapes`, `make_ups`, `manual_deformation`,
+  `auto_beautys`, `skin_color_info`; `BeautyBodyPreset` membawa `body_reshapes`.
+- **Mesh reshape** — `assets/zip/FaceReshape_V2/distortion.json`: satu entri per
+  landmark (`pos`, `offsetX`/`offsetY`, `radiusX`/`radiusY`, `scale`, `type`;
+  dua jenis distorsi). `FaceReshape_V3.zip` adalah effect package (AmazingFeature).
+- **Warp manual** — `assets/ManualReshape/event.lua` (slider
+  `MANUAL_RESHAPE_INTENSITY_SLIM` / `_STRETCH`), `assets/ManualReshape.zip`.
+- **Bukan bukti beauty**: `assets/beauty_kira_*.json` adalah animasi Lottie UI.
+
+## Implementasi M15 (on-device)
+
+Semua di perangkat; tidak ada unggahan dan tidak ada server CapCut.
+
+| Lapisan | File |
+|---|---|
+| Model | `BeautyConfig` di `core/model/Clip.kt` (`beauty`, aditif, draft lama `null`) |
+| Domain | `core/domain/BeautyEditor.kt` (tabel key/rentang, `toSdk`, clamp, label, ringkasan) |
+| Deteksi | `core/render/MlKitFaceDetector.kt` + kontrak `FaceGeometry`/`FaceBox`/`FacePoint` |
+| Piksel | `core/media/BeautyProcessor.kt` (warp 1 pass, smooth/whiten terlokalisasi, lip tint) |
+| UI | `feature/tools/BeautyScreen.kt` (rute `beauty`, clip tool) |
+
+Aturan konversi slider→engine yang dipakai (dua aturan dari bukti):
+
+1. Item auto-beauty/makeup (rentang mulai 0): kirim posisi itu sendiri, dibatasi
+   rentang asli. Bukti: konfigurasi asli menyimpan `_ui_value: 40` dengan
+   `_sdk_value: 0.4`.
+2. Item shape (rentang mulai di baseline netral > 0): interpolasi lintas rentang
+   asli, sehingga 0 = netral dan 100 = maksimum asli.
+
 ## Catatan paritas
 
 - **P0**: smooth, whiten, face slim, filter.
@@ -89,6 +135,16 @@ pada landmark (One Euro Filter) agar tidak bergetar.
 
 ## Unknown
 
+- **Konversi slider→engine untuk item shape tidak terbaca penuh.** Preset asli
+  menyimpan nilai shape yang cocok dengan `0.5 + ui/200` (mis. ui 29 → 0.65),
+  bukan interpolasi `[relative_min, relative_max]` seperti aturan yang dipakai
+  Zcut. Aturan asli tidak bisa direkonstruksi dari konfigurasi saja, jadi Zcut
+  memakai aturan interpolasi rentang (0 = netral) dan itu ditulis di sini.
+- **Pemetaan `type` di `distortion.json` → `WarpKind` bersifat *inferred***:
+  bentuk dua jenis distorsi terbaca dari file, tetapi mana `type` yang berarti
+  geser vs skala diperkirakan dari struktur berkas, tidak diamati di kode.
+  Magnitudo warp milik Zcut, bukan angka asli.
 - Jumlah landmark dan model face yang dipakai tidak terbaca (kemungkinan
-  model internal `tt_fsnew_*` dari EffectSDK).
+  model internal `tt_fsnew_*` dari EffectSDK). ML Kit memberi 6 landmark
+  (mata, hidung, sudut/bawah mulut), bukan 106 titik.
 - Apakah beauty diproses di GPU EffectSDK atau CPU retouch SDK; keduanya ada.

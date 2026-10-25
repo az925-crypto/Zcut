@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.model.Clip
@@ -347,6 +348,54 @@ fun ToolHint(text: String) {
             .fillMaxWidth()
             .padding(horizontal = 2.dp)
     )
+}
+
+/**
+ * Segmented control used by tool panels that group their controls in tabs
+ * (the approved mockup draws one for Retouch). Equal-width options in a single
+ * rounded track.
+ */
+@Composable
+fun ToolSegmented(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(10.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            options.forEachIndexed { index, option ->
+                val selected = index == selectedIndex
+                val shape = RoundedCornerShape(8.dp)
+                Surface(
+                    color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = shape,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(shape)
+                        .clickable { onSelect(index) }
+                ) {
+                    Text(
+                        text = option,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) ZcutOnPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 7.dp)
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -6,7 +6,7 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M14 selesai; batch M4–M10
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M15 selesai; batch M4–M10
   sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
   Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
@@ -29,7 +29,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M14 selesai · batch M11–M15 berjalan |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M15 selesai · batch M11–M15 berjalan |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
 
@@ -54,7 +54,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | ✅ |
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | ✅ |
 | M14 | Matting/cutout (ML Kit) | F11 | matting | ✅ |
-| M15 | Retouch & beauty | F12 | beauty | [ ] |
+| M15 | Retouch & beauty | F12 | beauty | ✅ |
 | M16 | Sticker + Lottie | F13 | stickers | [ ] |
 | M17 | Caption & speech lokal | F15 | captions | [ ] |
 | M18 | AI music prosedural | F18 | ai-music | [ ] |
@@ -255,12 +255,12 @@ Spek: [`docs/features/11-matting-background.md`](docs/features/11-matting-backgr
 Spek: [`docs/features/12-retouch-beauty.md`](docs/features/12-retouch-beauty.md)
 
 - [x] Spek
-- [ ] Skin smooth/whiten
-- [ ] Face slim/eye/nose
-- [ ] Makeup
-- [ ] Body reshape
-- [ ] Photo retouch
-- [ ] Unit test parameter bounds
+- [x] Skin smooth/whiten (terlokalisasi ke area wajah; key `auto_buffing` / `auto_balance_skin`)
+- [x] Face slim/eye/nose (warp satu pass; key `thin_face` / `eye_size` / `nose_wing`)
+- [x] Makeup (lip tint lokal dari landmark mulut; key `type_lips`)
+- [~] Body reshape (key `body_reshapes` & `event.lua` sudah dibaca; slider belum dirancang mockup)
+- [~] Photo retouch (retouch jalan pada frame klip; editor foto F26 belum)
+- [x] Unit test parameter bounds (`BeautyEditorTest`)
 
 ## F13 — Sticker & Tracking
 
@@ -625,6 +625,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `0e5d5e0` `3f3d199` `e675f79` | M12 audio dasar & TTS sistem: envelope gain, beat/loudness lokal, voiceover, TtsScreen |
 | 2026-10-25 | `90bd3b5` | M13 export & render: Media3ExportEngine, ExportPlan, layar export/export-done, FileProvider + MediaStore |
 | 2026-10-25 | `b4ab340` | M14 matting & cutout: MlKitSubjectSegmenter, MattingComposer, MattingScreen, MattingConfig |
+| 2026-10-25 | `TBD` | M15 retouch & beauty: MlKitFaceDetector, BeautyProcessor, BeautyEditor, BeautyScreen, rail Cutout/Retouch |
 
 ## Backlog re-audit
 
@@ -1039,6 +1040,61 @@ Batasan yang diakui di UI dan docs:
 - Hair detail, temporal consistency, dan brush eraser belum ada.
 
 `docs/ui-m14-design.md` ditulis manual (subagent `design` masih unavailable).
+
+### Catatan M15 — retouch & beauty (2026-10-25)
+
+Lingkup yang selesai:
+
+- `BeautyConfig` aditif di `Clip` (`smooth`, `whiten`, `faceSlim`, `eyes`,
+  `nose`, `lips`, `preserveTexture`); draft lama decode `null` tanpa naik
+  `schemaVersion`. Nilai adalah posisi slider 0–100, sama seperti `_ui_value` di
+  konfigurasi asli.
+- `BeautyEditor` (domain murni, diuji JVM) memegang tabel key/rentang asli dari
+  `assets/local_beauty_all.json` (`auto_buffing` 0–0.8, `auto_balance_skin`
+  0–0.8, `thin_face` 0.5–0.8, `eye_size` 0.5–0.8, `nose_wing` 0.5–0.6,
+  `type_lips` 0–1), konversi slider→engine (dua aturan dari bukti), clamp config
+  tak terpercaya, jumlah slider aktif, label chip, ringkasan, dan catatan tab.
+  Key asli yang belum punya slot mockup tetap disimpan di `SHIPPED_KEYS`.
+- `FaceDetector.detect(Bitmap): List<FaceGeometry>` + `MlKitFaceDetector`
+  (`com.google.mlkit:face-detection:16.1.7`, model dibundel, satu client per
+  proses, landmark mata/hidung/mulut, geometri normal 0..1). Hasil kosong =
+  tidak ada wajah, bukan tebakan.
+- `BeautyProcessor.apply`: satu pass warp (`OFFSET` untuk slim, `EXPAND` untuk
+  mata/nose, meniru bentuk `FaceReshape_V2/distortion.json`), lalu smooth &
+  whiten terlokalisasi (mask elips lembut + `DST_IN`), lalu lip tint dari
+  landmark mulut. `null` = tidak ada wajah / tidak ada slider digeser.
+- `BeautyScreen` (rute `beauty`, clip tool) mengikuti mockup: pratinjau +
+  kotak wajah (digambar di ruang skala `ContentScale.Fit`), segmented
+  Face/Body/Makeup, 6 slider dengan key asli ditampilkan, switch
+  "Preserve texture", chip jumlah wajah.
+- `ToolSegmented` ditambahkan ke `ToolCommon` (segmented control mockup).
+- Semua review gate M15 (`security/bug/performance`) dijalankan di akhir batch
+  M11–M15 sebelum rilis batch.
+
+Jalur masuknya: rail tool editor kini punya chip **Cutout** dan **Retouch**.
+Alasannya: `MattingScreen` (M14) sudah terdaftar sebagai rute tapi tidak punya
+jalur masuk sama sekali — mockup menggambar tombol Cutout di panel Mask, dan
+Retouch tidak punya jalur masuk di mockup. Rail adalah satu-satunya pintu masuk
+clip tool di aplikasi (pola yang sama seperti Keyframe/Transisi), jadi kedua
+chip itu ditambahkan supaya panel tidak "ada tapi tidak bisa dibuka". Dicatat di
+`DECISIONS.md`.
+
+Batasan yang diakui di UI dan docs:
+
+- Retouch memakai satu frame klip; matte/composite per frame saat export belum
+  ada (batas render M13), jadi video final belum ikut di-retouch. Ditulis di
+  layar.
+- Tab Body & Makeup belum punya slider (mockup ACC tidak merancangnya); layar
+  menyebut bukti aslinya (`BeautyBodyPreset.body_reshapes`, `event.lua`
+  `MANUAL_RESHAPE_INTENSITY_SLIM`/`_STRETCH`, `type_makeup_all`/`type_blush`)
+  alih-alih mengarang kontrol.
+- Konversi slider→engine untuk item shape tidak terbaca penuh (preset asli
+  memakai `0.5 + ui/200`); statusnya **Unknown** di spek fitur.
+- Pemetaan `type` `distortion.json` → `WarpKind` **inferred**; magnitudo warp
+  milik Zcut. Hair, makeup penuh, manual reshape brush, dan temporal
+  consistency belum ada.
+
+`docs/ui-m15-design.md` ditulis manual (subagent `design` masih unavailable).
 
 ## Ringkasan akhir
 

@@ -38,6 +38,20 @@ Rekonstruksi aplikasi CapCut dengan fitur 1:1, versi sendiri, kode ditulis sendi
 
 ## Alur per milestone
 
+0. **Bukti dulu, baru kode (wajib).** Sebelum menulis kode untuk satu fitur:
+   baca speknya di `docs/features/NN-*.md` **dan** buktinya di `docs/evidence.md`
+   serta artefak mentah hasil reverse engineering. Jangan menebak parameter,
+   nama field, rentang nilai, atau struktur file kalau buktinya ada. Setiap
+   klaim teknis baru ditulis di spek sebagai **koordinat artefak** (path di
+   dalam APK + nama key/kelas), misalnya:
+   `assets/local_beauty_all.json → beauty_all_info.category[].items[]`
+   atau `libmiddle-bridge.so → Java_..._BeautyAdjustParamModuleJNI_*`.
+   Kalau bukti tidak ada/hanya sebagian, tulis statusnya eksplisit
+   (**Unknown / inferred**) — jangan diamkan dan jangan diisi tebakan.
+   Artefak RE ada di `../rev/work/extracted/` (`base.apk`, `base_x/*.dex`,
+   `so_all/`, `tinyassets*/`) dan `CapCut_19.8.0.apks`; alat bantu: `jadx`,
+   `strings`, `unzip`. Kalau alat RE (REA/jadx provider) tidak tersedia, pakai
+   `strings`/`unzip`/`jadx --single-class` lewat shell dan tetap catat buktinya.
 1. Tulis kode + tes unit sesuai spek di `docs/`.
 2. Jalankan review gate (security, bug, performance); perbaiki semua temuan
    BLOCKING dalam satu pass gabungan.
@@ -51,6 +65,11 @@ Rekonstruksi aplikasi CapCut dengan fitur 1:1, versi sendiri, kode ditulis sendi
 - `DECISIONS.md`: keputusan + alasannya, satu baris per keputusan.
 - `docs/`: spek per fitur dan desain. Dokumen tidak boleh mengklaim hal yang
   belum ada di kode.
+- `docs/features/NN-*.md` + `docs/evidence.md`: **sumber parameter**. Nama key,
+  rentang, dan struktur dari artefak asli dipakai apa adanya; tiap milestone
+  mencantumkan koordinat buktinya. Hasil reverse engineering tidak boleh
+  menganggur: kalau spek sudah menyebut key/kelas tertentu, implementasi
+  mengikuti itu, bukan menebak nama sendiri.
 
 ## Gaya kerja
 

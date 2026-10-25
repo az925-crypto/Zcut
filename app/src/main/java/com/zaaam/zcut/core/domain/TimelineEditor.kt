@@ -2,6 +2,7 @@ package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.ChromaConfig
 import com.zaaam.zcut.core.model.AnimatableProperty
+import com.zaaam.zcut.core.model.BeautyConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.ColorAdjustments
@@ -483,6 +484,12 @@ object TimelineEditor {
     fun setMatting(timeline: Timeline, clipId: String, matting: MattingConfig?): Timeline =
         editClip(timeline, clipId) {
             it.copy(matting = matting?.let(MattingEditor::normalize))
+        }
+
+    /** Beauty sliders arrive from a draft file too; clamp them in one gate. */
+    fun setBeauty(timeline: Timeline, clipId: String, beauty: BeautyConfig?): Timeline =
+        editClip(timeline, clipId) {
+            it.copy(beauty = beauty?.let(BeautyEditor::normalize))
         }
 
     fun setTransition(

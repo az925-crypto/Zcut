@@ -108,6 +108,9 @@ dependencies {
     // bundled in the APK (~4.5 MB) and never calls a server.
     implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
 
+    // Bundled face detection (landmarks) for the retouch sliders; on-device only.
+    implementation("com.google.mlkit:face-detection:16.1.7")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }
