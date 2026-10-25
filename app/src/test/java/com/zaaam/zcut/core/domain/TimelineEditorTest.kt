@@ -4,9 +4,12 @@ import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.AudioConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
+import com.zaaam.zcut.core.model.ChromaConfig
 import com.zaaam.zcut.core.model.ColorAdjustments
 import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Keyframe
+import com.zaaam.zcut.core.model.MaskConfig
+import com.zaaam.zcut.core.model.MaskShape
 import com.zaaam.zcut.core.model.SpeedConfig
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -498,6 +501,39 @@ class TimelineEditorTest {
         assertTrue(
             cleared.tracks.first { it.id == videoId }.clips.single().filters.isEmpty()
         )
+    }
+
+    @Test
+    fun maskAndChromaAreStoredAndCleared() {
+        val (timeline, videoId, _) = baseTimeline()
+        val source = clip()
+        val withClip = TimelineEditor.addClip(timeline, videoId, source)
+
+        val masked = TimelineEditor.setMask(
+            withClip,
+            source.id,
+            MaskConfig(shape = MaskShape.CIRCLE, feather = 0.2f, invert = true)
+        )
+        val keyed = TimelineEditor.setChroma(
+            masked,
+            source.id,
+            ChromaConfig(similarity = 0.6f)
+        )
+        val stored = keyed.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(MaskShape.CIRCLE, stored.mask?.shape)
+        assertEquals(0.2f, stored.mask?.feather ?: 0f, 0.001f)
+        assertTrue(stored.mask?.invert == true)
+        assertEquals(0.6f, stored.chroma?.similarity ?: 0f, 0.001f)
+
+        val cleared = TimelineEditor.setChroma(
+            TimelineEditor.setMask(keyed, source.id, null),
+            source.id,
+            null
+        )
+        val plain = cleared.tracks.first { it.id == videoId }.clips.single()
+        assertNull(plain.mask)
+        assertNull(plain.chroma)
     }
 
     @Test

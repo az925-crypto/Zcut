@@ -29,6 +29,7 @@ import com.zaaam.zcut.feature.tools.AdjustScreen
 import com.zaaam.zcut.feature.tools.EffectsScreen
 import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
+import com.zaaam.zcut.feature.tools.MaskScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
@@ -245,6 +246,14 @@ fun ZcutNavHost(
 
             clipTool(ZcutRoutes.Effects) { projectId, clipId ->
                 EffectsScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Mask) { projectId, clipId ->
+                MaskScreen(
                     projectId = projectId,
                     clipId = clipId,
                     onBack = { navController.popBackStack() }
