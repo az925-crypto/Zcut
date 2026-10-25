@@ -624,7 +624,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `a63e970` `212f7cc` | M11 teks & tipografi: TextStyle/TextEditor/TextAnimator + TextScreen |
 | 2026-10-25 | `0e5d5e0` `3f3d199` `e675f79` | M12 audio dasar & TTS sistem: envelope gain, beat/loudness lokal, voiceover, TtsScreen |
 | 2026-10-25 | `90bd3b5` | M13 export & render: Media3ExportEngine, ExportPlan, layar export/export-done, FileProvider + MediaStore |
-| 2026-10-25 | `TBD` | M14 matting & cutout: MlKitSubjectSegmenter, MattingComposer, MattingScreen, MattingConfig |
+| 2026-10-25 | `b4ab340` | M14 matting & cutout: MlKitSubjectSegmenter, MattingComposer, MattingScreen, MattingConfig |
 
 ## Backlog re-audit
 
