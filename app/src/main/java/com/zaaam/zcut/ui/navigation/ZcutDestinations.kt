@@ -15,6 +15,7 @@ object ZcutRoutes {
     const val Keyframe = "keyframe"
     const val Transition = "transition"
     const val Audio = "audio"
+    const val Tts = "tts"
     const val Text = "text"
     const val Stickers = "stickers"
     const val Effects = "effects"
@@ -40,6 +41,13 @@ object ZcutRoutes {
     /** Text is not a clip tool: it can create a clip, so it carries `atMs`. */
     const val TextPattern = "$Text?$ArgProjectId={$ArgProjectId}" +
         "&$ArgClipId={$ArgClipId}&$ArgAtMs={$ArgAtMs}"
+
+    /** Audio can create clips too, so it carries the selected clip and playhead. */
+    const val AudioPattern = "$Audio?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgClipId={$ArgClipId}&$ArgAtMs={$ArgAtMs}"
+
+    /** TTS only inserts at a position; the clip is always new. */
+    const val TtsPattern = "$Tts?$ArgProjectId={$ArgProjectId}&$ArgAtMs={$ArgAtMs}"
 
     /**
      * Tool panels whose route pattern already carries `projectId`/`clipId`.
@@ -91,9 +99,19 @@ object ZcutRoutes {
         return if (clip == null) base else "$base&$ArgClipId=$clip"
     }
 
+    fun audio(projectId: String, clipId: String?, atMs: Long = 0L): String {
+        val base = "$Audio?$ArgProjectId=${encode(projectId)}" +
+            "&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+        val clip = clipId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (clip == null) base else "$base&$ArgClipId=$clip"
+    }
+
+    fun tts(projectId: String, atMs: Long = 0L): String =
+        "$Tts?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+
     /**
      * Tool routes carry the draft and clip as query arguments. Non-tool routes
-     * (Audio, Stickers) are returned unchanged until their milestone adds
+     * (Stickers) are returned unchanged until their milestone adds
      * a real screen.
      */
     fun toolRoute(route: String, projectId: String, clipId: String?): String {
@@ -151,8 +169,8 @@ object ZcutDestinations {
         ZcutDestination("stickers", "Sticker", "F13"),
         ZcutDestination("text", "Teks", "F14", implemented = true),
         ZcutDestination("captions", "Caption", "F15"),
-        ZcutDestination("audio", "Audio", "F16"),
-        ZcutDestination("tts", "Text to speech", "F17"),
+        ZcutDestination("audio", "Audio", "F16", implemented = true),
+        ZcutDestination("tts", "Text to speech", "F17", implemented = true),
         ZcutDestination("ai-music", "AI Music", "F18"),
         ZcutDestination("export", "Export", "F19"),
         ZcutDestination("export-done", "Export selesai", "F19"),

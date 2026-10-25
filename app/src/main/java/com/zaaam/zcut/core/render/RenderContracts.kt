@@ -83,6 +83,14 @@ interface AudioMixer {
     suspend fun mix(tracks: List<Track>, outputPath: String): Boolean
 }
 
+/** One voice exposed by the platform speech engine. */
+data class SpeechVoice(
+    /** Stable engine-side id; `null`/blank means the engine default voice. */
+    val id: String,
+    val label: String,
+    val locale: String
+)
+
 interface SpeechEngine {
     suspend fun synthesize(
         text: String,
@@ -91,6 +99,23 @@ interface SpeechEngine {
         pitch: Float,
         outputPath: String
     ): Boolean
+
+    /**
+     * Voices the device reports. Empty means the engine has no usable voices,
+     * which the UI must show honestly instead of offering dead choices.
+     */
+    suspend fun voices(): List<SpeechVoice> = emptyList()
+
+    /** Speaks [text] out loud for a quick preview; no file is written. */
+    suspend fun speak(
+        text: String,
+        voiceId: String?,
+        rate: Float,
+        pitch: Float
+    ): Boolean = false
+
+    /** Stops any in-flight preview speech. */
+    fun stop() = Unit
 }
 
 interface SubjectSegmenter {

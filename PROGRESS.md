@@ -6,7 +6,7 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M11 selesai; batch M4–M10
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M12 selesai; batch M4–M10
   sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
   Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
@@ -29,7 +29,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M11 selesai · batch M11–M15 berjalan |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M12 selesai · batch M11–M15 berjalan |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
 
@@ -51,7 +51,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M9 | Efek | F09 | effects | ✅ `f36af6f` |
 | M10 | Mask & chroma | F10 | mask | ✅ `5d735a9` `b7192a6` |
 | M11 | Teks & tipografi | F14 | text | ✅ |
-| M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | [ ] |
+| M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | ✅ |
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | [ ] |
 | M14 | Matting/cutout (ML Kit) | F11 | matting | [ ] |
 | M15 | Retouch & beauty | F12 | beauty | [ ] |
@@ -305,29 +305,29 @@ Spek: [`docs/features/15-captions-transcript.md`](docs/features/15-captions-tran
 Spek: [`docs/features/16-audio-editing.md`](docs/features/16-audio-editing.md)
 
 - [x] Spek
-- [ ] Add audio, volume, fade
-- [ ] Mute + loudness
-- [ ] Music library lokal
-- [ ] Voiceover recorder
-- [ ] Beat detection/sync
-- [ ] Voice change
+- [x] Add audio, volume, fade (M12; mix diterapkan saat export M13)
+- [x] Mute + loudness (M12: `Loudness` RMS → target ≈ -16 dBFS)
+- [ ] Music library lokal (impor perangkat saja di M12)
+- [x] Voiceover recorder (M12: `VoiceoverRecorder` + izin `RECORD_AUDIO`)
+- [x] Beat detection/sync (M12: `BeatDetector` + `beatGridMs` + snap)
+- [ ] Voice change (M12 hanya pitch; formant/robot menyusul)
 - [!] Vocal separation (BUTUH BACKEND)
-- [ ] Denoise
+- [ ] Denoise (belum ada)
 - [!] Dubbing (BUTUH BACKEND)
-- [ ] Unit test audio mix
+- [x] Unit test audio mix (M12: `AudioEditorTest`, `BeatDetectorTest`, `LoudnessTest`)
 
 ## F17 — TTS & Voice Clone
 
 Spek: [`docs/features/17-tts-voice-clone.md`](docs/features/17-tts-voice-clone.md)
 
 - [x] Spek
-- [ ] Android TextToSpeech engine
-- [ ] Voice/language/speed/pitch picker
-- [ ] Preview + insert ke timeline
-- [ ] Cache hasil TTS
+- [x] Android TextToSpeech engine (M12: `AndroidSpeechEngine`)
+- [x] Voice/language/speed/pitch picker (M12: `SpeechEngine.voices()` + rate/pitch)
+- [x] Preview + insert ke timeline (M12: `speak` + `insertAudio` di playhead)
+- [x] Cache hasil TTS (M12: cache key SHA-256 di `filesDir/tts`)
 - [ ] SSML/streaming (fallback)
 - [!] Voice clone (BUTUH BACKEND)
-- [ ] Unit test cache key
+- [x] Unit test cache key (M12: `TtsScriptTest`)
 
 ## F18 — AI Music
 
@@ -549,6 +549,29 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 | Marketplace/template AI | butuh server | template bawaan |
 | Publish platform | butuh SDK/API | share sheet |
 | Smart ad | butuh model | template + TTS |
+
+### Rencana implementasi fitur BUTUH BACKEND — dummy jujur
+
+Semua fitur di tabel di atas tetap **dibangun di UI** pada milestone-nya, tapi
+tanpa backend: yang tersedia hanya **dummy/placeholder yang jujur** — kontrol
+tampil dan bisa ditekan, lalu menampilkan status "butuh backend" beserta
+fallback lokalnya (bila ada). Tidak ada server tiruan, tidak ada hasil palsu,
+tidak ada paywall, dan tidak ada yang disembunyikan.
+
+Aturan dummy:
+
+- Kontrol tetap terlihat dan serumpun dengan fitur lain (tidak dikunci, tidak
+  di-disable tanpa penjelasan).
+- Menekan tombol dummy **tidak** menghasilkan artefak palsu; hasil = pesan
+  status + arahan fallback lokal, atau menerapkan fallback lokal yang nyata.
+- Badge **BUTUH BACKEND** dipakai konsisten lewat `BackendBadge`/`FeatureRegistry`.
+- Bila kelak ada backend/model, dummy diganti implementasi nyata tanpa mengubah
+  rute/navigasi (kontrak layar sudah ada duluan).
+
+Prioritas dummy: F24 (AI image/video), F25 (digital human), F23 (LLM agent),
+F18 (AI music generatif), F21 (template AI), F22 (ASR penuh), F26 (face cover),
+F27 (publish API), F20/F28 (cloud/kolaborasi), F31 (smart ad). Untuk tiap item,
+fallback lokal di kolom ketiga tetap dikerjakan lebih dulu; dummy menutup sisanya.
 
 ## Build & release
 
@@ -901,6 +924,43 @@ Batasan yang diakui di UI dan docs:
 - Rich text per-range, curve text, dan handwrite tetap P1/P2.
 
 `docs/ui-m11-design.md` ditulis manual karena subagent `design` gagal
+(model unavailable); kegagalan dicatat di `DECISIONS.md`.
+
+### Catatan M12 — audio dasar & TTS sistem (2026-10-25)
+
+Lingkup yang selesai:
+
+- `ClipType.AUDIO` di track `AUDIO` tunggal; klip masuk lewat
+  `AudioEditor.insertAudio` (impor lagu, rekaman voiceover, hasil TTS), semuanya
+  memakai satu jalur push-right ke slot bebas.
+- Envelope gain per klip (`volume`, `fadeInMs`, `fadeOutMs`, `pitch`, `muted`,
+  `looping`) dengan clamp di `AudioEditor.normalize`; `ProjectCodec.normalize`
+  men-sanitasi draft impor.
+- Analisis lokal: `BeatDetector` (energy onset, BPM median), `Loudness`
+  (RMS → target ≈ -16 dBFS), `PcmDecoder` (MediaExtractor + MediaCodec → mono
+  float, batas 60 detik).
+- `RECORD_AUDIO` + `VoiceoverRecorder` (AAC ke workspace privat) dan
+  `AudioDuration` untuk panjang berkas hasil.
+- TTS sistem: `SpeechEngine` diperluas aditif (`SpeechVoice`, `voices()`,
+  `speak()`, `stop()`), `AndroidSpeechEngine` untuk `android.speech.tts`;
+  `TtsScript` menangani sanitize, estimasi, dan cache key SHA-256.
+- Rute `audio?projectId=&clipId=&atMs=` dan `tts?projectId=&atMs=`, keduanya
+  `implemented = true`; `EditorScreen.openTool` mengarahkan tool `Audio` ke rute
+  ber-argumen.
+- Snap ke beat: `EditorViewModel.snapCandidates` menambah `beatGridMs` hanya
+  saat `snapToBeat` menyala; `beatGridMs` ditambahkan aditif tanpa bump
+  `schemaVersion`.
+
+Batasan yang diakui di UI dan docs:
+
+- Volume/fade/mute/pitch disimpan di draft, baru diterapkan oleh mixer export
+  (M13). Preview Media3 memutar audio sumber apa adanya.
+- Pustaka musik/SFX bawaan belum ada; impor dari perangkat saja.
+- Denoise, voice change berbasis formant, dan auto-cut ke beat menyusul;
+  vocal separation & dubbing **BUTUH BACKEND**; voice clone **BUTUH BACKEND**.
+- `PcmDecoder` dibatasi 60 detik pertama klip.
+
+`docs/ui-m12-design.md` ditulis manual karena subagent `design` gagal
 (model unavailable); kegagalan dicatat di `DECISIONS.md`.
 
 ## Ringkasan akhir

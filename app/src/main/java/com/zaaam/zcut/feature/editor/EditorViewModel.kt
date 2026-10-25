@@ -204,19 +204,19 @@ class EditorViewModel(
     }
 
     fun moveClip(clipId: String, targetTrackId: String, newStartMs: Long) {
-        editTimeline { timeline ->
+        editTimelineWithSettings { project ->
             val snapped = TimelineEditor.snapPosition(
                 newStartMs,
-                TimelineEditor.snapCandidates(timeline, clipId)
+                snapCandidates(project, clipId)
             )
-            TimelineEditor.moveClip(timeline, clipId, targetTrackId, snapped)
+            TimelineEditor.moveClip(project.timeline, clipId, targetTrackId, snapped)
         }
     }
 
     fun trimClip(clipId: String, newStartMs: Long, newEndMs: Long) {
-        editTimeline { timeline ->
-            val clip = timeline.clip(clipId) ?: return@editTimeline timeline
-            val candidates = TimelineEditor.snapCandidates(timeline, clipId)
+        editTimelineWithSettings { project ->
+            val clip = project.timeline.clip(clipId) ?: return@editTimelineWithSettings project.timeline
+            val candidates = snapCandidates(project, clipId)
             // Only snap the edge the gesture actually changed; snapping the
             // untouched edge lets a trim pull its twin, or snap it back to the
             // same position and swallow the whole gesture.
@@ -230,15 +230,31 @@ class EditorViewModel(
             } else {
                 newEndMs
             }
-            TimelineEditor.trimClip(timeline, clipId, start, end)
+            TimelineEditor.trimClip(project.timeline, clipId, start, end)
         }
     }
 
+    /**
+     * Clip boundaries plus, when the draft enables it, the locally detected beat
+     * grid. Beats only participate while "snap ke beat" is on.
+     */
+    private fun snapCandidates(project: Project, clipId: String): List<Long> {
+        val base = TimelineEditor.snapCandidates(project.timeline, clipId)
+        val settings = project.settings
+        if (!settings.snapToBeat || settings.beatGridMs.isEmpty()) return base
+        return (base + settings.beatGridMs).distinct().sorted()
+    }
+
     private fun editTimeline(transform: (Timeline) -> Timeline) {
+        editTimelineWithSettings { project -> transform(project.timeline) }
+    }
+
+    /** Same as [editTimeline] but the transform also sees the draft's settings. */
+    private fun editTimelineWithSettings(transform: (Project) -> Timeline) {
         viewModelScope.launch {
             editMutex.withLock {
                 val project = repository.get(projectId) ?: return@withLock
-                val updated = transform(project.timeline)
+                val updated = transform(project)
                 if (updated == project.timeline) return@withLock
                 runCatching {
                     repository.upsert(project.copy(timeline = updated))

@@ -6,8 +6,10 @@ import com.zaaam.zcut.core.data.DataStorePreferencesRepository
 import com.zaaam.zcut.core.data.JsonProjectRepository
 import com.zaaam.zcut.core.data.PreferencesRepository
 import com.zaaam.zcut.core.data.ProjectRepository
+import com.zaaam.zcut.core.media.AndroidSpeechEngine
 import com.zaaam.zcut.core.media.MediaImporter
 import com.zaaam.zcut.core.media.MediaThumbnails
+import com.zaaam.zcut.core.media.VoiceoverRecorder
 import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
 import com.zaaam.zcut.core.render.Media3PreviewEngine
@@ -19,7 +21,6 @@ import com.zaaam.zcut.core.render.ThumbnailGenerator
 import com.zaaam.zcut.core.render.UnavailableAudioMixer
 import com.zaaam.zcut.core.render.UnavailableEffectPipeline
 import com.zaaam.zcut.core.render.UnavailableMediaProbe
-import com.zaaam.zcut.core.render.UnavailableSpeechEngine
 import com.zaaam.zcut.core.render.UnavailableSubjectSegmenter
 import com.zaaam.zcut.core.render.UnavailableThumbnailGenerator
 import com.zaaam.zcut.core.render.UnavailableVideoRenderEngine
@@ -40,6 +41,9 @@ class AppContainer(context: Context) {
     private val mediaDir: File by lazy { File(appContext.filesDir, "media") }
     private val thumbnailDir: File by lazy { File(appContext.cacheDir, "thumbs") }
 
+    /** Synthesised speech cache; survives "Bersihkan cache" on purpose. */
+    val ttsCacheDir: File by lazy { File(appContext.filesDir, "tts") }
+
     val mediaThumbnails: MediaThumbnails by lazy {
         MediaThumbnails(appContext, thumbnailDir)
     }
@@ -48,15 +52,21 @@ class AppContainer(context: Context) {
         MediaImporter(appContext, mediaDir, thumbnailDir)
     }
 
-    // Stage 3 replaces these with Media3, CameraX, ML Kit, and Android TTS
-    // implementations. Until then every missing capability fails honestly.
+    // Stage 3 replaces these with Media3, CameraX, and ML Kit implementations.
+    // Until then every missing capability fails honestly.
     val renderEngine: VideoRenderEngine by lazy { UnavailableVideoRenderEngine() }
     val mediaProbe: MediaProbe by lazy { UnavailableMediaProbe() }
     val thumbnailGenerator: ThumbnailGenerator by lazy { UnavailableThumbnailGenerator() }
     val audioMixer: AudioMixer by lazy { UnavailableAudioMixer() }
-    val speechEngine: SpeechEngine by lazy { UnavailableSpeechEngine() }
+    val speechEngine: SpeechEngine by lazy { AndroidSpeechEngine(appContext) }
     val subjectSegmenter: SubjectSegmenter by lazy { UnavailableSubjectSegmenter() }
     val effectPipeline: EffectPipeline by lazy { UnavailableEffectPipeline() }
+
+    /**
+     * A recorder owns the microphone, so one is created per recording session
+     * and released by the screen that started it.
+     */
+    fun newVoiceoverRecorder(): VoiceoverRecorder = VoiceoverRecorder(appContext)
 
     /**
      * A player owns a GL pipeline and a surface, so it cannot be a singleton:

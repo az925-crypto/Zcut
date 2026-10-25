@@ -43,7 +43,12 @@ data class ProjectSettings(
     val exportPreset: ExportPreset = ExportPreset(),
     val backgroundColorArgb: Long = 0xFF08090D,
     val autoSave: Boolean = true,
-    val snapToBeat: Boolean = false
+    val snapToBeat: Boolean = false,
+    /**
+     * Locally detected beat markers (milliseconds). Additive: drafts written by
+     * M0–M11 decode with an empty grid, so no schema bump is needed.
+     */
+    val beatGridMs: List<Long> = emptyList()
 )
 
 @Serializable

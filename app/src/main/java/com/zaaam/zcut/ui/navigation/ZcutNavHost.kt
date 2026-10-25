@@ -26,6 +26,7 @@ import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
 import com.zaaam.zcut.feature.tools.AdjustScreen
+import com.zaaam.zcut.feature.tools.AudioScreen
 import com.zaaam.zcut.feature.tools.EffectsScreen
 import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
@@ -34,6 +35,7 @@ import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TextScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
+import com.zaaam.zcut.feature.tools.TtsScreen
 import com.zaaam.zcut.ui.LocalAppContainer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -279,6 +281,58 @@ fun ZcutNavHost(
                 TextScreen(
                     projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
                     clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
+                    atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.AudioPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgClipId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument(ZcutRoutes.ArgAtMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    }
+                )
+            ) { entry ->
+                val audioProjectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty()
+                val audioAtMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L
+                AudioScreen(
+                    projectId = audioProjectId,
+                    clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
+                    atMs = audioAtMs,
+                    onBack = { navController.popBackStack() },
+                    onAddAudio = {
+                        navController.navigate(ZcutRoutes.mediaPicker(audioProjectId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenTts = {
+                        navController.navigate(ZcutRoutes.tts(audioProjectId, audioAtMs)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.TtsPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgAtMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    }
+                )
+            ) { entry ->
+                TtsScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
                     atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }
                 )

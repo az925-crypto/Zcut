@@ -110,3 +110,33 @@ fun fadeGain(t: Long, dur: Long, fin: Long, fout: Long): Float {
 - Apakah `AudioSeparateSound` on-device atau cloud; `libaudio_fingerprint_sdk`
   menunjukkan ada model lokal untuk fingerprint, bukan pemisahan.
 - Format metadata beat (ms vs frame) tidak terbaca.
+
+## Status implementasi Zcut (M12)
+
+Yang sudah berjalan di Android:
+
+| Bagian | Implementasi |
+|---|---|
+| Model | `AudioConfig` (volume/fadeIn/fadeOut/pitch/muted/looping) dipakai apa adanya; `ProjectSettings.beatGridMs` ditambahkan aditif |
+| Operasi timeline | `core/domain/AudioEditor.kt` — set volume/fade/loop/mute/pitch, `fadeGain`, `effectiveVolume`, `sanitize`, `insertAudio`, `sanitizeBeats` |
+| Analisis lokal | `core/domain/BeatDetector.kt` (energy onset + BPM median), `core/domain/Loudness.kt` (RMS + gain target -16 dBFS) |
+| Dekode audio | `core/media/PcmDecoder.kt` — MediaExtractor + MediaCodec → mono float, kapasitas 60 detik |
+| Rekaman | `core/media/VoiceoverRecorder.kt` (MediaRecorder AAC ke workspace privat), `core/media/AudioDuration.kt` |
+| Layar & state | `feature/tools/AudioScreen.kt` + `AudioViewModel.kt`, rute `audio?projectId=&clipId=&atMs=` |
+| Snap beat | `EditorViewModel.snapCandidates` menambah `beatGridMs` saat `snapToBeat` aktif |
+| Sanitasi draft | `ProjectCodec.normalize` men-clamp envelope audio dan grid beat; snap dimatikan bila grid kosong |
+
+Batas yang disengaja (bukan paywall):
+
+- **Mixer/volume/fade/mute/pitch baru diterapkan saat export (M13).** Preview
+  Media3 memutar audio sumber apa adanya; UI menyebut ini di "Catatan jujur".
+- **Pustaka musik dan SFX bawaan belum ada**; pengguna mengimpor berkas lagu
+  sendiri lewat Media Picker.
+- **Denoise realtime** (butuh DSP native) dan **voice change berbasis formant**
+  belum ada; pitch memakai `AudioConfig.pitch` yang diterapkan di M13.
+- **Vocal separation dan dubbing** ditandai **BUTUH BACKEND**.
+- **Auto-cut ke beat** ditunda ke M13; M12 hanya menyimpan grid + snap.
+- Analisis dibatasi 60 detik pertama klip (batas memori `PcmDecoder`).
+
+Unit test: `AudioEditorTest`, `BeatDetectorTest`, `LoudnessTest`; paritas rute
+`audio` diperluas di `ZcutDestinationsTest`.

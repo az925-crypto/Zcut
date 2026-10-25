@@ -264,10 +264,10 @@ private fun EditorBody(
     onTrimClip: (String, Long, Long) -> Unit
 ) {
     val openTool: (String) -> Unit = { route ->
-        val target = if (route == ZcutRoutes.Text) {
-            ZcutRoutes.text(project.id, selectedClipId, playhead.value)
-        } else {
-            ZcutRoutes.toolRoute(route, project.id, selectedClipId)
+        val target = when (route) {
+            ZcutRoutes.Text -> ZcutRoutes.text(project.id, selectedClipId, playhead.value)
+            ZcutRoutes.Audio -> ZcutRoutes.audio(project.id, selectedClipId, playhead.value)
+            else -> ZcutRoutes.toolRoute(route, project.id, selectedClipId)
         }
         onNavigate(target)
     }

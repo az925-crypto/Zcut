@@ -12,8 +12,10 @@ import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
+import com.zaaam.zcut.feature.tools.AudioViewModel
 import com.zaaam.zcut.feature.tools.ClipToolViewModel
 import com.zaaam.zcut.feature.tools.TextViewModel
+import com.zaaam.zcut.feature.tools.TtsViewModel
 
 /**
  * Manual dependency injection, in the same spirit as [AppContainer]: one
@@ -92,6 +94,44 @@ fun textViewModelFactory(
                 projectId = projectId,
                 initialClipId = clipId,
                 repository = container.projectRepository
+            )
+        }
+    }
+}
+
+/** Audio can create clips, so it carries the optional clip and the playhead. */
+@Composable
+fun audioViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    clipId: String?
+): ViewModelProvider.Factory = remember(container, projectId, clipId) {
+    viewModelFactory {
+        initializer {
+            AudioViewModel(
+                projectId = projectId,
+                initialClipId = clipId,
+                repository = container.projectRepository
+            )
+        }
+    }
+}
+
+/** TTS inserts at the playhead the audio screen was opened with. */
+@Composable
+fun ttsViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    atMs: Long
+): ViewModelProvider.Factory = remember(container, projectId, atMs) {
+    viewModelFactory {
+        initializer {
+            TtsViewModel(
+                projectId = projectId,
+                atMs = atMs,
+                repository = container.projectRepository,
+                speechEngine = container.speechEngine,
+                cacheDir = container.ttsCacheDir
             )
         }
     }

@@ -155,3 +155,29 @@ suspend fun addTtsToTimeline(draft: MutableDraft, textSegment: Segment, result: 
   layanan pihak ketiga + server internal.
 - Batas karakter per request, format audio hasil, dan biaya tidak terbaca.
 - Apakah `sami` adalah engine TTS atau adaptor playback.
+
+## Status implementasi Zcut (M12)
+
+Yang sudah berjalan di Android:
+
+| Bagian | Implementasi |
+|---|---|
+| Kontrak | `SpeechEngine.synthesize/voices/speak/stop` + `SpeechVoice` di `core/render/RenderContracts.kt` |
+| Engine perangkat | `core/media/AndroidSpeechEngine.kt` — `android.speech.tts.TextToSpeech`, inisialisasi async, satu mutex, sintesis ke file + listener progres |
+| Aturan skrip | `core/domain/TtsScript.kt` — sanitize (maks 1.000 char), estimasi durasi, cache key SHA-256 atas teks+suara+rate+pitch |
+| Cache | `AppContainer.ttsCacheDir` (`filesDir/tts`); berkas dipakai ulang bila sudah ada |
+| Layar & state | `feature/tools/TtsScreen.kt` + `TtsViewModel.kt`, rute `tts?projectId=&atMs=` |
+| Penyisipan | Hasil disintesis masuk timeline lewat `AudioEditor.insertAudio` di posisi playhead |
+
+Batas yang disengaja (bukan paywall):
+
+- **Voice clone suara tertentu ditandai BUTUH BACKEND**; butuh model suara yang
+  tidak ada di perangkat. TTS sistem tetap gratis dan lokal.
+- Suara yang tersedia hanya yang dilaporkan engine perangkat; bila engine tidak
+  memberi daftar, ditampilkan satu entri "Bawaan perangkat" — bukan daftar kosong.
+- Hanya kualitas default engine (rate 0.5×–2×, pitch 0.5×–2×); SSML dan
+  streaming belum dipakai.
+- Tidak ada permintaan jaringan: seluruh sintesis lewat service lokal Android.
+
+Unit test: `TtsScriptTest` (sanitize, estimasi, cache key deterministik);
+paritas rute `tts` di `ZcutDestinationsTest`.

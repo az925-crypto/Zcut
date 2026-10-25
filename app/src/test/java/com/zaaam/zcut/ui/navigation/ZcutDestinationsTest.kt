@@ -77,6 +77,34 @@ class ZcutDestinationsTest {
         assertTrue(ZcutDestinations.get(ZcutRoutes.Text)?.implemented == true)
     }
 
+    @Test
+    fun audioRouteCarriesProjectClipAndPlayhead() {
+        val route = ZcutRoutes.audio("p 1", "c/1", 1_234L)
+
+        assertTrue(route.startsWith("audio?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue(route.contains("clipId=c%2F1"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Audio)?.implemented == true)
+    }
+
+    @Test
+    fun audioRouteOmitsAnEmptyClip() {
+        val route = ZcutRoutes.audio("p1", null, 0L)
+
+        assertTrue(route.startsWith("audio?projectId=p1"))
+        assertTrue(!route.contains("clipId"))
+    }
+
+    @Test
+    fun ttsRouteCarriesProjectAndPlayhead() {
+        val route = ZcutRoutes.tts("p 1", 1_234L)
+
+        assertTrue(route.startsWith("tts?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue(!route.contains("clipId"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Tts)?.implemented == true)
+    }
+
     private companion object {
         private val ID_PATTERN = Regex("""id:'([a-z0-9-]+)'""")
 

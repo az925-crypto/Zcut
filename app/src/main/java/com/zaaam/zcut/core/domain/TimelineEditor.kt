@@ -611,7 +611,7 @@ object TimelineEditor {
      * overlapping. Pushing right is the least surprising "fix clash" behaviour:
      * the dragged clip is the one the user is holding.
      */
-    private fun firstFreeStart(
+    internal fun firstFreeStart(
         clips: List<Clip>,
         desiredStartMs: Long,
         durationMs: Long

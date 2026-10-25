@@ -37,7 +37,7 @@ object TextEditor {
         val safeDuration = durationMs.coerceIn(MIN_DURATION_MS, MAX_DURATION_MS)
         val existing = timeline.tracks.firstOrNull { it.type == TrackType.TEXT }
         val track = existing ?: Track(type = TrackType.TEXT)
-        val start = firstFreeStart(track.clips, atMs.coerceAtLeast(0L), safeDuration)
+        val start = TimelineEditor.firstFreeStart(track.clips, atMs.coerceAtLeast(0L), safeDuration)
         if (start > Long.MAX_VALUE - safeDuration) return timeline
         val clip = Clip(
             id = clipId,
@@ -137,31 +137,4 @@ object TextEditor {
 
     private fun safe(value: Float, fallback: Float): Float =
         if (value.isFinite()) value else fallback
-
-    private fun firstFreeStart(
-        clips: List<Clip>,
-        desiredStartMs: Long,
-        durationMs: Long
-    ): Long {
-        var start = desiredStartMs.coerceAtLeast(0L)
-        repeat(clips.size + 1) {
-            val hit = clips
-                .filter { overlaps(start, durationMs, it) }
-                .minByOrNull { it.startMs }
-                ?: return start
-            start = hit.endMs
-            if (start > Long.MAX_VALUE - durationMs) return Long.MAX_VALUE
-        }
-        return start
-    }
-
-    private fun overlaps(startMs: Long, durationMs: Long, other: Clip): Boolean {
-        if (durationMs <= 0L) return false
-        val endMs = if (startMs > Long.MAX_VALUE - durationMs) {
-            Long.MAX_VALUE
-        } else {
-            startMs + durationMs
-        }
-        return startMs < other.endMs && other.startMs < endMs
-    }
 }
