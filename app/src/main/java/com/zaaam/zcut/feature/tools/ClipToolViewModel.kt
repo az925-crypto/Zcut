@@ -152,7 +152,8 @@ class ClipToolViewModel(
         }
     }
 
-    /** Slider edits: static property, auto-keyed once the property is animated. */    fun setPropertyValue(property: AnimatableProperty, timeMs: Long, value: Float) {
+    /** Slider edits: static property, auto-keyed once the property is animated. */
+    fun setPropertyValue(property: AnimatableProperty, timeMs: Long, value: Float) {
         editClip { clip ->
             KeyframeEditor.setPropertyAndAutoKey(clip, property, value, timeMs)
         }
