@@ -164,7 +164,8 @@ private fun AudioBody(
     onDismissNotice: () -> Unit
 ) {
     val context = LocalContext.current
-    val recorder = remember { LocalAppContainer.current.newVoiceoverRecorder() }
+    val container = LocalAppContainer.current
+    val recorder = remember { container.newVoiceoverRecorder() }
     var recording by remember { mutableStateOf(false) }
     var elapsedMs by remember { mutableLongStateOf(0L) }
     var localNotice by remember { mutableStateOf<String?>(null) }

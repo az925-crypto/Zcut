@@ -144,7 +144,12 @@ class AudioViewModel(
                 }
                 val gain = Loudness.normalizeGain(decoded.samples)
                 val target = (clip.audio.volume * gain).coerceIn(0f, AudioEditor.MAX_VOLUME)
-                if (applyEdit { AudioEditor.setVolume(it, clip.id, target) }) {
+                val stored = applyEdit { project ->
+                    project.copy(
+                        timeline = AudioEditor.setVolume(project.timeline, clip.id, target)
+                    )
+                }
+                if (stored) {
                     showMessage("Volume dinormalisasi ke ≈ ${Loudness.TARGET_DBFS.toInt()} dBFS.")
                 }
             } catch (cancel: CancellationException) {
