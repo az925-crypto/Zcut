@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.domain.KeyframeEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
+import com.zaaam.zcut.core.domain.TransitionSide
 import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.Easing
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
+import com.zaaam.zcut.core.model.TransitionConfig
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -153,6 +155,11 @@ class ClipToolViewModel(
 
     fun setKeyframeEasing(property: AnimatableProperty, timeMs: Long, easing: Easing) {
         editClip { clip -> KeyframeEditor.setEasing(clip, property, timeMs, easing) }
+    }
+
+    fun setTransition(side: TransitionSide, config: TransitionConfig?) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setTransition(it, id, side, config) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

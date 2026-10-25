@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -386,6 +387,13 @@ private fun ClipBox(
                 .padding(horizontal = 5.dp)
         )
 
+        if (clip.transitionIn != null) {
+            TransitionDot(Alignment.TopStart)
+        }
+        if (clip.transitionOut != null) {
+            TransitionDot(Alignment.TopEnd)
+        }
+
         if (selected) {
             TrimHandle(
                 alignment = Alignment.CenterStart,
@@ -423,6 +431,18 @@ private fun ClipBox(
             )
         }
     }
+}
+
+@Composable
+private fun BoxScope.TransitionDot(alignment: Alignment) {
+    Box(
+        modifier = Modifier
+            .align(alignment)
+            .padding(3.dp)
+            .size(7.dp)
+            .rotate(45f)
+            .background(ZcutLime)
+    )
 }
 
 @Composable

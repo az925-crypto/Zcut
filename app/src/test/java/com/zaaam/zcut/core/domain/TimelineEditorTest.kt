@@ -389,6 +389,87 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun transitionOutIsStoredOnLeftClipAndCleared() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip(durationMs = 800L)
+        val second = clip(durationMs = 600L).copy(startMs = 800L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val withTransition = TimelineEditor.setTransition(
+            withClips,
+            first.id,
+            TransitionSide.OUT,
+            TransitionConfig(TransitionType.WHIP, 2_000L)
+        )
+        val stored = withTransition.tracks.first { it.id == videoId }
+            .clips.first { it.id == first.id }
+
+        assertEquals(TransitionType.WHIP, stored.transitionOut?.type)
+        assertEquals(600L, stored.transitionOut?.durationMs)
+
+        val cleared = TimelineEditor.setTransition(
+            withTransition,
+            first.id,
+            TransitionSide.OUT,
+            null
+        )
+        assertNull(
+            cleared.tracks.first { it.id == videoId }
+                .clips.first { it.id == first.id }
+                .transitionOut
+        )
+    }
+
+    @Test
+    fun transitionWithoutNeighbourIsIgnored() {
+        val (timeline, videoId, _) = baseTimeline()
+        val only = clip()
+        val withClip = TimelineEditor.addClip(timeline, videoId, only)
+
+        val result = TimelineEditor.setTransition(
+            withClip,
+            only.id,
+            TransitionSide.OUT,
+            TransitionConfig(TransitionType.FADE, 300L)
+        )
+
+        assertNull(
+            result.tracks.first { it.id == videoId }
+                .clips.single()
+                .transitionOut
+        )
+    }
+
+    @Test
+    fun transitionBelowMinimumIsIgnored() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip(durationMs = 80L)
+        val second = clip(durationMs = 80L).copy(startMs = 80L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val result = TimelineEditor.setTransition(
+            withClips,
+            second.id,
+            TransitionSide.IN,
+            TransitionConfig(TransitionType.DISSOLVE, 500L)
+        )
+
+        assertNull(
+            result.tracks.first { it.id == videoId }
+                .clips.first { it.id == second.id }
+                .transitionIn
+        )
+    }
+
+    @Test
     fun sanitizeShiftsLegacyOverlaps() {
         val corrupt = Timeline(
             tracks = listOf(
