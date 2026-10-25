@@ -35,6 +35,11 @@ object ZcutRoutes {
 
     const val ArgProjectId = "projectId"
     const val ArgClipId = "clipId"
+    const val ArgAtMs = "atMs"
+
+    /** Text is not a clip tool: it can create a clip, so it carries `atMs`. */
+    const val TextPattern = "$Text?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgClipId={$ArgClipId}&$ArgAtMs={$ArgAtMs}"
 
     /**
      * Tool panels whose route pattern already carries `projectId`/`clipId`.
@@ -79,9 +84,16 @@ object ZcutRoutes {
     fun mask(projectId: String, clipId: String?): String =
         toolRoute(Mask, projectId, clipId)
 
+    fun text(projectId: String, clipId: String?, atMs: Long = 0L): String {
+        val base = "$Text?$ArgProjectId=${encode(projectId)}" +
+            "&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+        val clip = clipId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (clip == null) base else "$base&$ArgClipId=$clip"
+    }
+
     /**
      * Tool routes carry the draft and clip as query arguments. Non-tool routes
-     * (Audio, Text, Stickers) are returned unchanged until their milestone adds
+     * (Audio, Stickers) are returned unchanged until their milestone adds
      * a real screen.
      */
     fun toolRoute(route: String, projectId: String, clipId: String?): String {
@@ -137,7 +149,7 @@ object ZcutDestinations {
         ZcutDestination("matting", "Cutout", "F11"),
         ZcutDestination("beauty", "Retouch", "F12"),
         ZcutDestination("stickers", "Sticker", "F13"),
-        ZcutDestination("text", "Teks", "F14"),
+        ZcutDestination("text", "Teks", "F14", implemented = true),
         ZcutDestination("captions", "Caption", "F15"),
         ZcutDestination("audio", "Audio", "F16"),
         ZcutDestination("tts", "Text to speech", "F17"),

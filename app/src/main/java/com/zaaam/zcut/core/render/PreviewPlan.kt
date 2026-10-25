@@ -49,6 +49,17 @@ data class PreviewPlan(
     val hasAudio: Boolean get() = audioItems.isNotEmpty() || videoItems.any { !it.removeAudio }
     val isPlayable: Boolean get() = hasVideo || hasAudio
 
+    /**
+     * True when both plans map to the same Media3 composition. Text/style edits
+     * change the timeline but not the media sequences; the preview engine uses
+     * this to skip a full player rebuild (and its GL pipeline teardown).
+     */
+    fun sameMediaAs(other: PreviewPlan?): Boolean =
+        other != null &&
+            videoItems == other.videoItems &&
+            audioItems == other.audioItems &&
+            frameRate == other.frameRate
+
     /** The visual item on screen at [positionMs], or the next one after a gap. */
     fun nextVisualItem(positionMs: Long): PreviewItem? =
         videoItems.firstOrNull { positionMs < it.timelineStartMs + it.durationMs }

@@ -6,6 +6,7 @@ import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.MediaKind
+import com.zaaam.zcut.core.model.TextStylePreset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -197,5 +198,30 @@ class ProjectCodecTest {
         val decoded = ProjectCodec.decode(raw).projects.single()
 
         assertEquals("/data/files/media/a1.mp4", decoded.assets.single().localPath)
+    }
+
+    @Test
+    fun textConfigWithoutM11FieldsDecodesWithDefaults() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{"id":"p1","timeline":{"tracks":[
+              {"type":"TEXT","clips":[{
+                "type":"TEXT","startMs":0,"durationMs":1000,
+                "text":{"text":"Halo"}
+              }]}
+            ]}}]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+        val text = decoded.timeline.tracks
+            .first { it.type.name == "TEXT" }
+            .clips
+            .single()
+            .text!!
+
+        assertEquals("Halo", text.text)
+        assertEquals(TextStylePreset.NONE, text.stylePreset)
+        assertEquals(0f, text.letterSpacingEm, 0.001f)
+        assertEquals(1.2f, text.lineHeight, 0.001f)
+        assertEquals("sans", text.fontFamily)
     }
 }

@@ -13,6 +13,7 @@ import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
 import com.zaaam.zcut.feature.tools.ClipToolViewModel
+import com.zaaam.zcut.feature.tools.TextViewModel
 
 /**
  * Manual dependency injection, in the same spirit as [AppContainer]: one
@@ -72,6 +73,24 @@ fun clipToolViewModelFactory(
             ClipToolViewModel(
                 projectId = projectId,
                 clipId = clipId,
+                repository = container.projectRepository
+            )
+        }
+    }
+}
+
+/** Text can create a clip, so it carries the optional selected clip too. */
+@Composable
+fun textViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    clipId: String?
+): ViewModelProvider.Factory = remember(container, projectId, clipId) {
+    viewModelFactory {
+        initializer {
+            TextViewModel(
+                projectId = projectId,
+                initialClipId = clipId,
                 repository = container.projectRepository
             )
         }

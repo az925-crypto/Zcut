@@ -231,26 +231,31 @@ fun ToolChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Surface(
         shape = CircleShape,
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surface
+        color = when {
+            !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            selected -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.surface
         },
         border = if (selected) null else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         },
         modifier = modifier
             .clip(CircleShape)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (selected) ZcutOnPrimary else MaterialTheme.colorScheme.onSurface,
+            color = when {
+                !enabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                selected -> ZcutOnPrimary
+                else -> MaterialTheme.colorScheme.onSurface
+            },
             modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp)
         )
     }

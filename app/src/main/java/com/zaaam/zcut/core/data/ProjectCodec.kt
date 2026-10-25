@@ -1,5 +1,6 @@
 package com.zaaam.zcut.core.data
 
+import com.zaaam.zcut.core.domain.TextEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
@@ -88,7 +89,7 @@ object ProjectCodec {
     private fun normalize(project: Project): Project =
         project.copy(
             assets = sanitizeAssets(project.assets),
-            timeline = TimelineEditor.sanitize(project.timeline)
+            timeline = TextEditor.sanitize(TimelineEditor.sanitize(project.timeline))
         )
 
     /**

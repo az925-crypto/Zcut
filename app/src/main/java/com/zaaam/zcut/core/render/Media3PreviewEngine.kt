@@ -70,6 +70,21 @@ class Media3PreviewEngine(
         if (released) return
         // Only media inside the app's private workspace may reach the player.
         val newPlan = PreviewPlanBuilder.build(project, context.filesDir.absolutePath)
+        val previous = plan
+        // Text/style edits change the timeline but not the media sequences.
+        // Rebuilding the player for those would tear down the GL pipeline and
+        // flash black on every keystroke, so only refresh the duration/state.
+        if (compositionPlayer != null && previous != null && previous.sameMediaAs(newPlan)) {
+            plan = newPlan
+            _state.update {
+                it.copy(
+                    durationMs = newPlan.durationMs,
+                    hasVideo = newPlan.hasVideo,
+                    hasAudio = newPlan.hasAudio
+                )
+            }
+            return
+        }
         plan = newPlan
         range = null
         releasePlayer()

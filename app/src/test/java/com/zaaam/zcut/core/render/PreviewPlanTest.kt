@@ -1,5 +1,6 @@
 package com.zaaam.zcut.core.render
 
+import com.zaaam.zcut.core.domain.TextEditor
 import com.zaaam.zcut.core.model.AudioConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
@@ -8,6 +9,7 @@ import com.zaaam.zcut.core.model.MediaKind
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedConfig
 import com.zaaam.zcut.core.model.SpeedPoint
+import com.zaaam.zcut.core.model.TextConfig
 import com.zaaam.zcut.core.model.Timeline
 import com.zaaam.zcut.core.model.Track
 import com.zaaam.zcut.core.model.TrackType
@@ -508,5 +510,42 @@ class PreviewPlanTest {
         assertFalse(plan.hasAudio)
         assertFalse(plan.isPlayable)
         assertEquals(0L, plan.durationMs)
+    }
+
+    @Test
+    fun textEditDoesNotChangeTheMediaComposition() {
+        val video = asset("v1")
+        val base = project(
+            tracks = listOf(
+                Track(
+                    type = TrackType.VIDEO,
+                    clips = listOf(clip("c1", "v1", 0L, 4_000L))
+                )
+            ),
+            assets = listOf(video)
+        )
+        val mediaPlan = buildPlan(base)
+        val withText = base.copy(
+            timeline = TextEditor.addText(
+                base.timeline,
+                TextConfig(text = "Halo"),
+                atMs = 0L
+            )
+        )
+        val textPlan = buildPlan(withText)
+
+        assertTrue(mediaPlan.sameMediaAs(textPlan))
+        assertEquals(mediaPlan.videoItems, textPlan.videoItems)
+        assertEquals(mediaPlan.audioItems, textPlan.audioItems)
+        assertFalse(mediaPlan.sameMediaAs(null))
+    }
+
+    @Test
+    fun frameRateChangeBreaksMediaEquality() {
+        val base = project(tracks = emptyList(), assets = emptyList())
+        val a = buildPlan(base)
+        val b = buildPlan(base.copy(frameRate = 60))
+
+        assertFalse(a.sameMediaAs(b))
     }
 }

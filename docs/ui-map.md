@@ -41,7 +41,7 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `matting` | matting | M14 | ⏳ | placeholder |
 | `beauty` | beauty | M15 | ⏳ | placeholder |
 | `stickers` | stickers | M16 | ⏳ | placeholder |
-| `text` | text | M11 | ⏳ | placeholder |
+| `text` | text | M11 | ✅ | `feature/tools/TextScreen` |
 | `captions` | captions | M17 | ⏳ | placeholder |
 | `audio` | audio | M12 | ⏳ | placeholder |
 | `tts` | tts | M12 | ⏳ | placeholder |
@@ -86,6 +86,7 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 Spesifikasi desain M0 ada di [`ui-m0-design.md`](ui-m0-design.md).
 Spesifikasi desain M2 ada di [`ui-m2-design.md`](ui-m2-design.md).
 Spesifikasi desain M3 ada di [`ui-m3-design.md`](ui-m3-design.md).
+Spesifikasi desain M11 ada di [`ui-m11-design.md`](ui-m11-design.md).
 
 ## Preview (M3)
 

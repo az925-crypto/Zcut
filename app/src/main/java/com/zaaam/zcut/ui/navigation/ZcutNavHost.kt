@@ -31,6 +31,7 @@ import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
 import com.zaaam.zcut.feature.tools.MaskScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
+import com.zaaam.zcut.feature.tools.TextScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
 import com.zaaam.zcut.ui.LocalAppContainer
@@ -256,6 +257,29 @@ fun ZcutNavHost(
                 MaskScreen(
                     projectId = projectId,
                     clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.TextPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgClipId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument(ZcutRoutes.ArgAtMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    }
+                )
+            ) { entry ->
+                TextScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
+                    atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }
                 )
             }

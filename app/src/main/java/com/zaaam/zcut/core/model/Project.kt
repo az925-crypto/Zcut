@@ -26,6 +26,18 @@ data class Project(
     }
 }
 
+/** Cover material used by the editor and tool previews. */
+fun Project.coverAsset(): MediaAsset? {
+    val byId = assets.associateBy { it.id }
+    coverAssetId?.let { byId[it] }?.let { return it }
+    return timeline.tracks
+        .asSequence()
+        .flatMap { it.clips.asSequence() }
+        .sortedBy { it.startMs }
+        .mapNotNull { clip -> clip.assetId?.let(byId::get) }
+        .firstOrNull { it.isVisual }
+}
+
 @Serializable
 data class ProjectSettings(
     val exportPreset: ExportPreset = ExportPreset(),

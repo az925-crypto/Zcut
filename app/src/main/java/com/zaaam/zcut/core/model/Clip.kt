@@ -219,6 +219,25 @@ enum class TextAnimation {
     GLITCH
 }
 
+/** Single-select visual style from the ACC'd text mockup. */
+@Serializable
+enum class TextStylePreset {
+    NONE,
+    BOLD,
+    OUTLINE,
+    SHADOW,
+    NEON,
+    GRADIENT
+}
+
+/**
+ * Text layer stored on a [ClipType.TEXT] clip.
+ *
+ * `fontSizeSp` keeps its historical name but is a design-point value scaled
+ * against a 260 dp reference frame (see `TextLayout`), so the same draft looks
+ * identical in the editor preview and the export. All M11 fields are additive
+ * with defaults: drafts written before M11 decode unchanged.
+ */
 @Serializable
 data class TextConfig(
     val text: String,
@@ -230,7 +249,12 @@ data class TextConfig(
     val strokeColorArgb: Long = 0xFF000000,
     val shadow: Boolean = false,
     val backgroundColorArgb: Long? = null,
-    val animation: TextAnimation = TextAnimation.NONE
+    val animation: TextAnimation = TextAnimation.NONE,
+    val stylePreset: TextStylePreset = TextStylePreset.NONE,
+    val gradientColorArgb: Long? = null,
+    /** Letter spacing in em (fraction of the font size). */
+    val letterSpacingEm: Float = 0f,
+    val lineHeight: Float = 1.2f
 )
 
 @Serializable

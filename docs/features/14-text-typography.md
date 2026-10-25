@@ -111,3 +111,33 @@ fun wordProgress(index: Int, count: Int, elapsed: Float): Float {
 
 - Format `textStyle*.txt` dan text template package tidak terbaca penuh.
 - Jumlah dan lisensi font bundled; jangan salin font ke produk tanpa lisensi.
+
+## Status implementasi Zcut (M11)
+
+Yang sudah berjalan di Android:
+
+| Bagian | Implementasi |
+|---|---|
+| Model | `TextConfig` + `TextStylePreset` di `core/model/Clip.kt` (aditif, schema tetap 1) |
+| Operasi timeline | `core/domain/TextEditor.kt` — add/set/remove/sanitize/activeAt/label |
+| Animasi | `core/domain/TextAnimator.kt` — RISE, TYPEWRITER, POP, GLITCH (murni, deterministik) |
+| Gaya | `core/domain/TextStyle.kt` — resolver preset, alias font sistem, kontrak ukuran 260 dp |
+| Render | `ui/components/ZcutText.kt` — fill/stroke/shadow/gradient/background + transform animasi |
+| Overlay editor | `feature/editor/TextOverlay.kt` — mengikuti playhead + keyframe opacity/posisi/skala/rotasi |
+| Layar tool | `feature/tools/TextScreen.kt` + `TextViewModel.kt`, rute `text?projectId=&clipId=&atMs=` |
+| Timeline | Klip teks memakai baris pertama sebagai label |
+
+Batas yang disengaja (bukan paywall):
+
+- **Burn-in teks ke MP4 baru M13.** Preview Media3 tidak menggambar teks;
+  overlay teks adalah Compose. UI menyebutkan ini.
+- **Import font perangkat ditunda**; hanya font sistem Android. Tidak ada font
+  atau aset CapCut yang disalin.
+- **Template teks multi-layer** dan **AI font** belum ada. AI font ditandai
+  **BUTUH BACKEND** karena butuh model generatif.
+- **Satu track `TEXT`**; teks baru yang bentrok waktu digeser ke slot bebas.
+- Rich text per-range, curve text, handwrite, lyric effect tetap backlog P1/P2.
+
+Unit test: `TextEditorTest`, `TextAnimatorTest`, `TextStyleTest`, plus perluasan
+`ProjectCodecTest` (decode draft pra-M11) dan `PreviewPlanTest` (edit teks tidak
+mengubah komposisi media).

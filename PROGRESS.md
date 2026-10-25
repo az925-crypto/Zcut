@@ -5,12 +5,12 @@
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
-  Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M10 selesai; batch M4–M10
-  sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`)
-  dan fix-nya ter-commit.** Lanjut batch M11–M15.
-- **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
-  Temuan Medium/Low batch M4–M10 yang relevan sudah diperbaiki di commit
+  Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M11 selesai; batch M4–M10
+  sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
+  Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
+- **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
+  untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
 
 ## Mockup Stage 2
@@ -29,9 +29,9 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M10 selesai, review gate batch hijau · lanjut M11–M15 |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M11 selesai · batch M11–M15 berjalan |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
-| 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
+| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
 
 ## Tahap 3 — Milestone
 
@@ -50,7 +50,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M8 | Filter & color | F08 | filters, adjust | ✅ `b732ba1` |
 | M9 | Efek | F09 | effects | ✅ `f36af6f` |
 | M10 | Mask & chroma | F10 | mask | ✅ `5d735a9` `b7192a6` |
-| M11 | Teks & tipografi | F14 | text | [ ] |
+| M11 | Teks & tipografi | F14 | text | ✅ |
 | M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | [ ] |
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | [ ] |
 | M14 | Matting/cutout (ML Kit) | F11 | matting | [ ] |
@@ -277,12 +277,13 @@ Spek: [`docs/features/13-sticker-tracking.md`](docs/features/13-sticker-tracking
 Spek: [`docs/features/14-text-typography.md`](docs/features/14-text-typography.md)
 
 - [x] Spek
-- [ ] Text basic: font/color/stroke/shadow
-- [ ] Style + animation
-- [ ] Rich text + multiline
-- [ ] Text template
-- [ ] AI font
-- [ ] Unit test layout text
+- [x] Text basic: font/color/stroke/shadow (M11)
+- [x] Style + animation preview (M11; burn-in export di M13)
+- [x] Multiline + alignment + spacing + line height (M11)
+- [ ] Rich text per-range (P1)
+- [ ] Text template multi-layer (deferred)
+- [!] AI font (BUTUH BACKEND)
+- [x] Unit test layout text (M11: `TextEditor`, `TextAnimator`, `TextStyle`)
 
 ## F15 — Captions & Transcript
 
@@ -873,6 +874,34 @@ di main thread (refactor besar, pre-existing M3), mutex lintas-ViewModel
 
 Test baru/update di `TimelineEditorTest`: split seam sampel, retime rescale
 keyframe, ripple-delete/duplicate repair transisi, sanitize overflow drop.
+
+### Catatan M11 — teks & tipografi (2026-10-25)
+
+Lingkup yang selesai:
+
+- `ClipType.TEXT` pada track `TEXT` tunggal; tambah/edit/hapus lewat
+  `TextEditor` (push-right ke slot bebas bila benturan).
+- `TextConfig` diperluas aditif: `stylePreset`, `gradientColorArgb`,
+  `letterSpacingEm`, `lineHeight` (draft lama decode dengan default).
+- Editor overlay Compose mengikuti playhead + keyframe opacity/posisi/skala/
+  rotasi; timeline memakai baris pertama teks sebagai label.
+- Animasi `RISE`/`TYPEWRITER`/`POP`/`GLITCH` dihitung fungsi murni
+  `TextAnimator`, dipakai preview editor dan preview tool.
+- Kontrak ukuran `TextLayout.REFERENCE_FRAME_HEIGHT_DP = 260f`; M13 wajib
+  memakai konstanta yang sama saat burn-in.
+- `PreviewPlan.sameMediaAs` + guard di `Media3PreviewEngine.prepare` mencegah
+  rebuild player Media3 saat teks/gaya berubah.
+
+Batasan yang diakui di UI dan docs:
+
+- Burn-in teks ke MP4 baru M13; preview Media3 tidak menggambar teks.
+- Import font dari perangkat (SAF) ditunda; hanya font sistem.
+- Template multi-layer dan AI font ditandai deferred / **BUTUH BACKEND**.
+- Satu track `TEXT`; teks yang bentrok waktu digeser, tidak ditumpuk.
+- Rich text per-range, curve text, dan handwrite tetap P1/P2.
+
+`docs/ui-m11-design.md` ditulis manual karena subagent `design` gagal
+(model unavailable); kegagalan dicatat di `DECISIONS.md`.
 
 ## Ringkasan akhir
 

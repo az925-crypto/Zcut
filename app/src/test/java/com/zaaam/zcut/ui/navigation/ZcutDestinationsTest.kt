@@ -67,6 +67,16 @@ class ZcutDestinationsTest {
         ))
     }
 
+    @Test
+    fun textRouteCarriesProjectClipAndPlayhead() {
+        val route = ZcutRoutes.text("p 1", "c/1", 1_234L)
+
+        assertTrue(route.startsWith("text?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue(route.contains("clipId=c%2F1"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Text)?.implemented == true)
+    }
+
     private companion object {
         private val ID_PATTERN = Regex("""id:'([a-z0-9-]+)'""")
 

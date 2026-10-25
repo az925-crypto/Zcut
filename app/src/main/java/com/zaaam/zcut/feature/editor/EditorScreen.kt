@@ -51,9 +51,10 @@ import androidx.media3.common.Player
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.zaaam.zcut.core.domain.ExportDimensions
+import com.zaaam.zcut.core.domain.TextEditor
 import com.zaaam.zcut.core.media.MediaThumbnails
-import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
+import com.zaaam.zcut.core.model.coverAsset
 import com.zaaam.zcut.core.render.PreviewState
 import com.zaaam.zcut.core.util.TimeFormat
 import com.zaaam.zcut.feature.media.rememberThumbnail
@@ -263,7 +264,12 @@ private fun EditorBody(
     onTrimClip: (String, Long, Long) -> Unit
 ) {
     val openTool: (String) -> Unit = { route ->
-        onNavigate(ZcutRoutes.toolRoute(route, project.id, selectedClipId))
+        val target = if (route == ZcutRoutes.Text) {
+            ZcutRoutes.text(project.id, selectedClipId, playhead.value)
+        } else {
+            ZcutRoutes.toolRoute(route, project.id, selectedClipId)
+        }
+        onNavigate(target)
     }
     BoxWithConstraints(modifier = modifier) {
         // The mockup caps the preview at 42% of the body; the rest belongs to
@@ -355,6 +361,7 @@ private fun PreviewPanel(
         if (cover == null) null else thumbnails.load(cover, 720)
     }
     val hasContent = project.timeline.tracks.any { it.clips.isNotEmpty() }
+    val hasText = TextEditor.hasText(project.timeline)
     val showPlayer = preview.hasVideo && player != null
 
     BoxWithConstraints(
@@ -397,7 +404,7 @@ private fun PreviewPanel(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
-                } else if (!isEmpty) {
+                } else if (!isEmpty && !hasText) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -450,6 +457,14 @@ private fun PreviewPanel(
                     }
                 }
             }
+
+            // Text is composited here, not by Media3; the overlay follows the
+            // playhead so scrub and playback show the same animation.
+            TextOverlayLayer(
+                project = project,
+                playhead = playhead,
+                modifier = Modifier.fillMaxSize()
+            )
 
             // Scrim keeps the timestamp readable over any frame.
             Box(
@@ -659,17 +674,6 @@ private fun FooterChip(
 private fun projectMeta(project: Project): String {
     val (width, height) = ExportDimensions.forProject(project)
     return "$width × $height · ${project.frameRate} fps · ${TimeFormat.clock(project.timeline.durationMs)}"
-}
-
-private fun coverAsset(project: Project): MediaAsset? {
-    val byId = project.assets.associateBy { it.id }
-    project.coverAssetId?.let { byId[it] }?.let { return it }
-    return project.timeline.tracks
-        .asSequence()
-        .flatMap { it.clips.asSequence() }
-        .sortedBy { it.startMs }
-        .mapNotNull { clip -> clip.assetId?.let(byId::get) }
-        .firstOrNull { it.isVisual }
 }
 
 private data class EditorTool(val label: String, val route: String)

@@ -499,7 +499,12 @@ private fun AudioBars(seed: String) {
 }
 
 private fun clipLabel(clip: Clip, asset: MediaAsset?): String =
-    asset?.displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }
+    clip.text?.text
+        ?.lineSequence()
+        ?.map { it.trim() }
+        ?.firstOrNull { it.isNotEmpty() }
+        ?.take(40)
+        ?: asset?.displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }
         ?: if (clip.assetId != null) {
             "Media hilang"
         } else {
