@@ -12,6 +12,7 @@ import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
+import com.zaaam.zcut.feature.tools.ClipToolViewModel
 
 /**
  * Manual dependency injection, in the same spirit as [AppContainer]: one
@@ -54,6 +55,24 @@ fun editorViewModelFactory(
                 projectId = projectId,
                 repository = container.projectRepository,
                 previewEngine = container.newPreviewEngine()
+            )
+        }
+    }
+}
+
+/** Clip tool panels share one ViewModel; the key includes the route and clip. */
+@Composable
+fun clipToolViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    clipId: String?
+): ViewModelProvider.Factory = remember(container, projectId, clipId) {
+    viewModelFactory {
+        initializer {
+            ClipToolViewModel(
+                projectId = projectId,
+                clipId = clipId,
+                repository = container.projectRepository
             )
         }
     }

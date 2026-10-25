@@ -116,8 +116,14 @@ fun EditorScreen(
         onAddMedia = onAddMedia,
         onSeek = viewModel::seekTo,
         onSelectClip = viewModel::selectClip,
+        onSelectClipOnly = viewModel::selectClipOnly,
         onTogglePlay = viewModel::togglePlayback,
-        onToggleMute = viewModel::toggleMute
+        onToggleMute = viewModel::toggleMute,
+        onSplit = viewModel::splitAtPlayhead,
+        onDelete = { viewModel.deleteSelected(ripple = false) },
+        onDuplicate = viewModel::duplicateSelected,
+        onMoveClip = viewModel::moveClip,
+        onTrimClip = viewModel::trimClip
     )
 }
 
@@ -133,8 +139,14 @@ private fun EditorContent(
     onAddMedia: () -> Unit,
     onSeek: (Long) -> Unit,
     onSelectClip: (String?) -> Unit,
+    onSelectClipOnly: (String) -> Unit,
     onTogglePlay: () -> Unit,
-    onToggleMute: () -> Unit
+    onToggleMute: () -> Unit,
+    onSplit: () -> Unit,
+    onDelete: () -> Unit,
+    onDuplicate: () -> Unit,
+    onMoveClip: (String, String, Long) -> Unit,
+    onTrimClip: (String, Long, Long) -> Unit
 ) {
     val project = state.project
 
@@ -214,8 +226,14 @@ private fun EditorContent(
                 onAddMedia = onAddMedia,
                 onSeek = onSeek,
                 onSelectClip = { clipId -> onSelectClip(clipId) },
+                onSelectClipOnly = onSelectClipOnly,
                 onTogglePlay = onTogglePlay,
-                onToggleMute = onToggleMute
+                onToggleMute = onToggleMute,
+                onSplit = onSplit,
+                onDelete = onDelete,
+                onDuplicate = onDuplicate,
+                onMoveClip = onMoveClip,
+                onTrimClip = onTrimClip
             )
         }
     }
@@ -235,9 +253,18 @@ private fun EditorBody(
     onAddMedia: () -> Unit,
     onSeek: (Long) -> Unit,
     onSelectClip: (String) -> Unit,
+    onSelectClipOnly: (String) -> Unit,
     onTogglePlay: () -> Unit,
-    onToggleMute: () -> Unit
+    onToggleMute: () -> Unit,
+    onSplit: () -> Unit,
+    onDelete: () -> Unit,
+    onDuplicate: () -> Unit,
+    onMoveClip: (String, String, Long) -> Unit,
+    onTrimClip: (String, Long, Long) -> Unit
 ) {
+    val openTool: (String) -> Unit = { route ->
+        onNavigate(ZcutRoutes.toolRoute(route, project.id, selectedClipId))
+    }
     BoxWithConstraints(modifier = modifier) {
         // The mockup caps the preview at 42% of the body; the rest belongs to
         // the timeline. On a short screen the whole column scrolls instead of
@@ -271,7 +298,7 @@ private fun EditorBody(
                     .padding(horizontal = ZcutSpacing.screen, vertical = ZcutSpacing.sm)
             )
 
-            ToolStrip(onNavigate = onNavigate)
+            ToolStrip(onOpenTool = openTool)
 
             TimelineCanvas(
                 project = project,
@@ -279,6 +306,9 @@ private fun EditorBody(
                 selectedClipId = selectedClipId,
                 onSeek = onSeek,
                 onSelectClip = onSelectClip,
+                onSelectClipOnly = onSelectClipOnly,
+                onMoveClip = onMoveClip,
+                onTrimClip = onTrimClip,
                 thumbnails = thumbnails,
                 modifier = Modifier.padding(top = ZcutSpacing.sm)
             )
@@ -289,7 +319,14 @@ private fun EditorBody(
                 Spacer(Modifier.weight(1f))
             }
 
-            TimelineFooter(onNavigate = onNavigate, onAddMedia = onAddMedia)
+            TimelineFooter(
+                selectedClipId = selectedClipId,
+                onOpenTool = openTool,
+                onAddMedia = onAddMedia,
+                onSplit = onSplit,
+                onDelete = onDelete,
+                onDuplicate = onDuplicate
+            )
         }
     }
 }
@@ -536,7 +573,7 @@ private fun PreviewClock(playhead: StateFlow<Long>) {
 }
 
 @Composable
-private fun ToolStrip(onNavigate: (String) -> Unit) {
+private fun ToolStrip(onOpenTool: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -551,7 +588,7 @@ private fun ToolStrip(onNavigate: (String) -> Unit) {
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { onNavigate(tool.route) }
+                    .clickable { onOpenTool(tool.route) }
             ) {
                 Text(
                     text = tool.label,
@@ -565,7 +602,14 @@ private fun ToolStrip(onNavigate: (String) -> Unit) {
 }
 
 @Composable
-private fun TimelineFooter(onNavigate: (String) -> Unit, onAddMedia: () -> Unit) {
+private fun TimelineFooter(
+    selectedClipId: String?,
+    onOpenTool: (String) -> Unit,
+    onAddMedia: () -> Unit,
+    onSplit: () -> Unit,
+    onDelete: () -> Unit,
+    onDuplicate: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -574,9 +618,14 @@ private fun TimelineFooter(onNavigate: (String) -> Unit, onAddMedia: () -> Unit)
         horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
     ) {
         FooterChip(label = "+ Media", primary = true, onClick = onAddMedia)
-        FooterChip(label = "Trim", onClick = { onNavigate(ZcutRoutes.Trim) })
-        FooterChip(label = "Speed", onClick = { onNavigate(ZcutRoutes.Speed) })
-        FooterChip(label = "Volume", onClick = { onNavigate(ZcutRoutes.Audio) })
+        if (selectedClipId != null) {
+            FooterChip(label = "Split", onClick = onSplit)
+            FooterChip(label = "Duplicate", onClick = onDuplicate)
+            FooterChip(label = "Hapus", onClick = onDelete)
+        }
+        FooterChip(label = "Trim", onClick = { onOpenTool(ZcutRoutes.Trim) })
+        FooterChip(label = "Speed", onClick = { onOpenTool(ZcutRoutes.Speed) })
+        FooterChip(label = "Volume", onClick = onOpenTool(ZcutRoutes.Audio))
     }
 }
 
@@ -633,5 +682,7 @@ private val EditorTools = listOf(
     EditorTool("Efek", ZcutRoutes.Effects),
     EditorTool("Filter", ZcutRoutes.Filters),
     EditorTool("Adjust", ZcutRoutes.Adjust),
-    EditorTool("Mask", ZcutRoutes.Mask)
+    EditorTool("Mask", ZcutRoutes.Mask),
+    EditorTool("Keyframe", ZcutRoutes.Keyframe),
+    EditorTool("Transisi", ZcutRoutes.Transition)
 )

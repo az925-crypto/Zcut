@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.zaaam.zcut.core.data.ProjectRepository
+import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.Timeline
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * The editor observes the draft instead of holding a private copy, so media
@@ -30,12 +33,15 @@ import kotlinx.coroutines.launch
  */
 class EditorViewModel(
     private val projectId: String,
-    repository: ProjectRepository,
+    private val repository: ProjectRepository,
     private val previewEngine: PreviewEngine
 ) : ViewModel() {
 
     private val selectedClipId = MutableStateFlow<String?>(null)
     private val playheadMs = MutableStateFlow(0L)
+
+    /** Serialises read-modify-write edits so two fast gestures cannot drop one. */
+    private val editMutex = Mutex()
 
     val playhead: StateFlow<Long> = playheadMs.asStateFlow()
     val previewState: StateFlow<PreviewState> = previewEngine.state
@@ -135,6 +141,10 @@ class EditorViewModel(
         selectedClipId.value = if (selectedClipId.value == clipId) null else clipId
     }
 
+    fun selectClipOnly(clipId: String) {
+        selectedClipId.value = clipId
+    }
+
     fun seekTo(positionMs: Long) {
         val target = PreviewSeek.clamp(positionMs, uiState.value.durationMs)
         playheadMs.value = target
@@ -160,5 +170,71 @@ class EditorViewModel(
 
     fun toggleMute() {
         previewEngine.setMuted(!previewEngine.state.value.isMuted)
+    }
+
+    // ---- M4 timeline commands ------------------------------------------------
+
+    fun splitAtPlayhead() {
+        val atMs = playheadMs.value
+        editTimeline { timeline ->
+            val selected = uiState.value.selectedClipId
+            if (selected != null) {
+                TimelineEditor.splitClip(timeline, selected, atMs)
+            } else {
+                // No selection: split every clip crossing the playhead, which is
+                // the least destructive interpretation of the footer button.
+                timeline.tracks
+                    .flatMap { track -> track.clips }
+                    .filter { atMs > it.startMs && atMs < it.endMs }
+                    .fold(timeline) { current, clip ->
+                        TimelineEditor.splitClip(current, clip.id, atMs)
+                    }
+            }
+        }
+    }
+
+    fun deleteSelected(ripple: Boolean = false) {
+        val clipId = uiState.value.selectedClipId ?: return
+        editTimeline { timeline -> TimelineEditor.deleteClip(timeline, clipId, ripple) }
+    }
+
+    fun duplicateSelected() {
+        val clipId = uiState.value.selectedClipId ?: return
+        editTimeline { timeline -> TimelineEditor.duplicateClip(timeline, clipId) }
+    }
+
+    fun moveClip(clipId: String, targetTrackId: String, newStartMs: Long) {
+        editTimeline { timeline ->
+            val snapped = TimelineEditor.snapPosition(
+                newStartMs,
+                TimelineEditor.snapCandidates(timeline, clipId)
+            )
+            TimelineEditor.moveClip(timeline, clipId, targetTrackId, snapped)
+        }
+    }
+
+    fun trimClip(clipId: String, newStartMs: Long, newEndMs: Long) {
+        editTimeline { timeline ->
+            val candidates = TimelineEditor.snapCandidates(timeline, clipId)
+            val start = TimelineEditor.snapPosition(newStartMs, candidates)
+            val end = TimelineEditor.snapPosition(newEndMs, candidates)
+            TimelineEditor.trimClip(timeline, clipId, start, end)
+        }
+    }
+
+    private fun editTimeline(transform: (Timeline) -> Timeline) {
+        viewModelScope.launch {
+            editMutex.withLock {
+                val project = repository.get(projectId) ?: return@withLock
+                val updated = transform(project.timeline)
+                if (updated == project.timeline) return@withLock
+                runCatching {
+                    repository.upsert(project.copy(timeline = updated))
+                }
+                // The preview rebuild is driven by the repository flow, but the
+                // local playhead must not point past a now-shorter timeline.
+                playheadMs.value = PreviewSeek.clamp(playheadMs.value, updated.durationMs)
+            }
+        }
     }
 }

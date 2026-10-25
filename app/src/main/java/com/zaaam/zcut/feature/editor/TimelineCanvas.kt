@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,7 +38,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.model.Clip
@@ -55,6 +62,7 @@ import com.zaaam.zcut.ui.theme.ZcutGreen
 import com.zaaam.zcut.ui.theme.ZcutLime
 import com.zaaam.zcut.ui.theme.ZcutOnPrimary
 import com.zaaam.zcut.ui.theme.ZcutViolet
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -69,6 +77,9 @@ fun TimelineCanvas(
     selectedClipId: String?,
     onSeek: (Long) -> Unit,
     onSelectClip: (String) -> Unit,
+    onSelectClipOnly: (String) -> Unit,
+    onMoveClip: (String, String, Long) -> Unit,
+    onTrimClip: (String, Long, Long) -> Unit,
     thumbnails: MediaThumbnails,
     modifier: Modifier = Modifier
 ) {
@@ -117,14 +128,19 @@ fun TimelineCanvas(
                             contentWidth = contentWidth,
                             onSeek = onSeek
                         )
-                        tracks.forEach { track ->
+                        tracks.forEachIndexed { index, track ->
                             TrackLane(
                                 track = track,
+                                tracks = tracks,
+                                trackIndex = index,
                                 project = project,
                                 contentWidth = contentWidth,
                                 selectedClipId = selectedClipId,
                                 onSeek = onSeek,
                                 onSelectClip = onSelectClip,
+                                onSelectClipOnly = onSelectClipOnly,
+                                onMoveClip = onMoveClip,
+                                onTrimClip = onTrimClip,
                                 thumbnails = thumbnails
                             )
                             Spacer(Modifier.height(EditorTimeline.LANE_GAP_DP.dp))
@@ -221,11 +237,16 @@ private fun TimelineRuler(
 @Composable
 private fun TrackLane(
     track: Track,
+    tracks: List<Track>,
+    trackIndex: Int,
     project: Project,
     contentWidth: Dp,
     selectedClipId: String?,
     onSeek: (Long) -> Unit,
     onSelectClip: (String) -> Unit,
+    onSelectClipOnly: (String) -> Unit,
+    onMoveClip: (String, String, Long) -> Unit,
+    onTrimClip: (String, Long, Long) -> Unit,
     thumbnails: MediaThumbnails
 ) {
     Box(
@@ -247,8 +268,14 @@ private fun TrackLane(
             ClipBox(
                 clip = clip,
                 asset = asset,
+                track = track,
+                tracks = tracks,
+                trackIndex = trackIndex,
                 selected = clip.id == selectedClipId,
                 onClick = { onSelectClip(clip.id) },
+                onEnsureSelected = { onSelectClipOnly(clip.id) },
+                onMove = onMoveClip,
+                onTrim = onTrimClip,
                 thumbnails = thumbnails
             )
         }
@@ -259,8 +286,14 @@ private fun TrackLane(
 private fun ClipBox(
     clip: Clip,
     asset: MediaAsset?,
+    track: Track,
+    tracks: List<Track>,
+    trackIndex: Int,
     selected: Boolean,
     onClick: () -> Unit,
+    onEnsureSelected: () -> Unit,
+    onMove: (String, String, Long) -> Unit,
+    onTrim: (String, Long, Long) -> Unit,
     thumbnails: MediaThumbnails
 ) {
     val shape = RoundedCornerShape(6.dp)
@@ -268,11 +301,24 @@ private fun ClipBox(
     val thumbnail by rememberThumbnail(key = asset?.id) {
         if (asset == null) null else thumbnails.load(asset, 160)
     }
+    val density = LocalDensity.current
+    var dragXPx by remember(clip.id) { mutableFloatStateOf(0f) }
+    var dragYPx by remember(clip.id) { mutableFloatStateOf(0f) }
+    var trimLeftPx by remember(clip.id) { mutableFloatStateOf(0f) }
+    var trimRightPx by remember(clip.id) { mutableFloatStateOf(0f) }
+    val dragDp = with(density) { dragXPx.toDp().value }
+    val trimLeftDp = with(density) { trimLeftPx.toDp().value }
+    val trimRightDp = with(density) { trimRightPx.toDp().value }
+    val baseWidthDp = EditorTimeline.widthDp(clip.durationMs)
+    val widthDp = maxOf(EditorTimeline.MIN_CLIP_WIDTH_DP, baseWidthDp - trimLeftDp + trimRightDp)
+    val laneHeightPx = with(density) { EditorTimeline.LANE_HEIGHT_DP.dp.toPx() }
 
     Box(
         modifier = Modifier
-            .offset(x = EditorTimeline.offsetDp(clip.startMs).dp)
-            .width(EditorTimeline.widthDp(clip.durationMs).dp)
+            .offset(
+                x = (EditorTimeline.offsetDp(clip.startMs) + dragDp + trimLeftDp).dp
+            )
+            .width(widthDp.dp)
             .fillMaxHeight()
             .padding(vertical = 2.dp)
             .clip(shape)
@@ -283,6 +329,35 @@ private fun ClipBox(
                 shape = shape
             )
             .clickable(onClick = onClick)
+            .pointerInput(clip.id, clip.startMs, clip.durationMs, tracks.size) {
+                detectDragGestures(
+                    onDragStart = { onEnsureSelected() },
+                    onDragEnd = {
+                        val deltaMs = EditorTimeline.msAt(dragXPx.toDp().value)
+                        val laneDelta = (dragYPx / laneHeightPx).roundToInt()
+                        val targetIndex = (trackIndex + laneDelta)
+                            .coerceIn(0, tracks.lastIndex.coerceAtLeast(0))
+                        val targetTrack = tracks.getOrNull(targetIndex) ?: track
+                        if (deltaMs != 0L || targetTrack.id != track.id) {
+                            onMove(
+                                clip.id,
+                                targetTrack.id,
+                                (clip.startMs + deltaMs).coerceAtLeast(0L)
+                            )
+                        }
+                        dragXPx = 0f
+                        dragYPx = 0f
+                    },
+                    onDragCancel = {
+                        dragXPx = 0f
+                        dragYPx = 0f
+                    }
+                ) { change, amount ->
+                    change.consume()
+                    dragXPx += amount.x
+                    dragYPx += amount.y
+                }
+            }
     ) {
         if (thumbnail != null) {
             Image(
@@ -310,7 +385,69 @@ private fun ClipBox(
                 .align(Alignment.CenterStart)
                 .padding(horizontal = 5.dp)
         )
+
+        if (selected) {
+            TrimHandle(
+                alignment = Alignment.CenterStart,
+                onDrag = { deltaPx ->
+                    val maxPx = with(density) {
+                        maxOf(1f, widthDp - 14f).dp.toPx()
+                    }
+                    trimLeftPx = (trimLeftPx + deltaPx).coerceIn(0f, maxPx)
+                },
+                onCommit = {
+                    val deltaMs = EditorTimeline.msAt(
+                        with(density) { trimLeftPx.toDp().value }
+                    )
+                    onTrim(clip.id, clip.startMs + deltaMs, clip.endMs)
+                    trimLeftPx = 0f
+                },
+                onCancel = { trimLeftPx = 0f }
+            )
+            TrimHandle(
+                alignment = Alignment.CenterEnd,
+                onDrag = { deltaPx ->
+                    val maxPx = with(density) {
+                        maxOf(1f, widthDp - 14f).dp.toPx()
+                    }
+                    trimRightPx = (trimRightPx + deltaPx).coerceIn(-maxPx, maxPx)
+                },
+                onCommit = {
+                    val deltaMs = EditorTimeline.msAt(
+                        with(density) { trimRightPx.toDp().value }
+                    )
+                    onTrim(clip.id, clip.startMs, clip.endMs + deltaMs)
+                    trimRightPx = 0f
+                },
+                onCancel = { trimRightPx = 0f }
+            )
+        }
     }
+}
+
+@Composable
+private fun BoxScope.TrimHandle(
+    alignment: Alignment,
+    onDrag: (Float) -> Unit,
+    onCommit: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .align(alignment)
+            .width(14.dp)
+            .fillMaxHeight()
+            .background(ZcutLime.copy(alpha = 0.42f))
+            .pointerInput(alignment) {
+                detectDragGestures(
+                    onDragEnd = { onCommit() },
+                    onDragCancel = { onCancel() }
+                ) { change, amount ->
+                    change.consume()
+                    onDrag(amount.x)
+                }
+            }
+    )
 }
 
 @Composable

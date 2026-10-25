@@ -24,6 +24,7 @@ import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
+import com.zaaam.zcut.feature.tools.TrimScreen
 import com.zaaam.zcut.ui.LocalAppContainer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -181,6 +182,24 @@ fun ZcutNavHost(
                             navController.navigate(ZcutRoutes.editor(id))
                         }
                     }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.clipToolPattern(ZcutRoutes.Trim),
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgClipId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                TrimScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
+                    onBack = { navController.popBackStack() }
                 )
             }
 

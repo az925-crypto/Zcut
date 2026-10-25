@@ -225,6 +225,207 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun trimClampsRightEdgeToNeighbour() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withFirst = TimelineEditor.addClip(timeline, videoId, first)
+        val withBoth = TimelineEditor.addClip(withFirst, videoId, second)
+
+        val trimmed = TimelineEditor.trimClip(withBoth, first.id, 0L, 1_500L)
+        val result = trimmed.tracks.first { it.id == videoId }.clips.first { it.id == first.id }
+
+        assertEquals(1_000L, result.durationMs)
+        assertEquals(1_000L, result.endMs)
+    }
+
+    @Test
+    fun trimClampsRightEdgeToSourceDuration() {
+        val (timeline, videoId, _) = baseTimeline()
+        val source = clip().copy(sourceDurationMs = 500L)
+        val withClip = TimelineEditor.addClip(timeline, videoId, source)
+
+        val trimmed = TimelineEditor.trimClip(withClip, source.id, 0L, 900L)
+        val result = trimmed.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(500L, result.durationMs)
+        assertEquals(500L, result.sourceDurationMs)
+    }
+
+    @Test
+    fun rippleDeleteClosesGapAndKeepsLaterClipsContiguous() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val third = clip().copy(startMs = 2_000L)
+        val withClips = listOf(first, second, third).fold(timeline) { current, item ->
+            TimelineEditor.addClip(current, videoId, item)
+        }
+
+        val deleted = TimelineEditor.rippleDelete(withClips, second.id)
+        val clips = deleted.tracks.first { it.id == videoId }.clips
+
+        assertEquals(listOf(0L, 1_000L), clips.map { it.startMs })
+        assertEquals(2_000L, deleted.durationMs)
+    }
+
+    @Test
+    fun deleteWithoutRippleLeavesGap() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val deleted = TimelineEditor.deleteClip(withClips, first.id, ripple = false)
+        val remaining = deleted.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(1_000L, remaining.startMs)
+        assertEquals(2_000L, deleted.durationMs)
+    }
+
+    @Test
+    fun addClipRejectsOverlapOnSameTrack() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 500L)
+        val withFirst = TimelineEditor.addClip(timeline, videoId, first)
+
+        val withSecond = TimelineEditor.addClip(withFirst, videoId, second)
+
+        assertEquals(1, withSecond.tracks.first { it.id == videoId }.clips.size)
+    }
+
+    @Test
+    fun moveClipPushesToFirstFreeSlot() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 2_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val moved = TimelineEditor.moveClip(withClips, second.id, videoId, 500L)
+        val result = moved.tracks.first { it.id == videoId }.clips.first { it.id == second.id }
+
+        assertEquals(1_000L, result.startMs)
+    }
+
+    @Test
+    fun snapPositionOnlyMovesInsideThreshold() {
+        val candidates = listOf(0L, 1_000L, 2_000L)
+
+        assertEquals(1_000L, TimelineEditor.snapPosition(1_050L, candidates, 120L))
+        assertEquals(1_500L, TimelineEditor.snapPosition(1_500L, candidates, 120L))
+        assertEquals(1_000L, TimelineEditor.snapPosition(880L, candidates, 120L))
+    }
+
+    @Test
+    fun retimeFasterRipplesLaterClipsLeft() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val retimed = TimelineEditor.retimeClip(withClips, first.id, 2f)
+        val clips = retimed.tracks.first { it.id == videoId }.clips
+
+        assertEquals(500L, clips.first { it.id == first.id }.durationMs)
+        assertEquals(500L, clips.first { it.id == second.id }.startMs)
+        assertEquals(1_500L, retimed.durationMs)
+    }
+
+    @Test
+    fun retimeSlowerPushesLaterClipsRight() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val retimed = TimelineEditor.retimeClip(withClips, first.id, 0.5f)
+        val clips = retimed.tracks.first { it.id == videoId }.clips
+
+        assertEquals(2_000L, clips.first { it.id == first.id }.durationMs)
+        assertEquals(2_000L, clips.first { it.id == second.id }.startMs)
+        assertEquals(3_000L, retimed.durationMs)
+    }
+
+    @Test
+    fun transitionDurationIsClampedToBothClips() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip(durationMs = 400L)
+        val second = clip(durationMs = 1_000L).copy(startMs = 400L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val withTransition = TimelineEditor.setTransition(
+            withClips,
+            second.id,
+            TransitionSide.IN,
+            TransitionConfig(TransitionType.DISSOLVE, 5_000L)
+        )
+        val result = withTransition.tracks.first { it.id == videoId }
+            .clips.first { it.id == second.id }
+
+        assertEquals(400L, result.transitionIn?.durationMs)
+    }
+
+    @Test
+    fun sanitizeShiftsLegacyOverlaps() {
+        val corrupt = Timeline(
+            tracks = listOf(
+                Track(
+                    type = TrackType.VIDEO,
+                    clips = listOf(
+                        Clip(startMs = 0L, durationMs = 1_000L),
+                        Clip(startMs = 500L, durationMs = 1_000L)
+                    )
+                )
+            )
+        )
+
+        val fixed = TimelineEditor.sanitize(corrupt)
+        val clips = fixed.tracks.single().clips
+
+        assertEquals(listOf(0L, 1_000L), clips.map { it.startMs })
+        assertEquals(2_000L, fixed.durationMs)
+    }
+
+    @Test
+    fun duplicateClipSkipsOccupiedSlot() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+
+        val duplicated = TimelineEditor.duplicateClip(withClips, first.id)
+        val copy = duplicated.tracks.first { it.id == videoId }
+            .clips.first { it.id != first.id && it.id != second.id }
+
+        assertEquals(2_000L, copy.startMs)
+    }
+
+    @Test
     fun trimUsesSpeedAwareSourceDuration() {
         val (timeline, videoId, _) = baseTimeline()
         val source = Clip(

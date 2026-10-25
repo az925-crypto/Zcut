@@ -12,6 +12,8 @@ object ZcutRoutes {
     const val MediaPicker = "media-picker"
     const val Trim = "trim"
     const val Speed = "speed"
+    const val Keyframe = "keyframe"
+    const val Transition = "transition"
     const val Audio = "audio"
     const val Text = "text"
     const val Stickers = "stickers"
@@ -32,6 +34,16 @@ object ZcutRoutes {
     const val MediaPickerPattern = "media-picker?projectId={projectId}"
 
     const val ArgProjectId = "projectId"
+    const val ArgClipId = "clipId"
+
+    /**
+     * Tool panels whose route pattern already carries `projectId`/`clipId`.
+     * Grows one milestone at a time so a half-built panel still falls through to
+     * the honest placeholder instead of navigating to an unregistered route.
+     */
+    private val argToolRoutes: Set<String> = setOf(Trim)
+
+    fun isClipTool(route: String): Boolean = route in argToolRoutes
 
     fun editor(projectId: String): String = "$Editor/${encode(projectId)}"
 
@@ -41,6 +53,45 @@ object ZcutRoutes {
         } else {
             "$MediaPicker?$ArgProjectId=${encode(projectId)}"
         }
+
+    fun trim(projectId: String, clipId: String?): String =
+        toolRoute(Trim, projectId, clipId)
+
+    fun speed(projectId: String, clipId: String?): String =
+        toolRoute(Speed, projectId, clipId)
+
+    fun keyframe(projectId: String, clipId: String?): String =
+        toolRoute(Keyframe, projectId, clipId)
+
+    fun transition(projectId: String, clipId: String?): String =
+        toolRoute(Transition, projectId, clipId)
+
+    fun effects(projectId: String, clipId: String?): String =
+        toolRoute(Effects, projectId, clipId)
+
+    fun filters(projectId: String, clipId: String?): String =
+        toolRoute(Filters, projectId, clipId)
+
+    fun adjust(projectId: String, clipId: String?): String =
+        toolRoute(Adjust, projectId, clipId)
+
+    fun mask(projectId: String, clipId: String?): String =
+        toolRoute(Mask, projectId, clipId)
+
+    /**
+     * Tool routes carry the draft and clip as query arguments. Non-tool routes
+     * (Audio, Text, Stickers) are returned unchanged until their milestone adds
+     * a real screen.
+     */
+    fun toolRoute(route: String, projectId: String, clipId: String?): String {
+        if (!isClipTool(route)) return route
+        val base = "$route?$ArgProjectId=${encode(projectId)}"
+        val clip = clipId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (clip == null) base else "$base&$ArgClipId=$clip"
+    }
+
+    fun clipToolPattern(route: String): String =
+        "$route?$ArgProjectId={$ArgProjectId}&$ArgClipId={$ArgClipId}"
 
     private fun encode(value: String): String =
         java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
@@ -74,7 +125,7 @@ object ZcutDestinations {
         ZcutDestination("ai-studio", "AI Studio", "F23"),
         ZcutDestination("editor", "Editor", "F01", implemented = true),
         ZcutDestination("media-picker", "Tambah media", "F02", implemented = true),
-        ZcutDestination("trim", "Trim & split", "F04"),
+        ZcutDestination("trim", "Trim & split", "F04", implemented = true),
         ZcutDestination("speed", "Speed & curve", "F05"),
         ZcutDestination("keyframe", "Keyframe", "F06"),
         ZcutDestination("transition", "Transisi", "F07"),
