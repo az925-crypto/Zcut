@@ -2,6 +2,7 @@ package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.AudioConfig
+import com.zaaam.zcut.core.model.BeautyConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.ChromaConfig
@@ -10,6 +11,7 @@ import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Keyframe
 import com.zaaam.zcut.core.model.MaskConfig
 import com.zaaam.zcut.core.model.MaskShape
+import com.zaaam.zcut.core.model.MattingConfig
 import com.zaaam.zcut.core.model.SpeedConfig
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -18,6 +20,7 @@ import com.zaaam.zcut.core.model.TrackType
 import com.zaaam.zcut.core.model.TransitionConfig
 import com.zaaam.zcut.core.model.TransitionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -325,6 +328,49 @@ class TimelineEditorTest {
 
         assertEquals(1, clips.size)
         assertEquals(200L, fixed.durationMs)
+    }
+
+    @Test
+    fun sanitizeClampsBeautyAndMattingFromAnUntrustedDraft() {
+        // Values here stand in for a hand-edited draft file: out of range and
+        // NaN. Both clip configs must be clamped on the way in, otherwise the
+        // slider label would print a garbage number and the pixel pass would be
+        // fed a NaN (the editor clamps on write, but a decoded draft never went
+        // through the editor).
+        val hostile = Clip(
+            startMs = 0L,
+            durationMs = 200L,
+            beauty = BeautyConfig(smooth = 1e30f, faceSlim = Float.NaN, lips = -5f),
+            matting = MattingConfig(blur = 4f, edgeRefine = -2f, shadow = Float.NaN)
+        )
+        val timeline = Timeline(
+            tracks = listOf(Track(type = TrackType.VIDEO, clips = listOf(hostile)))
+        )
+
+        val clip = TimelineEditor.sanitize(timeline).tracks.single().clips.single()
+        val beauty = clip.beauty
+        val matting = clip.matting
+
+        assertNotNull(beauty)
+        assertNotNull(matting)
+        assertEquals(100f, beauty!!.smooth, 0.0001f)
+        assertEquals(0f, beauty.faceSlim, 0.0001f)
+        assertEquals(0f, beauty.lips, 0.0001f)
+        assertEquals(1f, matting!!.blur, 0.0001f)
+        assertEquals(0f, matting.edgeRefine, 0.0001f)
+        assertEquals(0f, matting.shadow, 0.0001f)
+    }
+
+    @Test
+    fun sanitizeLeavesAnAbsentBeautyAndMattingAbsent() {
+        val timeline = Timeline(
+            tracks = listOf(Track(type = TrackType.VIDEO, clips = listOf(clip())))
+        )
+
+        val clip = TimelineEditor.sanitize(timeline).tracks.single().clips.single()
+
+        assertNull(clip.beauty)
+        assertNull(clip.matting)
     }
 
     @Test

@@ -7,8 +7,9 @@
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
   diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M15 selesai; batch M4–M10
-  sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
-  Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
+  dan batch M11–M15 sudah melewati review gate (setelah perbaikan, ketiga
+  reviewer `BLOCKING: no`).**
+  Rilis batch berikutnya menyusul di tag `v0.7.0`.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
   untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
@@ -661,6 +662,17 @@ penghalang commit; jadi backlog untuk Tahap 3.
   penuh, tick halus berhenti setelah 10 menit (`ponytail:` di kode).
 - **Virtualisasi timeline** belum ada — dedup in-flight + semaphore sudah
   meredakan; draft 100+ klip tetap mengukur semua klip per frame.
+- **`MediaRecorder.prepare()/start()`/`stop()` + `AudioDuration.of` sinkron di
+  main thread** saat rekam/stop voiceover (`AudioScreen` lambda tombol,
+  `DisposableEffect onDispose`) — hitch ratusan ms di device rendah; pindahkan
+  ke dispatcher IO + state loading saat itu dirapikan.
+- **`AudioDuration.of` di `TtsViewModel.generate` dan builder export
+  (`PreviewPlanBuilder.build`, `Media3CompositionBuilder.build`,
+  `output.parentFile?.mkdirs()`)** jalan di dispatcher Main sebelum export
+  masuk `Main.immediate` — hitch kecil; pindah ke IO/Default.
+- **Bitmap hasil composite slider** (`BeautyScreen`/`MattingScreen`) tidak
+  di-`recycle()`; churn heap ~2 MB per commit slider yang ditangani GC — pola
+  sama dengan M14, dibersihkan lewat `DisposableEffect` kalau churn terasa.
 
 ### Temuan reviewer M0 (2026-10-23)
 
@@ -904,6 +916,58 @@ di main thread (refactor besar, pre-existing M3), mutex lintas-ViewModel
 
 Test baru/update di `TimelineEditorTest`: split seam sampel, retime rescale
 keyframe, ripple-delete/duplicate repair transisi, sanitize overflow drop.
+
+### Temuan reviewer batch M11–M15 (2026-10-26)
+
+Gate otomatis dijalankan pada batch (M11–M15) di commit `cd77987`. Verdict:
+security **BLOCKING: no**, performance **BLOCKING: no**, bug **BLOCKING: yes**
+(1 Critical + 1 Medium). Semua temuan Critical/Medium dan Low murah diperbaiki
+dalam satu pass:
+
+- **Critical — tombol TTS mati permanen** (`TtsViewModel.generate`): jalur
+  `!ready` (mesin TTS perangkat tidak ada / init > 8 s) hanya menulis notice lalu
+  `return@launch` tanpa me-reset `isBusy`, sehingga `canGenerate` tetap false dan
+  label tombol tetap "Membuat suara..." sampai layar dibuka ulang. → jalur itu
+  kini me-reset `isBusy = false` bersama notice-nya.
+- **Medium — `MediaRecorder` bocor** (`VoiceoverRecorder.start`): saat
+  `prepare()`/`start()` gagal, recorder yang baru dibuat tidak di-release
+  (`runCatching { recorder?.release() }` no-op karena `recorder` baru di-assign
+  di jalur sukses) → mic tertahan dan tiap retry bocor lagi. → recorder
+  dikonstruksi terpisah dan di-release di jalur gagal.
+- **Low — `beauty`/`matting` tidak disanitasi saat decode** (`ProjectCodec` →
+  `TimelineEditor.sanitize`): draft yang disunting tangan dengan `smooth: 1e30`
+  atau `blur: 1e30`/NaN lolos ke model dan label slider mencetak angka sampah.
+  → `sanitize` kini meng-clamp `matting`/`beauty` tiap klip (satu gerbang untuk
+  semua jalur decode/impor), + tes regresi di `TimelineEditorTest`.
+- **Low — recycle bitmap identitas** (`BeautyProcessor.boxBlur` /
+  `MattingComposer` blur): frame sangat kecil membuat `createScaledBitmap`
+  mengembalikan instance yang sama sehingga recycle ganda menabrak bitmap yang
+  masih dipakai; `coerceIn` rentang kosong juga bisa melempar. → guard
+  identitas + batas atas `coerceAtLeast`.
+- **Low — `CancellationException` tertelan** (`MlKitFaceDetector`,
+  `MlKitSubjectSegmenter`): coroutine yang dibatalkan (pindah layar) diubah jadi
+  "tidak ada wajah/subjek". → rethrow CancellationException.
+- **Low — status jujur model wajah** (`BeautyScreen`): `detect()` dulu
+  mengembalikan list kosong baik saat tidak ada wajah maupun saat model gagal
+  dimuat, jadi layar menuduh frame. → kontrak `FaceDetector.detect` kini
+  `List<FaceGeometry>?` (`null` = model tidak tersedia) dan layar menampilkan
+  "MODEL WAJAH TIDAK TERSEDIA" + hint jujur.
+- **Low — dokumen vs kode** (`AudioEditor.fadeGain`): KDoc menyebut "kedua ramp
+  dikalikan" padahal implementasinya `minOf`. → komentar diselaraskan.
+- **Perf Medium (sebagian)** — pass DSP `Loudness.normalizeGain` dan
+  `BeatDetector.detect` dipindah ke `Dispatchers.Default` (sebelumnya ikut main
+  thread setelah decode). Sisanya masuk backlog.
+
+Test baru: `sanitizeClampsBeautyAndMattingFromAnUntrustedDraft`,
+`sanitizeLeavesAnAbsentBeautyAndMattingAbsent`.
+
+Yang sengaja **ditunda** ke backlog (non-blocking):
+`MediaRecorder.prepare()/stop()` + `AudioDuration.of` di main thread saat
+rekam voiceover (hitch ~ratusan ms), `AudioDuration.of` di `TtsViewModel`, dan
+builder export (`PreviewPlanBuilder.build`/`Media3CompositionBuilder.build`) di
+dispatcher Main sebelum pindah ke `Main.immediate`. Composite bitmap hasil
+slider tidak di-`recycle()` (dibersihkan GC; pola sama dengan M14) juga dicatat
+sebagai churn, bukan leak.
 
 ### Catatan M11 — teks & tipografi (2026-10-25)
 

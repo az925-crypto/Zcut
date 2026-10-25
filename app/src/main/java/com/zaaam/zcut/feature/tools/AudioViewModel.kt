@@ -142,7 +142,7 @@ class AudioViewModel(
                     showMessage("Audio tidak bisa didekode di perangkat ini.")
                     return@launch
                 }
-                val gain = Loudness.normalizeGain(decoded.samples)
+                val gain = withContext(Dispatchers.Default) { Loudness.normalizeGain(decoded.samples) }
                 val target = (clip.audio.volume * gain).coerceIn(0f, AudioEditor.MAX_VOLUME)
                 val stored = applyEdit { project ->
                     project.copy(
@@ -175,7 +175,9 @@ class AudioViewModel(
                     showMessage("Audio tidak bisa didekode di perangkat ini.")
                     return@launch
                 }
-                val beats = BeatDetector.detect(decoded.samples, decoded.sampleRate)
+                val beats = withContext(Dispatchers.Default) {
+                    BeatDetector.detect(decoded.samples, decoded.sampleRate)
+                }
                 if (beats.isEmpty()) {
                     showMessage("Tidak ada beat yang terdeteksi pada klip ini.")
                     return@launch

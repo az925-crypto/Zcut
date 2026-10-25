@@ -86,8 +86,8 @@ object AudioEditor {
 
     /**
      * Gain multiplier at [positionMs] inside a clip of [durationMs], combining
-     * the fade-in and fade-out ramps. Both ramps multiply, so short clips with
-     * long fades simply sit quieter instead of clipping.
+     * the fade-in and fade-out ramps. The weaker of the two ramps wins
+     * ([minOf]), so overlapping fades do not multiply into an inaudible clip.
      */
     fun fadeGain(
         positionMs: Long,

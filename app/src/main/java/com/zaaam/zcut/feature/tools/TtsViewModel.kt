@@ -148,7 +148,16 @@ class TtsViewModel(
                     )
                 }.getOrDefault(false)
                 if (!ready) {
-                    showNotice("Gagal membuat suara. Mesin TTS perangkat mungkin tidak tersedia.")
+                    // Reset the busy flag here too: the success path resets it
+                    // later, so returning early without it would leave the button
+                    // disabled and labelled "Membuat suara..." forever.
+                    _uiState.update {
+                        it.copy(
+                            isBusy = false,
+                            notice = "Gagal membuat suara. Mesin TTS perangkat mungkin " +
+                                "tidak tersedia."
+                        )
+                    }
                     return@launch
                 }
 

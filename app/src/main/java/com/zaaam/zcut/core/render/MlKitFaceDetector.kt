@@ -9,6 +9,7 @@ import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.face.FaceLandmark
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -32,15 +33,19 @@ class MlKitFaceDetector : FaceDetector {
     var unavailableReason: String? = null
         private set
 
-    override suspend fun detect(frame: Bitmap): List<FaceGeometry> =
+    override suspend fun detect(frame: Bitmap): List<FaceGeometry>? =
         withContext(Dispatchers.Default) {
             if (frame.width < MIN_SIDE || frame.height < MIN_SIDE) {
                 // Below this the model has nothing usable to work with.
                 return@withContext emptyList()
             }
-            val detector = clientOrNull() ?: return@withContext emptyList()
+            // null (not empty) so the screen can say "model unavailable" instead
+            // of blaming the frame for a model that never loaded.
+            val detector = clientOrNull() ?: return@withContext null
             val faces = try {
                 detector.process(InputImage.fromBitmap(frame, 0)).awaitFaces()
+            } catch (cancel: CancellationException) {
+                throw cancel
             } catch (error: Exception) {
                 Log.w(TAG, "face detection failed", error)
                 return@withContext emptyList()

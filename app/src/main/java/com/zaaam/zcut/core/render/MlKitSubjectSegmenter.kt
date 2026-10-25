@@ -8,6 +8,7 @@ import com.google.mlkit.vision.segmentation.Segmenter
 import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -38,6 +39,9 @@ class MlKitSubjectSegmenter : SubjectSegmenter {
         val segmenter = clientOrNull() ?: return@withContext null
         val mask = try {
             segmenter.process(InputImage.fromBitmap(frame, 0)).awaitMask()
+        } catch (cancel: CancellationException) {
+            // A cancelled screen must not look like a successful "no subject".
+            throw cancel
         } catch (error: Exception) {
             Log.w(TAG, "segmentation failed", error)
             return@withContext null

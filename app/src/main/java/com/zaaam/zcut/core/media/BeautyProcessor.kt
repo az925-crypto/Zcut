@@ -397,8 +397,11 @@ object BeautyProcessor {
         val first = Bitmap.createScaledBitmap(source, smallWidth, smallHeight, true)
         val second = Bitmap.createScaledBitmap(first, max(2, smallWidth / 2), max(2, smallHeight / 2), true)
         val back = Bitmap.createScaledBitmap(second, source.width, source.height, true)
-        first.recycle()
-        second.recycle()
+        // A tiny source (smaller than the requested size) makes the platform
+        // return the *same* instance, so recycling blindly would recycle the
+        // frame we still have to return.
+        if (first !== source && first !== back) first.recycle()
+        if (second !== source && second !== first && second !== back) second.recycle()
         return back
     }
 

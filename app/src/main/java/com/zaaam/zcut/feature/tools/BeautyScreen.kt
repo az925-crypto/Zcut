@@ -56,6 +56,9 @@ import kotlin.math.min
 private sealed interface FaceProbe {
     data object Pending : FaceProbe
     data object NoFrame : FaceProbe
+
+    /** The bundled model could not be loaded; say so instead of blaming the frame. */
+    data object Unavailable : FaceProbe
     data class Faces(val detected: List<FaceGeometry>) : FaceProbe
 }
 
@@ -111,11 +114,12 @@ private fun BeautyBody(
     val committed = clip.beauty
 
     val probe by produceState<FaceProbe>(FaceProbe.Pending, frame) {
-        value = when (val bitmap = frame) {
-            null -> FaceProbe.NoFrame
-            else -> FaceProbe.Faces(
-                container.faceDetector.detect(bitmap.asAndroidBitmap())
-            )
+        val bitmap = frame
+        value = when {
+            bitmap == null -> FaceProbe.NoFrame
+            else -> container.faceDetector.detect(bitmap.asAndroidBitmap())
+                ?.let(FaceProbe::Faces)
+                ?: FaceProbe.Unavailable
         }
     }
 
@@ -145,6 +149,7 @@ private fun BeautyBody(
     val label = when {
         probe == FaceProbe.NoFrame -> "TANPA MEDIA"
         detecting -> "MENDETEKSI WAJAH..."
+        probe == FaceProbe.Unavailable -> "MODEL WAJAH TIDAK TERSEDIA"
         else -> BeautyEditor.faceLabel(faces.size)
     }
 
@@ -192,6 +197,13 @@ private fun FaceTab(
         when {
             probe == FaceProbe.NoFrame ->
                 ToolHint("Klip ini belum punya media. Tambahkan media untuk memakai retouch.")
+
+            probe == FaceProbe.Unavailable ->
+                ToolHint(
+                    "Model deteksi wajah (ML Kit, dibundel APK) gagal dimuat di perangkat ini. " +
+                        "Fitur tetap terbuka dan slider tetap bisa digeser, tapi hasilnya belum " +
+                        "bisa ditampilkan sampai model tersedia."
+                )
 
             subject == null && probe !is FaceProbe.Pending ->
                 ToolHint(

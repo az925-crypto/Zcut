@@ -589,7 +589,14 @@ object TimelineEditor {
                     null
                 } else {
                     cursor = start + clip.durationMs
-                    if (start == clip.startMs) clip else clip.copy(startMs = start)
+                    // Clip configs arrive from the draft file as well as the UI,
+                    // so they are clamped here too (NaN/out-of-range values would
+                    // otherwise reach the pixel passes and the slider labels).
+                    val placed = if (start == clip.startMs) clip else clip.copy(startMs = start)
+                    placed.copy(
+                        matting = placed.matting?.let(MattingEditor::normalize),
+                        beauty = placed.beauty?.let(BeautyEditor::normalize)
+                    )
                 }
             }
             track.copy(clips = repaired)

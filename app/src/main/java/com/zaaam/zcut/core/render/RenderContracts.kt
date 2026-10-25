@@ -250,9 +250,11 @@ data class FaceGeometry(
 }
 
 /**
- * On-device face detection for a single still frame. An empty list means "no
- * face found" (or the model could not load) — never a fabricated face.
+ * On-device face detection for a single still frame. `null` means the model
+ * could not be loaded (unsupported device or a failed model load) and the caller
+ * must say so; an empty list means the model ran and found no face — never a
+ * fabricated face.
  */
 interface FaceDetector {
-    suspend fun detect(frame: android.graphics.Bitmap): List<FaceGeometry>
+    suspend fun detect(frame: android.graphics.Bitmap): List<FaceGeometry>?
 }

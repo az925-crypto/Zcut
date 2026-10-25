@@ -77,12 +77,15 @@ object MattingComposer {
             MattingBackground.COLOR -> canvas.drawColor(withAlpha(config.colorArgb))
 
             MattingBackground.BLUR -> {
+                // `coerceIn` throws on an empty range, so the upper bound must
+                // never fall below the floor for a very small frame.
+                val ceiling = Math.max(Math.max(width, height), BLUR_MIN_EDGE)
                 val edge = (BLUR_MIN_EDGE + (1f - config.blur) * Math.min(width, height) / 2f)
                     .toInt()
-                    .coerceIn(BLUR_MIN_EDGE, Math.max(width, height))
+                    .coerceIn(BLUR_MIN_EDGE, ceiling)
                 val small = Bitmap.createScaledBitmap(frame, edge, edge, true)
                 canvas.drawBitmap(small, null, android.graphics.Rect(0, 0, width, height), FILTERED)
-                small.recycle()
+                if (small !== frame) small.recycle()
             }
 
             // Both need material we do not have locally (a picked still / a

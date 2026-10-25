@@ -30,12 +30,17 @@ class VoiceoverRecorder(private val context: Context) {
         val dir = File(context.filesDir, MEDIA_DIR)
         dir.mkdirs()
         val file = File(dir, "voiceover-${UUID.randomUUID()}.m4a")
-        return try {
-            val created = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val created = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(context)
             } else {
                 MediaRecorder()
             }
+        } catch (error: Exception) {
+            file.delete()
+            return null
+        }
+        return try {
             created.setAudioSource(MediaRecorder.AudioSource.MIC)
             created.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             created.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
@@ -49,7 +54,9 @@ class VoiceoverRecorder(private val context: Context) {
             startedAtMs = System.currentTimeMillis()
             file
         } catch (error: Exception) {
-            runCatching { recorder?.release() }
+            // Release the recorder we just built: it holds the mic even when
+            // prepare()/start() failed, and `recorder` is only assigned on success.
+            runCatching { created.release() }
             recorder = null
             target = null
             file.delete()
