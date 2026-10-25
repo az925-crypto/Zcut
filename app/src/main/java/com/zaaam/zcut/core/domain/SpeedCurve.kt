@@ -1,6 +1,9 @@
 package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.SpeedPoint
+import kotlin.math.abs
+import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.roundToLong
 
 /**
@@ -8,9 +11,11 @@ import kotlin.math.roundToLong
  * *source* range, so a curve survives trims and splits: the editor remaps the
  * sub-range instead of guessing from the presentation length.
  *
- * Presentation duration is the integral of `1 / speed` over the source range.
- * `sourceDurationForPresentationMs` inverts that integral numerically; it is the
- * piece split/trim needs when a clip is retimed with a curve.
+ * Speed is linearly interpolated between points. Presentation duration is the
+ * integral of `1 / speed` over the source range, solved in closed form per
+ * segment (`S / (b - a) * ln(b / a)`), which is exactly what a frame-by-frame
+ * retimer integrates. `sourceDurationForPresentationMs` inverts that integral;
+ * it is the piece split/trim needs when a clip is retimed with a curve.
  */
 object SpeedCurve {
 
@@ -85,9 +90,7 @@ object SpeedCurve {
             val right = points[index + 1]
             val sourceSpan = (right.atFraction - left.atFraction).toDouble() * source
             if (sourceSpan <= 0.0) continue
-            val averageSpeed = ((left.speed + right.speed) / 2.0)
-                .coerceAtLeast(MIN_SPEED.toDouble())
-            total += sourceSpan / averageSpeed
+            total += segmentPresentationMs(sourceSpan, left.speed, right.speed)
         }
         return total.roundToLong().coerceAtLeast(1L)
     }
@@ -119,9 +122,11 @@ object SpeedCurve {
             val right = points[index + 1]
             val sourceSpan = (right.atFraction - left.atFraction).toDouble() * source
             if (sourceSpan <= 0.0) continue
-            val averageSpeed = ((left.speed + right.speed) / 2.0)
-                .coerceAtLeast(MIN_SPEED.toDouble())
-            val segmentPresentation = sourceSpan / averageSpeed
+            val segmentPresentation = segmentPresentationMs(
+                sourceSpan,
+                left.speed,
+                right.speed
+            )
             if (elapsed + segmentPresentation >= presentationMs) {
                 val remaining = (presentationMs - elapsed).coerceAtLeast(0.0)
                 val progress = if (segmentPresentation <= 0.0) {
@@ -129,13 +134,36 @@ object SpeedCurve {
                 } else {
                     (remaining / segmentPresentation).coerceIn(0.0, 1.0)
                 }
+                val sourceProgress = sourceProgressFor(progress, left.speed, right.speed)
                 val sourceFraction = left.atFraction +
-                    (right.atFraction - left.atFraction) * progress
+                    (right.atFraction - left.atFraction) * sourceProgress
                 return (sourceFraction * source).roundToLong().coerceIn(0L, source)
             }
             elapsed += segmentPresentation
         }
         return source
+    }
+
+    /**
+     * Blends each interior point towards the average of its neighbours. The
+     * endpoints stay fixed so the curve still spans the whole clip.
+     */
+    fun smoothed(points: List<SpeedPoint>, amount: Float): List<SpeedPoint> {
+        val normalized = normalized(points)
+        val strength = amount.coerceIn(0f, 1f)
+        if (normalized.size < 3 || strength <= 0f) return normalized
+        return normalized.mapIndexed { index, point ->
+            if (index == 0 || index == normalized.lastIndex) {
+                point
+            } else {
+                val previous = normalized[index - 1].speed
+                val next = normalized[index + 1].speed
+                val average = (previous + next) / 2f
+                point.copy(
+                    speed = clampSpeed(point.speed + (average - point.speed) * strength)
+                )
+            }
+        }
     }
 
     /**
@@ -167,5 +195,37 @@ object SpeedCurve {
         return normalized(result, fallbackSpeed)
     }
 
+    private fun segmentPresentationMs(
+        sourceSpanMs: Double,
+        fromSpeed: Float,
+        toSpeed: Float
+    ): Double {
+        val a = fromSpeed.toDouble().coerceAtLeast(MIN_SPEED.toDouble())
+        val b = toSpeed.toDouble().coerceAtLeast(MIN_SPEED.toDouble())
+        val delta = b - a
+        return if (abs(delta) <= SPEED_EPSILON) {
+            sourceSpanMs / a
+        } else {
+            sourceSpanMs * ln(b / a) / delta
+        }
+    }
+
+    /**
+     * Fraction of the source span consumed by [progress] (0..1) of the segment's
+     * presentation. Inverts `p = S / (b - a) * ln(1 + (b - a) f / a)`.
+     */
+    private fun sourceProgressFor(progress: Double, fromSpeed: Float, toSpeed: Float): Double {
+        val a = fromSpeed.toDouble().coerceAtLeast(MIN_SPEED.toDouble())
+        val b = toSpeed.toDouble().coerceAtLeast(MIN_SPEED.toDouble())
+        val delta = b - a
+        return if (abs(delta) <= SPEED_EPSILON) {
+            progress
+        } else {
+            val ratio = b / a
+            ((ratio.pow(progress) - 1.0) / (ratio - 1.0)).coerceIn(0.0, 1.0)
+        }
+    }
+
     private const val FRACTION_EPSILON = 0.0001f
+    private const val SPEED_EPSILON = 0.000001
 }

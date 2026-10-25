@@ -1,9 +1,11 @@
 package com.zaaam.zcut.core.render
 
+import com.zaaam.zcut.core.domain.SpeedCurve
 import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.MediaKind
 import com.zaaam.zcut.core.model.Project
+import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Track
 import com.zaaam.zcut.core.model.TrackType
 import java.io.File
@@ -25,6 +27,8 @@ data class PreviewItem(
     val sourceStartMs: Long,
     val sourceDurationMs: Long,
     val speed: Float,
+    /** Normalised speed curve over the clip's source range; empty = constant. */
+    val curve: List<SpeedPoint> = emptyList(),
     val isImage: Boolean,
     val removeAudio: Boolean
 )
@@ -141,6 +145,13 @@ object PreviewPlanBuilder {
                     .takeIf { it > 0L }
                     ?: (clip.durationMs.toDouble() * speed).roundToLong().coerceAtLeast(1L)
             }
+            // Images have no temporal frames to ramp; a curve on one is stored
+            // but ignored by the preview (the clip duration already encodes it).
+            val curve = if (isImage) {
+                emptyList()
+            } else {
+                SpeedCurve.normalized(clip.speed.curve, speed)
+            }
 
             items += PreviewItem(
                 clipId = clip.id,
@@ -151,6 +162,7 @@ object PreviewPlanBuilder {
                 sourceStartMs = clip.sourceStartMs.coerceAtLeast(0L),
                 sourceDurationMs = sourceDurationMs,
                 speed = speed,
+                curve = curve,
                 isImage = isImage,
                 removeAudio = removeAudio
             )

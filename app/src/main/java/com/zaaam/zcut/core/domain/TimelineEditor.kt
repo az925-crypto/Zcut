@@ -2,6 +2,7 @@ package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.ChromaConfig
 import com.zaaam.zcut.core.model.Clip
+import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.ColorAdjustments
 import com.zaaam.zcut.core.model.EffectConfig
 import com.zaaam.zcut.core.model.FilterConfig
@@ -351,7 +352,13 @@ object TimelineEditor {
         if (!clip.isValid()) return timeline
         val sourceMs = clip.effectiveSourceDurationMs.coerceAtLeast(1L)
         val safeSpeed = SpeedCurve.clampSpeed(speed)
-        val safeCurve = SpeedCurve.normalized(curve, safeSpeed)
+        // A still image has no frames to ramp, so its duration stays a plain
+        // division and any stored curve is dropped instead of silently lying.
+        val safeCurve = if (clip.type == ClipType.IMAGE) {
+            emptyList()
+        } else {
+            SpeedCurve.normalized(curve, safeSpeed)
+        }
         val durationMs = SpeedCurve.presentationDurationMs(
             sourceDurationMs = sourceMs,
             speed = safeSpeed,

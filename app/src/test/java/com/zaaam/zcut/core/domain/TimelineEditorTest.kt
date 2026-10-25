@@ -3,8 +3,10 @@ package com.zaaam.zcut.core.domain
 import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.AudioConfig
 import com.zaaam.zcut.core.model.Clip
+import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.Keyframe
 import com.zaaam.zcut.core.model.SpeedConfig
+import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
 import com.zaaam.zcut.core.model.Track
 import com.zaaam.zcut.core.model.TrackType
@@ -440,5 +442,48 @@ class TimelineEditorTest {
 
         assertEquals(500L, result.durationMs)
         assertEquals(1_000L, result.sourceDurationMs)
+    }
+
+    @Test
+    fun retimeWithCurveUsesCurveDurationAndRipples() {
+        val (timeline, videoId, _) = baseTimeline()
+        val first = clip()
+        val second = clip().copy(startMs = 1_000L)
+        val withClips = TimelineEditor.addClip(
+            TimelineEditor.addClip(timeline, videoId, first),
+            videoId,
+            second
+        )
+        val curve = listOf(
+            SpeedPoint(0f, 1f),
+            SpeedPoint(0.5f, 2f),
+            SpeedPoint(1f, 1f)
+        )
+
+        val retimed = TimelineEditor.retimeClip(withClips, first.id, 1f, curve)
+        val clips = retimed.tracks.first { it.id == videoId }.clips
+        val retimedFirst = clips.first { it.id == first.id }
+
+        assertEquals(693L, retimedFirst.durationMs)
+        assertEquals(3, retimedFirst.speed.curve.size)
+        assertEquals(693L, clips.first { it.id == second.id }.startMs)
+    }
+
+    @Test
+    fun imageRetimeDropsCurveAndUsesConstantSpeed() {
+        val (timeline, videoId, _) = baseTimeline()
+        val image = Clip(type = ClipType.IMAGE, startMs = 0L, durationMs = 1_000L)
+        val withClip = TimelineEditor.addClip(timeline, videoId, image)
+        val curve = listOf(
+            SpeedPoint(0f, 1f),
+            SpeedPoint(0.5f, 4f),
+            SpeedPoint(1f, 1f)
+        )
+
+        val retimed = TimelineEditor.retimeClip(withClip, image.id, 2f, curve)
+        val result = retimed.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(500L, result.durationMs)
+        assertTrue(result.speed.curve.isEmpty())
     }
 }

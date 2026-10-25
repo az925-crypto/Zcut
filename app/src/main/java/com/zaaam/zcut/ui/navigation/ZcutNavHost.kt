@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -24,6 +25,7 @@ import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
+import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
 import com.zaaam.zcut.ui.LocalAppContainer
 import kotlinx.coroutines.flow.first
@@ -185,20 +187,18 @@ fun ZcutNavHost(
                 )
             }
 
-            composable(
-                route = ZcutRoutes.clipToolPattern(ZcutRoutes.Trim),
-                arguments = listOf(
-                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
-                    navArgument(ZcutRoutes.ArgClipId) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    }
-                )
-            ) { entry ->
+            clipTool(ZcutRoutes.Trim) { projectId, clipId ->
                 TrimScreen(
-                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
-                    clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Speed) { projectId, clipId ->
+                SpeedScreen(
+                    projectId = projectId,
+                    clipId = clipId,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -213,5 +213,32 @@ fun ZcutNavHost(
                 }
             }
         }
+    }
+}
+
+/**
+ * Registers one clip tool panel with its `projectId`/`clipId` arguments. Keeping
+ * the argument wiring in one place stops a new panel from silently reading the
+ * wrong key.
+ */
+private fun NavGraphBuilder.clipTool(
+    route: String,
+    screen: @Composable (String, String?) -> Unit
+) {
+    composable(
+        route = ZcutRoutes.clipToolPattern(route),
+        arguments = listOf(
+            navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+            navArgument(ZcutRoutes.ArgClipId) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { entry ->
+        screen(
+            entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+            entry.arguments?.getString(ZcutRoutes.ArgClipId)
+        )
     }
 }

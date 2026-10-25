@@ -20,19 +20,19 @@ class SpeedCurveTest {
     }
 
     @Test
-    fun curveIntegratesSegmentsUsingAverageSpeed() {
+    fun curveIntegratesLinearSpeed() {
         val curve = listOf(
             SpeedPoint(0f, 1f),
             SpeedPoint(0.5f, 2f),
             SpeedPoint(1f, 1f)
         )
 
-        // 500ms at avg 1.5x + 500ms at avg 1.5x = 666.67ms
-        assertEquals(667L, SpeedCurve.presentationDurationMs(1_000L, 1f, curve))
+        // 500ms at 1x→2x + 500ms at 2x→1x, closed form: 2 * 500 * ln(2) = 693ms.
+        assertEquals(693L, SpeedCurve.presentationDurationMs(1_000L, 1f, curve))
     }
 
     @Test
-    fun inverseMappingLandsOnSegmentBoundary() {
+    fun inverseMappingUsesClosedFormIntegral() {
         val curve = listOf(
             SpeedPoint(0f, 1f),
             SpeedPoint(0.5f, 2f),
@@ -46,7 +46,8 @@ class SpeedCurveTest {
             presentationMs = 333L
         )
 
-        assertEquals(500L, source)
+        // 1x→2x over 500ms of source consumes ~473ms of presentation by 333ms.
+        assertEquals(473L, source)
     }
 
     @Test
@@ -107,5 +108,35 @@ class SpeedCurveTest {
         assertEquals(1f, right.last().atFraction)
         assertEquals(4f, right.last().speed, 0.001f)
         assertTrue(right.size >= 2)
+    }
+
+    @Test
+    fun smoothedBlendsInteriorPointsAndKeepsEndpoints() {
+        val curve = listOf(
+            SpeedPoint(0f, 1f),
+            SpeedPoint(0.5f, 4f),
+            SpeedPoint(1f, 1f)
+        )
+
+        val smoothed = SpeedCurve.smoothed(curve, 1f)
+
+        assertEquals(1f, smoothed.first().speed, 0.001f)
+        assertEquals(1f, smoothed[1].speed, 0.001f)
+        assertEquals(1f, smoothed.last().speed, 0.001f)
+    }
+
+    @Test
+    fun smoothedWithZeroAmountReturnsNormalizedCurve() {
+        val curve = listOf(
+            SpeedPoint(0.5f, 2f),
+            SpeedPoint(0f, 1f)
+        )
+
+        val smoothed = SpeedCurve.smoothed(curve, 0f)
+
+        assertEquals(0f, smoothed.first().atFraction)
+        assertEquals(1f, smoothed.last().atFraction)
+        assertEquals(2f, smoothed.last().speed, 0.001f)
+        assertEquals(3, smoothed.size)
     }
 }

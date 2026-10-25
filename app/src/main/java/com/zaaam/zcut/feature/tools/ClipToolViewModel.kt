@@ -6,6 +6,7 @@ import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.Project
+import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -96,6 +97,25 @@ class ClipToolViewModel(
     fun delete(ripple: Boolean, onDone: () -> Unit = {}) {
         val id = clipId ?: return
         edit(onDone = onDone) { TimelineEditor.deleteClip(it, id, ripple) }
+    }
+
+    fun setSpeed(speed: Float) {
+        val id = clipId ?: return
+        edit { TimelineEditor.retimeClip(it, id, speed, emptyList()) }
+    }
+
+    fun setCurve(points: List<SpeedPoint>, fallbackSpeed: Float) {
+        val id = clipId ?: return
+        edit { TimelineEditor.retimeClip(it, id, fallbackSpeed, points) }
+    }
+
+    fun setPreservePitch(preserve: Boolean) {
+        editClip { clip -> clip.copy(speed = clip.speed.copy(preservePitch = preserve)) }
+    }
+
+    fun setReversed(reversed: Boolean) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setReversed(it, id, reversed) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

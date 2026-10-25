@@ -7,6 +7,7 @@ import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.MediaKind
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedConfig
+import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
 import com.zaaam.zcut.core.model.Track
 import com.zaaam.zcut.core.model.TrackType
@@ -43,6 +44,7 @@ class PreviewPlanTest {
         sourceStartMs: Long = 0L,
         sourceDurationMs: Long = 0L,
         speed: Float = 1f,
+        curve: List<SpeedPoint> = emptyList(),
         muted: Boolean = false
     ) = Clip(
         id = id,
@@ -52,7 +54,7 @@ class PreviewPlanTest {
         durationMs = durationMs,
         sourceStartMs = sourceStartMs,
         sourceDurationMs = sourceDurationMs,
-        speed = SpeedConfig(speed),
+        speed = SpeedConfig(speed, curve = curve),
         audio = AudioConfig(muted = muted)
     )
 
@@ -132,6 +134,54 @@ class PreviewPlanTest {
         assertTrue(plan.hasAudio)
         assertTrue(plan.isPlayable)
         assertEquals(6_000L, plan.durationMs)
+    }
+
+    @Test
+    fun carriesNormalizedSpeedCurveAndIgnoresItForImages() {
+        val video = asset("v1")
+        val image = asset("i1", kind = MediaKind.IMAGE, hasAudio = false)
+        val curve = listOf(
+            SpeedPoint(0.5f, 2f),
+            SpeedPoint(0f, 1f),
+            SpeedPoint(1f, 1f)
+        )
+        val plan = buildPlan(
+            project(
+                tracks = listOf(
+                    Track(
+                        type = TrackType.VIDEO,
+                        clips = listOf(
+                            clip(
+                                id = "c1",
+                                assetId = "v1",
+                                startMs = 0L,
+                                durationMs = 1_000L,
+                                sourceDurationMs = 1_000L,
+                                curve = curve
+                            ),
+                            clip(
+                                id = "c2",
+                                assetId = "i1",
+                                startMs = 1_000L,
+                                durationMs = 1_000L,
+                                type = ClipType.IMAGE,
+                                curve = curve
+                            )
+                        )
+                    )
+                ),
+                assets = listOf(video, image),
+                durationMs = 2_000L
+            )
+        )
+
+        val videoItem = plan.videoItems.first { it.clipId == "c1" }
+        assertEquals(0f, videoItem.curve.first().atFraction)
+        assertEquals(1f, videoItem.curve.last().atFraction)
+        assertEquals(3, videoItem.curve.size)
+
+        val imageItem = plan.videoItems.first { it.clipId == "c2" }
+        assertTrue(imageItem.curve.isEmpty())
     }
 
     @Test
