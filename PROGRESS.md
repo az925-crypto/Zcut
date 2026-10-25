@@ -6,10 +6,12 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M3 selesai; batch M4–M10
-  dikerjakan, review gate dijalankan di akhir batch.**
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M10 selesai; batch M4–M10
+  sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`)
+  dan fix-nya ter-commit.** Lanjut batch M11–M15.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
-  Sisa temuan Medium/Low ada di bagian Backlog re-audit, bukan penghalang.
+  Temuan Medium/Low batch M4–M10 yang relevan sudah diperbaiki di commit
+  `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
 
 ## Mockup Stage 2
 
@@ -27,7 +29,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · batch M4–M10 (M0–M3 selesai) |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M10 selesai, review gate batch hijau · lanjut M11–M15 |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
 
@@ -41,13 +43,13 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | ✅ |
 | M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | ✅ |
 | M3 | Preview player Media3 | F03 | (editor) | ✅ |
-| M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | [ ] |
-| M5 | Speed, reverse, curve, motion | F05 | speed | [ ] |
-| M6 | Keyframe | F06 | keyframe | [ ] |
-| M7 | Transisi | F07 | transition | [ ] |
-| M8 | Filter & color | F08 | filters, adjust | [ ] |
-| M9 | Efek | F09 | effects | [ ] |
-| M10 | Mask & chroma | F10 | mask | [ ] |
+| M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | ✅ `a2c6abe` `e60804a` |
+| M5 | Speed, reverse, curve, motion | F05 | speed | ✅ `771aa82` |
+| M6 | Keyframe | F06 | keyframe | ✅ `646ab88` |
+| M7 | Transisi | F07 | transition | ✅ `a59cf91` |
+| M8 | Filter & color | F08 | filters, adjust | ✅ `b732ba1` |
+| M9 | Efek | F09 | effects | ✅ `f36af6f` |
+| M10 | Mask & chroma | F10 | mask | ✅ `5d735a9` `b7192a6` |
 | M11 | Teks & tipografi | F14 | text | [ ] |
 | M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | [ ] |
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | [ ] |
@@ -153,51 +155,51 @@ Spek: [`docs/features/03-preview-player.md`](docs/features/03-preview-player.md)
 Spek: [`docs/features/04-timeline-editing.md`](docs/features/04-timeline-editing.md)
 
 - [x] Spek
-- [ ] Trim in/out
-- [ ] Split
-- [ ] Move + snap
-- [ ] Ripple delete
-- [ ] Collision resolve
+- [x] Trim in/out (snap hanya sisi yang digeser, clamp ke tetangga/sumber)
+- [x] Split (seam keyframe diinterpolasi di titik potong)
+- [x] Move + snap (push-kanan saat tabrakan)
+- [x] Ripple delete (tutup gap)
+- [x] Collision resolve (`firstFreeStart`, sanitize shift overlap)
 - [ ] Linked audio/video
-- [ ] Multi-select + duplicate
-- [ ] Unit test operasi timeline
+- [x] Duplicate (transisi dangling dibersihkan) / multi-select belum
+- [x] Unit test operasi timeline
 
 ## F05 — Speed, Curve, Motion
 
 Spek: [`docs/features/05-speed-curve-motion.md`](docs/features/05-speed-curve-motion.md)
 
 - [x] Spek
-- [ ] Speed konstan
-- [ ] Reverse
-- [ ] Speed curve
-- [ ] Slow-motion interpolation
+- [x] Speed konstan (0.1×–8×, ripple ke klip berikutnya)
+- [~] Reverse (tersimpan + UI; preview/pitch tidak dirender Media3)
+- [x] Speed curve (integral tertutup `S/(b−a)·ln(b/a)`, curve editor)
+- [~] Slow-motion interpolation (keyframe retime; frame interpolasi di export)
 - [ ] Stabilisasi
 - [ ] Deflicker
 - [ ] Motion blur
 - [ ] Noise reduction
-- [ ] Unit test retime
+- [x] Unit test retime (kecepatan, curve, rippling, keyframe rescale)
 
 ## F06 — Keyframe
 
 Spek: [`docs/features/06-keyframe.md`](docs/features/06-keyframe.md)
 
 - [x] Spek
-- [ ] Keyframe posisi/scale/opacity
-- [ ] Rotasi + easing
+- [x] Keyframe posisi/scale/opacity (POSITION_X/Y, SCALE, OPACITY, ROTATION, VOLUME)
+- [x] Rotasi + easing (LINEAR/EASE_IN/EASE_OUT/EASE_IN_OUT/BEZIER smoothstep)
 - [ ] Curve editor
 - [ ] Copy/paste keyframe
 - [ ] Tracking keyframe
-- [ ] Unit test interpolasi
+- [x] Unit test interpolasi
 
 ## F07 — Transition
 
 Spek: [`docs/features/07-transition.md`](docs/features/07-transition.md)
 
 - [x] Spek
-- [ ] Cut/dissolve/fade
-- [ ] Library transisi lokal
-- [ ] Durasi + curve
-- [ ] Preview transisi
+- [x] Cut/dissolve/fade (jenis disimpan per batas; clamp ke sisi terpendek, min 100 ms)
+- [x] Library transisi lokal (tipe dipilih dari katalog)
+- [~] Durasi + curve (durasi ✅; kurva easing belum)
+- [ ] Preview transisi (BUTUH BACKEND — ditandai di UI)
 - [!] AI transition (BUTUH BACKEND; fallback transisi biasa)
 
 ## F08 — Filter & Color
@@ -205,35 +207,35 @@ Spek: [`docs/features/07-transition.md`](docs/features/07-transition.md)
 Spek: [`docs/features/08-filter-color.md`](docs/features/08-filter-color.md)
 
 - [x] Spek
-- [ ] Filter/LUT + intensity
-- [ ] Brightness/contrast/saturation
-- [ ] HSL
-- [ ] Curves
-- [ ] Highlight/shadow/vignette
-- [ ] Color wheels + color match
-- [ ] Unit test color pipeline
+- [x] Filter/LUT + intensity (8 preset matriks warna lokal, blend intensity)
+- [x] Brightness/contrast/saturation (+ temperature, tint, highlight/shadow)
+- [~] HSL (8 band disimpan untuk export; preview matriks tidak mempengaruhi)
+- [ ] Curves (menyusul — ditandai di UI)
+- [x] Highlight/shadow/vignette (vignette disimpan untuk export)
+- [ ] Color wheels + color match (menyusul — ditandai di UI)
+- [x] Unit test color pipeline (matrix, preset, order, band upsert)
 
 ## F09 — Video Effects
 
 Spek: [`docs/features/09-video-effects.md`](docs/features/09-video-effects.md)
 
 - [x] Spek
-- [ ] Shader effect lokal
-- [ ] Effect pack format sendiri
-- [ ] Effect browser + preview
-- [ ] AR/face/body effect
-- [ ] Unit test shader compile
+- [x] Shader effect lokal (9 efek, matrix warna + blur, stack berurutan)
+- [ ] Effect pack format sendiri (katalog dikode keras; format pack di M29)
+- [x] Effect browser + preview (kategori + intensity + preview card)
+- [~] AR/face/body effect (BUTUH BACKEND; fallback warna lokal, tetap bisa dipilih)
+- [x] Unit test katalog/matrix/stack
 
 ## F10 — Mask & Chroma
 
 Spek: [`docs/features/10-mask-chroma.md`](docs/features/10-mask-chroma.md)
 
 - [x] Spek
-- [ ] Mask rectangle/linear/circle
-- [ ] Feather + invert
+- [x] Mask rectangle/linear/circle (+ mirror, heart, star; scrim + outline putus-putus)
+- [x] Feather + invert + posisi
 - [ ] Brush mask
-- [ ] Chroma key/green screen
-- [ ] Unit test mask math
+- [~] Chroma key/green screen (disimpan untuk export; preview area mask saja)
+- [x] Unit test mask math
 
 ## F11 — Matting & Background
 
@@ -585,6 +587,14 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `4bf0df2` | M3 preview player Media3: plan, engine, timeline playhead, lifecycle |
 | 2026-10-25 | `cc295cd` | Perbaikan kompilasi ikon vektor M3; CI hijau |
 | 2026-10-25 | `1de612b` | versionCode 5 + tag `v0.5.0`; signed release APK terbit |
+| 2026-10-25 | `a2c6abe` `e60804a` | M4 timeline editing: trim/split/move/snap/ripple + TrimScreen + tool layer |
+| 2026-10-25 | `771aa82` | M5 speed: kurva closed-form, reverse, SpeedScreen |
+| 2026-10-25 | `646ab88` | M6 keyframe: KeyframeEditor + KeyframeScreen |
+| 2026-10-25 | `a59cf91` | M7 transisi batas klip + penanda timeline |
+| 2026-10-25 | `b732ba1` | M8 filter LUT lokal + adjust warna/HSL |
+| 2026-10-25 | `f36af6f` | M9 efek lokal + katalog + intensity |
+| 2026-10-25 | `5d735a9` `b7192a6` | M10 mask bentuk + chroma key lokal |
+| 2026-10-25 | `2af6eb8` | Review gate batch M4–M10: fix trim-snap, split/retime keyframe, repair transisi, sanitize overflow, mask draft, thumbnail gate/dedup, hot-path speed, ruler cap |
 
 ## Backlog re-audit
 
@@ -594,8 +604,6 @@ penghalang commit; jadi backlog untuk Tahap 3.
 - **Speed curve belum jadi sumber kebenaran** (`TimelineEditor.splitClip`):
   offset sumber dihitung dari `speed` skalar, sementara `curve` hanya di-remap.
   Butuh keputusan semantik curve sebelum diimplementasikan.
-- **Seam keyframe pakai nilai keyframe terakhir, bukan interpolasi di titik
-  potong** — animasi yang melewati titik potong masih "dibekukan" di paruh kiri.
 - **Erasure clip di decode tidak dikarantina** — clip invalid dibuang, bukan
   disimpan mentah; dibuat konsisten dengan karantina project saat sanitize
   sudah punya jalur karantina.
@@ -604,16 +612,24 @@ penghalang commit; jadi backlog untuk Tahap 3.
 - **Trim handle mentok** di batas sumber: edit ditolak, bukan di-clamp.
 - **Pin actions ke commit SHA** dan gate job `release` di Environment
   ber-reviewer (hardening workflow).
-- **`normalize`→`sanitize` menambah sort per track di jalur decode** — tidak
-  signifikan, tapi bisa dilewati bila data sudah urut.
 - **Duplikasi saturating-add** (`TimelineEditor.safeAdd` vs
   `ProjectFactory.advanceCursor`) — satukan saat math drag/trim UI ditulis.
-- **`splitClip` sudah ~68 baris** — pisah seam-keyframe/trim/clamp ke helper
-  saat salah satu concern berubah.
 - **`Clip.isValid()` masih private di `TimelineEditor`** — angkat ke `Clip`
   saat layer lain (repo/UI) butuh invarian yang sama.
 - **`quarantinedProjects` menyimpan dua bentuk** (dokumen mentah vs elemen
   project) tanpa penanda — beri diskriminator saat fitur recovery dibuat.
+- **Rebuild player Media3 sinkron di main thread** tiap commit edit
+  (`EditorViewModel`/`Media3PreviewEngine`) — swap-ke-player-baru ditunda;
+  terasa sebagai jeda 0,2–0,5 s saat lepas trim handle di device rendah.
+- **Mutex terpisah per ViewModel** (`ClipToolViewModel` vs `EditorViewModel`)
+  — edit bersamaan dari kedua layar bisa saling menimpa; belum reachable
+  (editor tertutup saat tool screen terbuka), didokumentasikan.
+- **`KeyframeEditor.sample` menyortir ulang daftar keyframe tiap panggil** —
+  list kecil, dioptimasi kalau keyframe banyak.
+- **Ruler timeline minor-tick di-cap 600 detik** (bukan dihapus) — label tetap
+  penuh, tick halus berhenti setelah 10 menit (`ponytail:` di kode).
+- **Virtualisasi timeline** belum ada — dedup in-flight + semaphore sudah
+  meredakan; draft 100+ klip tetap mengukur semua klip per frame.
 
 ### Temuan reviewer M0 (2026-10-23)
 
@@ -811,6 +827,52 @@ Backlog M3 (non-blocking):
   dispatcher player bila jeda terasa di perangkat rendah.
 - **Timeline belum divirtualisasi**; draft 100+ klip mengukur semua klip dalam
   satu frame. Optimasi saat draft panjang jadi umum.
+
+### Temuan reviewer batch M4–M10 (2026-10-25)
+
+Gate otomatis dijalankan pada batch (M4–M10) di commit `b7192a6`. Verdict
+ketiga reviewer: security **BLOCKING: no**, bug **BLOCKING: no**, performance
+**BLOCKING: no**. Tidak ada temuan Critical/High; Medium/Low yang relevan
+diperbaiki dalam satu pass di commit `2af6eb8`:
+
+- **Trim snap dua sisi** (bug Medium): drag satu handle ikut men-snap sisi
+  satunya → klip bisa membesar diam-diam atau gestur tertelan. → snap hanya
+  sisi yang berubah (`EditorViewModel.trimClip`).
+- **Split seam keyframe** (bug Medium): paruh kiri tidak dapat keyframe di
+  titik potong dan paruh kanan di-seed nilai keyframe terakhir → bentuk animasi
+  berubah di seam. → kedua paruh di-seed nilai sampel di titik potong.
+- **Retime tidak men-scaling keyframe** (bug Medium): keyframe melewati durasi
+  baru → animasi drift tak terlihat. → keyframe di-scale ke durasi baru.
+- **Transisi menggantung** (bug Medium): delete/duplicate/move/split tidak
+  memperbaiki transisi tetangga. → repair transisi di `recalculate`
+  (choke point semua mutasi), clamp ke sisi terpendek, drop bila < 100 ms.
+- **Sanitize overflow** (bug Low): klip bisa "stuck" di `Long.MAX_VALUE`. →
+  klip yang overflow di-drop, bukan dibiarkan tak bisa diedit.
+- **MaskScreen slider** (bug Medium): slider menampilkan nilai committed (basi)
+  saat menulis draft → thumb tidak mengikuti jari; chip shape juga bisa
+  ditimpa draft lama. → slider/invert/chip memakai draft, commit di ujung.
+- **Transisi klip pendek** (bug Low): kedua klip < 100 ms → tile transisi
+  no-op tanpa umpan balik. → kontrol disembunyikan + hint.
+- **Path thumbnail** (security Low): `thumbnailPath`/`localPath`/`uri` dibaca
+  tanpa gate containment (gap satu-satunya vs `PreviewPlan`). → contain di
+  `cacheDir`/`filesDir` + hanya `content://`.
+- **Decode-time NaN** (security Low): `ColorAdjustments.brightness` tanpa
+  `coerceIn`. → di-clamp seperti saudaranya.
+- **speedAt re-normalisasi** (perf Medium): 73×/frame di curve editor dan
+  tiap frame playback. → `speedAtNormalized` (binary search) di hot path.
+- **Thumbnail fan-out** (perf Medium): N klip → N retriever paralel, split
+  mendecode file sama 2×. → dedup in-flight + `Semaphore(3)`.
+- **Ruler tick tak terbatas** (perf Low) → minor tick di-cap; **drawDiamond
+  alokasi Path** (perf Low) → 8 `drawLine`; **waktu keyframe > durasi klip**
+  (bug Low) → `remember` ikut `durationMs`; komentar `valueOf`/`sample`
+  diperbaiki (perf/Low).
+
+Yang sengaja **ditunda** ke backlog (bukan penghalang): rebuild player sinkron
+di main thread (refactor besar, pre-existing M3), mutex lintas-ViewModel
+(latent), virtualisasi timeline penuh.
+
+Test baru/update di `TimelineEditorTest`: split seam sampel, retime rescale
+keyframe, ripple-delete/duplicate repair transisi, sanitize overflow drop.
 
 ## Ringkasan akhir
 
