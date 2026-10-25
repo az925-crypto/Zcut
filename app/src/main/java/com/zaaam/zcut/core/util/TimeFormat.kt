@@ -19,5 +19,21 @@ object TimeFormat {
         }
     }
 
+    /** `0:05.240` — same shape as [clock] with millisecond precision. */
+    fun clockMillis(durationMs: Long): String {
+        val total = durationMs.coerceAtLeast(0L)
+        val millis = total % 1_000L
+        val totalSeconds = total / 1_000L
+        val seconds = totalSeconds % 60L
+        val minutes = (totalSeconds / 60L) % 60L
+        val hours = totalSeconds / 3_600L
+        val base = if (hours > 0L) {
+            "${hours}:${pad(minutes)}:${pad(seconds)}"
+        } else {
+            "${minutes}:${pad(seconds)}"
+        }
+        return "$base.${millis.toString().padStart(3, '0')}"
+    }
+
     private fun pad(value: Long): String = if (value < 10L) "0$value" else value.toString()
 }

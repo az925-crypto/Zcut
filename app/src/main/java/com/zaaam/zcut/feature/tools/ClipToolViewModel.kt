@@ -3,8 +3,11 @@ package com.zaaam.zcut.feature.tools
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zaaam.zcut.core.data.ProjectRepository
+import com.zaaam.zcut.core.domain.KeyframeEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
+import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.Clip
+import com.zaaam.zcut.core.model.Easing
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -116,6 +119,40 @@ class ClipToolViewModel(
     fun setReversed(reversed: Boolean) {
         val id = clipId ?: return
         edit { TimelineEditor.setReversed(it, id, reversed) }
+    }
+
+    fun addKeyframe(property: AnimatableProperty, timeMs: Long) {
+        editClip { clip ->
+            KeyframeEditor.upsert(
+                clip = clip,
+                property = property,
+                timeMs = timeMs,
+                value = KeyframeEditor.sample(clip, property, timeMs)
+            )
+        }
+    }
+
+    fun removeKeyframe(property: AnimatableProperty, timeMs: Long) {
+        editClip { clip -> KeyframeEditor.remove(clip, property, timeMs) }
+    }
+
+    fun clearKeyframes(property: AnimatableProperty) {
+        editClip { clip ->
+            val remaining = clip.keyframes.filterNot { it.property == property }
+            if (remaining.size == clip.keyframes.size) clip else {
+                clip.copy(keyframes = remaining)
+            }
+        }
+    }
+
+    /** Slider edits: static property, auto-keyed once the property is animated. */    fun setPropertyValue(property: AnimatableProperty, timeMs: Long, value: Float) {
+        editClip { clip ->
+            KeyframeEditor.setPropertyAndAutoKey(clip, property, value, timeMs)
+        }
+    }
+
+    fun setKeyframeEasing(property: AnimatableProperty, timeMs: Long, easing: Easing) {
+        editClip { clip -> KeyframeEditor.setEasing(clip, property, timeMs, easing) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

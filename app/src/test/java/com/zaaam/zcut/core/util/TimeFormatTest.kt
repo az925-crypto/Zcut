@@ -33,4 +33,13 @@ class TimeFormatTest {
         assertEquals("0:00", TimeFormat.clock(-1L))
         assertEquals("0:00", TimeFormat.clock(Long.MIN_VALUE))
     }
+
+    @Test
+    fun formatsMilliseconds() {
+        assertEquals("0:00.000", TimeFormat.clockMillis(0L))
+        assertEquals("0:00.042", TimeFormat.clockMillis(42L))
+        assertEquals("0:01.240", TimeFormat.clockMillis(1_240L))
+        assertEquals("1:02:03.005", TimeFormat.clockMillis(3_723_005L))
+        assertEquals("0:00.000", TimeFormat.clockMillis(-5L))
+    }
 }

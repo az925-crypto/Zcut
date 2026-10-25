@@ -25,6 +25,7 @@ import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
+import com.zaaam.zcut.feature.tools.KeyframeScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
 import com.zaaam.zcut.ui.LocalAppContainer
@@ -197,6 +198,14 @@ fun ZcutNavHost(
 
             clipTool(ZcutRoutes.Speed) { projectId, clipId ->
                 SpeedScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Keyframe) { projectId, clipId ->
+                KeyframeScreen(
                     projectId = projectId,
                     clipId = clipId,
                     onBack = { navController.popBackStack() }
