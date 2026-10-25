@@ -6,7 +6,8 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M3 selesai, M4 berikutnya.**
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M3 selesai; batch M4–M10
+  dikerjakan, review gate dijalankan di akhir batch.**
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
   Sisa temuan Medium/Low ada di bagian Backlog re-audit, bukan penghalang.
 
@@ -26,7 +27,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0–M3 selesai) |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · batch M4–M10 (M0–M3 selesai) |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
 
@@ -557,8 +558,9 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
       `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
 - [x] Upload APK ke GitHub Releases
 - [x] CI hijau
-- [x] Link release terbaru: <https://github.com/az925-crypto/Zcut/releases/tag/v0.4.0>
-      (riwayat: `v0.1.0` scaffold, `v0.2.0` M0, `v0.3.0` M1, `v0.4.0` M2)
+- [x] Link release terbaru: <https://github.com/az925-crypto/Zcut/releases/tag/v0.5.0>
+      (riwayat: `v0.1.0` scaffold, `v0.2.0` M0, `v0.3.0` M1, `v0.4.0` M2,
+      `v0.5.0` M3)
 - [x] Verifikasi signature: `apksigner verify --print-certs` →
       `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`
 
@@ -580,6 +582,9 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-24 | `900cbb4` | M1 preferensi lokal, onboarding tersimpan, Profil & Pengaturan; release `v0.3.0` |
 | 2026-10-24 | `c129da5` | M2 editor shell, kanvas timeline, impor media; CI hijau |
 | 2026-10-24 | `7c14b3b` | versionCode 4 + tag `v0.4.0`; signed release APK terbit |
+| 2026-10-25 | `4bf0df2` | M3 preview player Media3: plan, engine, timeline playhead, lifecycle |
+| 2026-10-25 | `cc295cd` | Perbaikan kompilasi ikon vektor M3; CI hijau |
+| 2026-10-25 | `1de612b` | versionCode 5 + tag `v0.5.0`; signed release APK terbit |
 
 ## Backlog re-audit
 
