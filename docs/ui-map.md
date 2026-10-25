@@ -28,7 +28,7 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `template-detail` | template-detail | M19 | ⏳ | placeholder |
 | `discover` | discover | M19 | ⏳ | placeholder |
 | `ai-studio` | ai-studio | M20 | ⏳ | placeholder |
-| `editor` | editor | M2 | ✅ | `feature/editor/EditorScreen` |
+| `editor` | editor | M2–M3 | ✅ | `feature/editor/EditorScreen` |
 | `media-picker` | media-picker | M2 | ✅ | `feature/media/MediaPickerScreen` |
 | `trim` | trim | M4 | ⏳ | placeholder |
 | `speed` | speed | M5 | ⏳ | placeholder |
@@ -84,6 +84,27 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `ui/LocalAppContainer.kt` | `LocalAppContainer` + `zcutViewModelFactory` |
 
 Spesifikasi desain M0 ada di [`ui-m0-design.md`](ui-m0-design.md).
+Spesifikasi desain M2 ada di [`ui-m2-design.md`](ui-m2-design.md).
+Spesifikasi desain M3 ada di [`ui-m3-design.md`](ui-m3-design.md).
+
+## Preview (M3)
+
+Rute `editor` sekarang memutar timeline lewat Media3 `CompositionPlayer`.
+Tidak ada rute baru: kontrol play/pause, mute, playhead, dan badge FPS berada
+di panel preview yang sama.
+
+| Bagian | Implementasi |
+|---|---|
+| Mapping timeline → composition | `core/render/PreviewPlan.kt`, `Media3CompositionBuilder.kt` |
+| Player + ticker + FPS | `core/render/Media3PreviewEngine.kt` |
+| Playhead tanpa recompose klip | `TimelineCanvas` membaca `StateFlow<Long>` di `Modifier.offset {}` |
+| Range klip terpilih | `PreviewSeek.range` / `rangeAfterSeek` |
+| Lifecycle | pause saat `ON_STOP`/dispose; rebuild ditunda saat editor tersembunyi |
+| Sumber aman | hanya `filesDir` kanonik atau `content://` |
+
+Batasan M3: satu sequence visual + satu sequence audio; overlay/teks/efek/
+caption/sticker belum ter-composite; GIF tampil sebagai frame diam; global
+speed menyusul di M5. Detail lengkap di [`ui-m3-design.md`](ui-m3-design.md).
 
 ## Preferensi (M1)
 

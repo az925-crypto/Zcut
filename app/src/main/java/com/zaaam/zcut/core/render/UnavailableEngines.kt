@@ -1,10 +1,8 @@
 package com.zaaam.zcut.core.render
 
 import com.zaaam.zcut.core.model.MediaAsset
-import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.Track
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -18,37 +16,6 @@ class UnavailableVideoRenderEngine(
         flowOf(RenderProgress.Failed(reason))
 
     override suspend fun cancel() = Unit
-}
-
-class UnavailablePreviewEngine : PreviewEngine {
-    private val state = MutableStateFlow(PreviewState())
-
-    override fun prepare(project: Project): Flow<PreviewState> {
-        state.value = PreviewState(
-            durationMs = project.timeline.durationMs,
-            aspectRatio = project.aspectRatio
-        )
-        return state
-    }
-
-    override fun play() {
-        state.value = state.value.copy(isPlaying = true)
-    }
-
-    override fun pause() {
-        state.value = state.value.copy(isPlaying = false)
-    }
-
-    override fun seekTo(positionMs: Long) {
-        val duration = state.value.durationMs.coerceAtLeast(0L)
-        state.value = state.value.copy(
-            positionMs = positionMs.coerceIn(0L, duration)
-        )
-    }
-
-    override fun release() {
-        state.value = PreviewState()
-    }
 }
 
 class UnavailableMediaProbe : MediaProbe {

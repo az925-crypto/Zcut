@@ -35,8 +35,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
@@ -53,6 +55,7 @@ import com.zaaam.zcut.ui.theme.ZcutGreen
 import com.zaaam.zcut.ui.theme.ZcutLime
 import com.zaaam.zcut.ui.theme.ZcutOnPrimary
 import com.zaaam.zcut.ui.theme.ZcutViolet
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Multi-track timeline: one shared horizontal scroll state drives the ruler and
@@ -62,13 +65,16 @@ import com.zaaam.zcut.ui.theme.ZcutViolet
 @Composable
 fun TimelineCanvas(
     project: Project,
-    playheadMs: Long,
+    playhead: StateFlow<Long>,
     selectedClipId: String?,
     onSeek: (Long) -> Unit,
     onSelectClip: (String) -> Unit,
     thumbnails: MediaThumbnails,
     modifier: Modifier = Modifier
 ) {
+    // Collected as Compose state but only read inside the layout lambdas below:
+    // a moving playhead invalidates placement, not composition of every clip.
+    val playheadMs = playhead.collectAsStateWithLifecycle()
     val tracks = EditorTimeline.orderedTracks(project.timeline.tracks)
     val durationMs = project.timeline.durationMs.coerceAtLeast(1_000L)
     val scrollState = rememberScrollState()
@@ -128,14 +134,25 @@ fun TimelineCanvas(
                     // Playhead spans the ruler and every lane.
                     Box(
                         modifier = Modifier
-                            .offset(x = EditorTimeline.offsetDp(playheadMs).dp)
+                            .offset {
+                                IntOffset(
+                                    x = EditorTimeline.offsetDp(playheadMs.value).dp.roundToPx(),
+                                    y = 0
+                                )
+                            }
                             .width(2.dp)
                             .height(canvasHeight)
                             .background(ZcutLime)
                     )
                     Box(
                         modifier = Modifier
-                            .offset(x = (EditorTimeline.offsetDp(playheadMs) - 4f).dp)
+                            .offset {
+                                IntOffset(
+                                    x = (EditorTimeline.offsetDp(playheadMs.value).dp - 4.dp)
+                                        .roundToPx(),
+                                    y = 0
+                                )
+                            }
                             .size(10.dp)
                             .clip(CircleShape)
                             .background(ZcutLime)

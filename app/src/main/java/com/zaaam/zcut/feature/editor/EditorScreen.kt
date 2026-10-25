@@ -24,12 +24,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -38,14 +40,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.Player
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import com.zaaam.zcut.core.domain.ExportDimensions
 import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
+import com.zaaam.zcut.core.render.PreviewState
 import com.zaaam.zcut.core.util.TimeFormat
 import com.zaaam.zcut.feature.media.rememberThumbnail
 import com.zaaam.zcut.ui.LocalAppContainer
@@ -57,6 +66,7 @@ import com.zaaam.zcut.ui.components.ZcutTopBar
 import com.zaaam.zcut.ui.editorViewModelFactory
 import com.zaaam.zcut.ui.navigation.ZcutRoutes
 import com.zaaam.zcut.ui.theme.ZcutSpacing
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun EditorScreen(
@@ -72,26 +82,59 @@ fun EditorScreen(
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // The ViewModel survives on the back stack, so leaving the editor (or
+    // backgrounding the app) must stop playback explicitly; onCleared is too
+    // late and would keep audio and the decoder running behind another screen.
+    // Preview rebuilds are deferred while stopped and flushed on ON_START.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.onScreenStarted()
+                Lifecycle.Event.ON_STOP -> viewModel.onScreenStopped()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.onScreenStarted()
+        }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.onScreenStopped()
+        }
+    }
+
     EditorContent(
         state = state,
+        previewState = viewModel.previewState,
+        playhead = viewModel.playhead,
+        previewPlayer = viewModel.previewPlayer,
         thumbnails = container.mediaThumbnails,
         onBack = onBack,
         onNavigate = onNavigate,
         onAddMedia = onAddMedia,
         onSeek = viewModel::seekTo,
-        onSelectClip = viewModel::selectClip
+        onSelectClip = viewModel::selectClip,
+        onTogglePlay = viewModel::togglePlayback,
+        onToggleMute = viewModel::toggleMute
     )
 }
 
 @Composable
 private fun EditorContent(
     state: EditorUiState,
+    previewState: StateFlow<PreviewState>,
+    playhead: StateFlow<Long>,
+    previewPlayer: StateFlow<Player?>,
     thumbnails: MediaThumbnails,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit,
     onAddMedia: () -> Unit,
     onSeek: (Long) -> Unit,
-    onSelectClip: (String?) -> Unit
+    onSelectClip: (String?) -> Unit,
+    onTogglePlay: () -> Unit,
+    onToggleMute: () -> Unit
 ) {
     val project = state.project
 
@@ -158,7 +201,9 @@ private fun EditorContent(
 
             else -> EditorBody(
                 project = project,
-                playheadMs = state.playheadMs,
+                previewState = previewState,
+                playhead = playhead,
+                previewPlayer = previewPlayer,
                 selectedClipId = state.selectedClipId,
                 isEmpty = state.isEmpty,
                 thumbnails = thumbnails,
@@ -168,7 +213,9 @@ private fun EditorContent(
                 onNavigate = onNavigate,
                 onAddMedia = onAddMedia,
                 onSeek = onSeek,
-                onSelectClip = { clipId -> onSelectClip(clipId) }
+                onSelectClip = { clipId -> onSelectClip(clipId) },
+                onTogglePlay = onTogglePlay,
+                onToggleMute = onToggleMute
             )
         }
     }
@@ -177,7 +224,9 @@ private fun EditorContent(
 @Composable
 private fun EditorBody(
     project: Project,
-    playheadMs: Long,
+    previewState: StateFlow<PreviewState>,
+    playhead: StateFlow<Long>,
+    previewPlayer: StateFlow<Player?>,
     selectedClipId: String?,
     isEmpty: Boolean,
     thumbnails: MediaThumbnails,
@@ -185,7 +234,9 @@ private fun EditorBody(
     onNavigate: (String) -> Unit,
     onAddMedia: () -> Unit,
     onSeek: (Long) -> Unit,
-    onSelectClip: (String) -> Unit
+    onSelectClip: (String) -> Unit,
+    onTogglePlay: () -> Unit,
+    onToggleMute: () -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
         // The mockup caps the preview at 42% of the body; the rest belongs to
@@ -206,10 +257,14 @@ private fun EditorBody(
         ) {
             PreviewPanel(
                 project = project,
-                playheadMs = playheadMs,
+                previewState = previewState,
+                previewPlayer = previewPlayer,
+                playhead = playhead,
                 isEmpty = isEmpty,
                 thumbnails = thumbnails,
                 onAddMedia = onAddMedia,
+                onTogglePlay = onTogglePlay,
+                onToggleMute = onToggleMute,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(previewHeight)
@@ -220,7 +275,7 @@ private fun EditorBody(
 
             TimelineCanvas(
                 project = project,
-                playheadMs = playheadMs,
+                playhead = playhead,
                 selectedClipId = selectedClipId,
                 onSeek = onSeek,
                 onSelectClip = onSelectClip,
@@ -242,18 +297,28 @@ private fun EditorBody(
 @Composable
 private fun PreviewPanel(
     project: Project,
-    playheadMs: Long,
+    previewState: StateFlow<PreviewState>,
+    previewPlayer: StateFlow<Player?>,
+    playhead: StateFlow<Long>,
     isEmpty: Boolean,
     thumbnails: MediaThumbnails,
     onAddMedia: () -> Unit,
+    onTogglePlay: () -> Unit,
+    onToggleMute: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Collected here, not at the screen root: the 1 Hz FPS update and
+    // play/pause changes must not recompose the timeline and its clips.
+    val preview by previewState.collectAsStateWithLifecycle()
+    val player by previewPlayer.collectAsStateWithLifecycle()
     val cover = remember(project.id, project.assets, project.timeline) {
         coverAsset(project)
     }
     val thumbnail by rememberThumbnail(key = cover?.id) {
         if (cover == null) null else thumbnails.load(cover, 720)
     }
+    val hasContent = project.timeline.tracks.any { it.clips.isNotEmpty() }
+    val showPlayer = preview.hasVideo && player != null
 
     BoxWithConstraints(
         modifier = modifier,
@@ -269,27 +334,71 @@ private fun PreviewPanel(
                 .clip(RoundedCornerShape(14.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            if (thumbnail != null) {
-                Image(
-                    bitmap = thumbnail!!,
-                    contentDescription = "Pratinjau ${project.name}",
-                    contentScale = ContentScale.Crop,
+            if (showPlayer) {
+                AndroidView(
+                    factory = { context ->
+                        PlayerView(context).apply {
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            setKeepContentOnPlayerReset(true)
+                        }
+                    },
+                    update = { view -> view.player = player },
+                    onRelease = { view -> view.player = null },
                     modifier = Modifier.fillMaxSize()
                 )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(ZcutSpacing.lg),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = if (isEmpty) "Belum ada media" else "Pratinjau belum tersedia",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+            }
+
+            // The player surface is black until the first frame is decoded, so
+            // the cover thumbnail stays on top for that moment.
+            if (!showPlayer || !preview.hasFrame) {
+                if (thumbnail != null) {
+                    Image(
+                        bitmap = thumbnail!!,
+                        contentDescription = "Pratinjau ${project.name}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    if (isEmpty) {
+                } else if (!isEmpty) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(ZcutSpacing.lg),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = if (preview.hasAudio) {
+                                "Pratinjau audio"
+                            } else {
+                                "Pratinjau belum tersedia"
+                            },
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (preview.hasAudio) {
+                            Text(
+                                text = "Tekan putar untuk mendengarkan audio.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = ZcutSpacing.xs)
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(ZcutSpacing.lg),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Belum ada media",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Text(
                             text = "Tambahkan video, foto, atau audio untuk mulai.",
                             style = MaterialTheme.typography.bodySmall,
@@ -333,19 +442,45 @@ private fun PreviewPanel(
                 )
             }
 
-            Surface(
-                color = Color.Black.copy(alpha = 0.38f),
-                shape = CircleShape,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(52.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.55f),
-                    modifier = Modifier.padding(12.dp)
-                )
+            preview.error?.let { message ->
+                Surface(
+                    color = Color.Black.copy(alpha = 0.72f),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(ZcutSpacing.sm)
+                ) {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            if (hasContent) {
+                val playEnabled = preview.isPlayable && player != null && preview.error == null
+                Surface(
+                    color = Color.Black.copy(alpha = 0.38f),
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = playEnabled, onClick = onTogglePlay)
+                ) {
+                    Icon(
+                        imageVector = if (preview.isPlaying) {
+                            ZcutIcons.Pause
+                        } else {
+                            Icons.Filled.PlayArrow
+                        },
+                        contentDescription = if (preview.isPlaying) "Jeda" else "Putar",
+                        tint = Color.White.copy(alpha = if (playEnabled) 0.92f else 0.45f),
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
             }
 
             Row(
@@ -355,21 +490,49 @@ private fun PreviewPanel(
                     .padding(horizontal = ZcutSpacing.md, vertical = ZcutSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = TimeFormat.clock(playheadMs),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = " · pemutar aktif di M3",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                PreviewClock(playhead)
+                if (preview.isPlaying && preview.renderedFps > 0) {
+                    Text(
+                        text = " · ${preview.renderedFps} fps",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                if (preview.hasAudio) {
+                    IconButton(
+                        onClick = onToggleMute,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (preview.isMuted) {
+                                ZcutIcons.VolumeOff
+                            } else {
+                                ZcutIcons.VolumeOn
+                            },
+                            contentDescription = if (preview.isMuted) {
+                                "Nyalakan suara"
+                            } else {
+                                "Bisukan suara"
+                            },
+                            tint = Color.White
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun PreviewClock(playhead: StateFlow<Long>) {
+    val position by playhead.collectAsStateWithLifecycle()
+    Text(
+        text = TimeFormat.clock(position),
+        style = MaterialTheme.typography.labelMedium,
+        color = Color.White
+    )
 }
 
 @Composable

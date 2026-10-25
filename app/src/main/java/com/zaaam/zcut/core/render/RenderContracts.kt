@@ -1,11 +1,12 @@
 package com.zaaam.zcut.core.render
 
-import com.zaaam.zcut.core.model.AspectRatio
+import androidx.media3.common.Player
 import com.zaaam.zcut.core.model.ExportPreset
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.Track
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 data class RenderRequest(
     val project: Project,
@@ -38,16 +39,35 @@ interface VideoRenderEngine {
 
 data class PreviewState(
     val isPlaying: Boolean = false,
-    val positionMs: Long = 0L,
+    val isReady: Boolean = false,
+    val hasVideo: Boolean = false,
+    val hasAudio: Boolean = false,
+    /** True once Media3 has rendered a frame; the thumbnail stays until then. */
+    val hasFrame: Boolean = false,
+    val isMuted: Boolean = false,
     val durationMs: Long = 0L,
-    val aspectRatio: AspectRatio = AspectRatio.PORTRAIT_9_16
-)
+    /** Measured frames per second over the last second while playing. */
+    val renderedFps: Int = 0,
+    val error: String? = null
+) {
+    val isPlayable: Boolean get() = hasVideo || hasAudio
+}
 
 interface PreviewEngine {
-    fun prepare(project: Project): Flow<PreviewState>
+    val state: StateFlow<PreviewState>
+    val positionMs: StateFlow<Long>
+
+    /** Player for the attached PlayerView; emits null until [prepare]. */
+    val playerFlow: StateFlow<Player?>
+
+    fun prepare(project: Project, startPositionMs: Long)
     fun play()
     fun pause()
     fun seekTo(positionMs: Long)
+
+    /** Restricts playback to [startMs]..[endMs]; null clears the range. */
+    fun setRange(startMs: Long?, endMs: Long?)
+    fun setMuted(muted: Boolean)
     fun release()
 }
 

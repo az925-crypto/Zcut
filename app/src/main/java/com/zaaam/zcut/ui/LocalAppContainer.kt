@@ -49,7 +49,13 @@ fun editorViewModelFactory(
     projectId: String
 ): ViewModelProvider.Factory = remember(container, projectId) {
     viewModelFactory {
-        initializer { EditorViewModel(projectId, container.projectRepository) }
+        initializer {
+            EditorViewModel(
+                projectId = projectId,
+                repository = container.projectRepository,
+                previewEngine = container.newPreviewEngine()
+            )
+        }
     }
 }
 

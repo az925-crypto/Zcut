@@ -97,8 +97,11 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Render stack (media3) is added in M3, when the preview player is wired.
-    // Shipping unused ExoPlayer/Transformer modules now only grows the APK.
+    // Media3 1.9.0 is the last line that supports compileSdk 35; 1.10+ needs 36.
+    // Transformer pulls ExoPlayer in as an api dependency, so the analytics and
+    // frame-metadata listeners compile without a separate exoplayer artifact.
+    implementation("androidx.media3:media3-transformer:1.9.0")
+    implementation("androidx.media3:media3-ui:1.9.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

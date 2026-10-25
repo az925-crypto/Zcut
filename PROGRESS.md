@@ -6,7 +6,7 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.1.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) dimulai 2026-10-23.**
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M3 selesai, M4 berikutnya.**
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`.
   Sisa temuan Medium/Low ada di bagian Backlog re-audit, bukan penghalang.
 
@@ -26,7 +26,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0–M1 selesai) |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · fitur per fitur (M0–M3 selesai) |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0` (scaffold) sudah rilis; rilis fitur menyusul per tag |
 
@@ -39,7 +39,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M0 | Fondasi Compose, shell navigasi, daftar draft | F01/F20 (parsial) | splash, onboarding, home, projects | ✅ |
 | M1 | Preferensi lokal, onboarding tersimpan, Profil & Pengaturan | F28/F29 | profile, settings | ✅ |
 | M2 | Editor shell, kanvas timeline, media import | F01/F02 | editor, media-picker | ✅ |
-| M3 | Preview player Media3 | F03 | (editor) | [ ] |
+| M3 | Preview player Media3 | F03 | (editor) | ✅ |
 | M4 | Timeline editing: trim, split, move, snap, ripple | F04 | trim | [ ] |
 | M5 | Speed, reverse, curve, motion | F05 | speed | [ ] |
 | M6 | Keyframe | F06 | keyframe | [ ] |
@@ -139,13 +139,13 @@ Spek: [`docs/features/02-media-import-gallery.md`](docs/features/02-media-import
 Spek: [`docs/features/03-preview-player.md`](docs/features/03-preview-player.md)
 
 - [x] Spek
-- [ ] Media3 ExoPlayer + surface
-- [ ] Composite timeline playback
-- [ ] Frame-accurate seek
-- [ ] Preview range + speed
-- [ ] Playhead sync dengan timeline
-- [ ] Performance metrics (FPS/dropped frame)
-- [ ] Unit/instrumentation test seek
+- [x] Media3 CompositionPlayer + surface (`PlayerView`)
+- [x] Composite timeline playback (satu sequence visual + satu sequence audio)
+- [~] Frame-accurate seek (preview mengikuti keyframe Media3; frame-accurate di M13)
+- [~] Preview range + speed (range klip terpilih sudah; global speed di M5, speed per klip sudah)
+- [x] Playhead sync dengan timeline (30 fps, tanpa recompose klip)
+- [x] Performance metrics (FPS; dropped-frame counter dihapus karena tidak ditampilkan)
+- [~] Unit test seek/plan (`PreviewPlanTest`, `PreviewSeekTest`); instrumentation menyusul
 
 ## F04 — Timeline Editing
 
@@ -753,6 +753,59 @@ Temuan manual yang diperbaiki sebelum commit:
 
 Backlog M2 (non-blocking): file yatim bila upsert gagal / draft dihapus (M27),
 waveform (M3), probe codec, decode HEIF/WebP/GIF bergantung platform.
+
+### Temuan reviewer M3 (2026-10-25)
+
+Gate otomatis dijalankan lagi (exception M2 tidak dipakai). Putaran pertama:
+
+- security **BLOCKING: no** (4 Low: path draft dipercaya, fallback `file://`,
+  root opsional fail-open, log URI).
+- bug **BLOCKING: yes** (1 Critical: frame gambar tidak pernah dianggap
+  render; 2 Medium: playback tidak pause saat editor ditinggalkan, state play
+  salah; 4 Low).
+- performance **BLOCKING: yes** (1 High: player/ticker hidup di back stack;
+  2 Medium: seluruh editor recompose oleh `PreviewState`, ticker churn; 1 Low).
+
+Semua Critical/High/Medium diperbaiki dalam satu pass:
+
+- **Frame gambar**: `PreviewPlan.nextVisualItem` + cek `STATE_READY`/ticker
+  menandai `hasFrame`; thumbnail tidak lagi menutupi gambar kedua.
+- **Lifecycle**: `ON_STOP` + dispose pause; rebuild player ditunda saat editor
+  tersembunyi dan di-flush saat `ON_START`.
+- **Recomposition**: `PreviewState`/`Player` dikumpulkan di `PreviewPanel`,
+  playhead dibaca di fase layout (`Modifier.offset {}`), FPS maksimal 1×/detik.
+- **Range/seek**: `rangeAfterSeek` melepas range saat seek tepat ke ujung
+  eksklusif; test regresi menangkap off-by-one ini.
+- **Durasi Media3**: `durationUs = sourceStart + sourceDuration` untuk klip
+  ter-clip; gap ekor per sequence (video dan audio) agar durasi composition =
+  durasi timeline walau klip terakhir di-skip.
+- **Sumber**: root `filesDir` wajib, path dikanonikalisasi (anti `..`/symlink),
+  fallback hanya `content://`; log tidak lagi memuat URI/throwable.
+- **FPS**: jendela sampel di-reset saat pause; `droppedFrames` dihapus.
+
+Re-review: security **BLOCKING: no**, performance **BLOCKING: no**. Bug reviewer
+sempat menemukan satu Critical lanjutan (gap ekor hanya ditambahkan ke sequence
+visual sehingga audio-only/audio-panjang tetap lebih pendek); diperbaiki dengan
+gap per sequence + test `trailingGapCoversTimelineTailPerSequence`. Verdict
+akhir bug **BLOCKING: no**.
+
+Backlog M3 (non-blocking):
+
+- **`MediaThumbnails` belum memakai gate root yang sama** dengan preview
+  (`thumbnailPath` di-join ke `cacheDir`, `localPath`/`uri` dibuka langsung).
+  Dampaknya decode bitmap/null, bukan exfiltrasi; rapikan saat M27.
+- **Test wiring composition** belum ada: `Media3CompositionBuilder.build`
+  memanggil `Uri` Android sehingga butuh Robolectric; saat ini yang diuji hanya
+  helper gap murni.
+- **Durasi presentasi aktual bisa lebih pendek dari nominal** pada video VFR
+  atau trim yang mengecilkan `sourceDurationMs` tanpa `durationMs`; belum
+  reachable dari UI M3, verifikasi di M4/M13.
+- **Preview error tidak punya tombol retry**; pemulihan saat ini lewat edit
+  timeline atau keluar-masuk editor.
+- **Rebuild player saat editor terlihat tetap di main thread**; pindahkan ke
+  dispatcher player bila jeda terasa di perangkat rendah.
+- **Timeline belum divirtualisasi**; draft 100+ klip mengukur semua klip dalam
+  satu frame. Optimasi saat draft panjang jadi umum.
 
 ## Ringkasan akhir
 
