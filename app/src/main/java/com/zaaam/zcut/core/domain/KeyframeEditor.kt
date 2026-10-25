@@ -87,7 +87,7 @@ object KeyframeEditor {
         .filter { abs(it.timeMs - timeMs) <= toleranceMs }
         .minByOrNull { abs(it.timeMs - timeMs) }
 
-    /** Static value used before the first and after the last keyframe. */
+    /** Static value used when a property has no keyframes at all. */
     fun valueOf(clip: Clip, property: AnimatableProperty): Float = when (property) {
         AnimatableProperty.POSITION_X -> clip.transform.positionX
         AnimatableProperty.POSITION_Y -> clip.transform.positionY
@@ -136,6 +136,11 @@ object KeyframeEditor {
     fun sample(clip: Clip, property: AnimatableProperty, timeMs: Long): Float =
         sample(clip.keyframes, property, timeMs, valueOf(clip, property))
 
+    /**
+     * Holds the first keyframe's value before it and the last keyframe's value
+     * after it (standard editor hold semantics); interpolates between them.
+     * Falls back to [fallback] only when the property has no keyframes.
+     */
     fun sample(
         keyframes: List<Keyframe>,
         property: AnimatableProperty,

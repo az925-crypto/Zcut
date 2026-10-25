@@ -160,10 +160,16 @@ private fun TransitionBody(
             ToolValueRow("Klip A", assetName(project, first))
             ToolValueRow("Klip B", assetName(project, second))
             ToolValueRow("Maksimum", TimeFormat.clockMillis(maxDuration))
+            if (maxDuration < TimelineEditor.MIN_TRANSITION_MS) {
+                ToolHint(
+                    "Kedua klip terlalu pendek untuk transisi " +
+                        "(minimal ${TimelineEditor.MIN_TRANSITION_MS} ms)."
+                )
+            }
         }
     }
 
-    if (neighbour != null) {
+    if (neighbour != null && maxDuration >= TimelineEditor.MIN_TRANSITION_MS) {
         ToolSection(title = "Durasi") {
             if (active == null) {
                 ToolHint("Pilih jenis transisi dulu untuk mengatur durasinya.")

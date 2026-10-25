@@ -57,15 +57,30 @@ object SpeedCurve {
         curve: List<SpeedPoint>,
         fraction: Float,
         fallbackSpeed: Float = 1f
+    ): Float = speedAtNormalized(normalized(curve, fallbackSpeed), fraction, fallbackSpeed)
+
+    /**
+     * Same as [speedAt] but expects an already-normalized list, skipping the
+     * sort/dedupe/closure pass. Used by per-frame and per-drag hot paths.
+     */
+    fun speedAtNormalized(
+        points: List<SpeedPoint>,
+        fraction: Float,
+        fallbackSpeed: Float = 1f
     ): Float {
-        val points = normalized(curve, fallbackSpeed)
         if (points.isEmpty()) return clampSpeed(fallbackSpeed)
         val progress = fraction.coerceIn(0f, 1f)
         if (progress <= points.first().atFraction) return points.first().speed
         if (progress >= points.last().atFraction) return points.last().speed
-        val index = points.indexOfLast { it.atFraction <= progress }.coerceAtLeast(0)
-        val left = points[index]
-        val right = points.getOrNull(index + 1) ?: return left.speed
+        // Binary search: last point at or before the progress fraction.
+        var low = 0
+        var high = points.lastIndex
+        while (low < high) {
+            val mid = (low + high + 1) ushr 1
+            if (points[mid].atFraction <= progress) low = mid else high = mid - 1
+        }
+        val left = points[low]
+        val right = points.getOrNull(low + 1) ?: return left.speed
         val span = right.atFraction - left.atFraction
         if (span <= 0f) return right.speed
         val t = (progress - left.atFraction) / span
@@ -80,7 +95,14 @@ object SpeedCurve {
     ): Long {
         val source = sourceDurationMs.coerceAtLeast(0L)
         if (source == 0L) return 0L
-        val points = normalized(curve, speed)
+        return presentationDurationMsNormalized(source, speed, normalized(curve, speed))
+    }
+
+    private fun presentationDurationMsNormalized(
+        source: Long,
+        speed: Float,
+        points: List<SpeedPoint>
+    ): Long {
         if (points.isEmpty()) {
             return (source / clampSpeed(speed).toDouble()).roundToLong().coerceAtLeast(1L)
         }
@@ -113,7 +135,7 @@ object SpeedCurve {
             val scaled = presentationMs.toDouble() * clampSpeed(speed)
             return scaled.roundToLong().coerceIn(0L, source)
         }
-        val totalPresentation = presentationDurationMs(source, speed, points)
+        val totalPresentation = presentationDurationMsNormalized(source, speed, points)
         if (presentationMs >= totalPresentation) return source
 
         var elapsed = 0.0
@@ -183,7 +205,7 @@ object SpeedCurve {
         if (to - from <= FRACTION_EPSILON) return emptyList()
         val span = to - from
         val result = ArrayList<SpeedPoint>(points.size + 2)
-        result += SpeedPoint(0f, speedAt(points, from, fallbackSpeed))
+        result += SpeedPoint(0f, speedAtNormalized(points, from, fallbackSpeed))
         points.forEach { point ->
             if (point.atFraction > from + FRACTION_EPSILON &&
                 point.atFraction < to - FRACTION_EPSILON
@@ -191,7 +213,7 @@ object SpeedCurve {
                 result += point.copy(atFraction = (point.atFraction - from) / span)
             }
         }
-        result += SpeedPoint(1f, speedAt(points, to, fallbackSpeed))
+        result += SpeedPoint(1f, speedAtNormalized(points, to, fallbackSpeed))
         return normalized(result, fallbackSpeed)
     }
 

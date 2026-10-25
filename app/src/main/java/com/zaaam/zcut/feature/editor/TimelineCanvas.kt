@@ -203,10 +203,15 @@ private fun TimelineRuler(
             val secondPx = EditorTimeline.PX_PER_SECOND_DP.dp.toPx()
             val totalSeconds = (durationMs / 1_000L).toInt().coerceAtLeast(1)
             val interval = EditorTimeline.labelIntervalSeconds(durationMs)
+            // ponytail: per-second minor ticks stay cheap for short cuts; past
+            // 10 minutes they add hundreds of line draws per redraw with no
+            // readability, so only the label ticks keep drawing.
+            val minorTickCapSeconds = 600
             for (second in 0..totalSeconds) {
                 val x = second * secondPx
                 if (x > size.width) break
                 val major = second % interval == 0
+                if (!major && second > minorTickCapSeconds) continue
                 drawLine(
                     color = tickColor,
                     start = Offset(x, if (major) 0f else size.height * 0.55f),

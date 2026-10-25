@@ -102,7 +102,9 @@ private fun KeyframeBody(
     onEasing: (AnimatableProperty, Long, Easing) -> Unit
 ) {
     var property by remember(clip.id) { mutableStateOf(AnimatableProperty.POSITION_X) }
-    var timeMs by remember(clip.id) { mutableLongStateOf(0L) }
+    // Keyed on the duration so a trim/retime elsewhere can never leave the
+    // playhead slider pointing past the clip's end.
+    var timeMs by remember(clip.id, clip.durationMs) { mutableLongStateOf(0L) }
     val frames = clip.keyframes
         .filter { it.property == property }
         .sortedBy { it.timeMs }
@@ -362,15 +364,21 @@ private fun KeyframeTrack(
 }
 
 private fun DrawScope.drawDiamond(center: Offset, radius: Float, fill: Color) {
-    val path = Path().apply {
-        moveTo(center.x, center.y - radius)
-        lineTo(center.x + radius, center.y)
-        lineTo(center.x, center.y + radius)
-        lineTo(center.x - radius, center.y)
-        close()
-    }
-    drawPath(path = path, color = fill.copy(alpha = 0.35f))
-    drawPath(path = path, color = fill, style = Stroke(width = 2.dp.toPx()))
+    // Four edges drawn twice (thick translucent under, thin solid over) instead
+    // of Path objects, so a playhead drag with many keyframes allocates nothing.
+    val top = Offset(center.x, center.y - radius)
+    val right = Offset(center.x + radius, center.y)
+    val bottom = Offset(center.x, center.y + radius)
+    val left = Offset(center.x - radius, center.y)
+    val fillAlpha = fill.copy(alpha = 0.35f)
+    drawLine(fillAlpha, top, right, 4.dp.toPx())
+    drawLine(fillAlpha, right, bottom, 4.dp.toPx())
+    drawLine(fillAlpha, bottom, left, 4.dp.toPx())
+    drawLine(fillAlpha, left, top, 4.dp.toPx())
+    drawLine(fill, top, right, 2.dp.toPx())
+    drawLine(fill, right, bottom, 2.dp.toPx())
+    drawLine(fill, bottom, left, 2.dp.toPx())
+    drawLine(fill, left, top, 2.dp.toPx())
 }
 
 @Composable

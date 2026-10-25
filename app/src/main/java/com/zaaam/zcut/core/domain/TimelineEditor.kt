@@ -1,6 +1,7 @@
 package com.zaaam.zcut.core.domain
 
 import com.zaaam.zcut.core.model.ChromaConfig
+import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.ColorAdjustments
@@ -45,8 +46,40 @@ object TimelineEditor {
             .maxOfOrNull { it.endMs.coerceAtLeast(0L) } ?: 0L
         return timeline.copy(
             durationMs = duration,
-            playheadMs = timeline.playheadMs.coerceIn(0L, duration)
+            playheadMs = timeline.playheadMs.coerceIn(0L, duration),
+            // Every mutation funnels through here, so a structural edit can never
+            // leave a transition dangling at a boundary that no longer exists.
+            tracks = timeline.tracks.map { track ->
+                track.copy(clips = repairTransitions(track.clips))
+            }
         )
+    }
+
+    /**
+     * Drops or clamps transitions whose boundary changed under a structural
+     * edit: no neighbour, a neighbour shorter than the transition, or a clip
+     * too short for any transition. A transition can only survive when both
+     * sides are at least [MIN_TRANSITION_MS] long.
+     */
+    private fun repairTransitions(clips: List<Clip>): List<Clip> =
+        clips.mapIndexed { index, clip ->
+            val previous = clips.getOrNull(index - 1)
+            val next = clips.getOrNull(index + 1)
+            clip.copy(
+                transitionIn = clampedTransition(clip.transitionIn, clip.durationMs, previous?.durationMs),
+                transitionOut = clampedTransition(clip.transitionOut, clip.durationMs, next?.durationMs)
+            )
+        }
+
+    private fun clampedTransition(
+        config: TransitionConfig?,
+        ownDurationMs: Long,
+        neighbourDurationMs: Long?
+    ): TransitionConfig? {
+        if (config == null) return null
+        val max = neighbourDurationMs?.let { minOf(ownDurationMs, it) } ?: 0L
+        if (max < MIN_TRANSITION_MS) return null
+        return config.copy(durationMs = config.durationMs.coerceIn(MIN_TRANSITION_MS, max))
     }
 
     fun addClip(timeline: Timeline, trackId: String, clip: Clip): Timeline {
@@ -245,21 +278,35 @@ object TimelineEditor {
                     )
                     val leftKeyframes = clip.keyframes
                         .filter { it.timeMs <= leftDurationMs }
-                    // Re-seed the right half with each property's value at the cut so
-                    // the animation does not jump at the seam.
-                    val seamKeyframes = leftKeyframes
-                        .groupBy { it.property }
-                        .map { (_, keyframes) -> keyframes.maxBy { it.timeMs } }
-                        .map { it.copy(timeMs = 0L) }
-                    val rightKeyframes = seamKeyframes + clip.keyframes
+                    // Re-seed both halves with every animated property's sampled
+                    // value at the cut so the animation shape is preserved (a
+                    // ramp keeps ramping instead of truncating to a hold).
+                    val cutProperties = clip.keyframes.map { it.property }.distinct()
+                    val seamValue = { property: AnimatableProperty ->
+                        KeyframeEditor.sample(clip, property, leftDurationMs)
+                    }
+                    val leftSeams = cutProperties
+                        .filter { property ->
+                            leftKeyframes.none {
+                                it.property == property && it.timeMs == leftDurationMs
+                            }
+                        }
+                        .map { property -> Keyframe(leftDurationMs, property, seamValue(property)) }
+                    val shiftedRight = clip.keyframes
                         .filter { it.timeMs > leftDurationMs }
                         .map { it.copy(timeMs = it.timeMs - leftDurationMs) }
+                    val rightSeams = cutProperties
+                        .filter { property ->
+                            shiftedRight.none { it.property == property && it.timeMs == 0L }
+                        }
+                        .map { property -> Keyframe(0L, property, seamValue(property)) }
+                    val rightKeyframes = rightSeams + shiftedRight
 
                     val left = clip.copy(
                         durationMs = leftDurationMs,
                         sourceDurationMs = leftSourceMs,
                         speed = clip.speed.copy(curve = leftCurve),
-                        keyframes = leftKeyframes,
+                        keyframes = leftKeyframes + leftSeams,
                         transitionOut = null,
                         audio = clip.audio.copy(
                             fadeInMs = clip.audio.fadeInMs.coerceAtMost(leftDurationMs),
@@ -366,9 +413,21 @@ object TimelineEditor {
         ).coerceAtLeast(1L)
         if (clip.startMs > Long.MAX_VALUE - durationMs) return timeline
 
+        // Keyframes are timed in presentation ms; rescale them with the new
+        // length so they stay inside the clip instead of drifting off-canvas.
+        val keyframes = if (clip.durationMs > 0L) {
+            clip.keyframes.map { keyframe ->
+                val scaled = (keyframe.timeMs.toDouble() * durationMs / clip.durationMs)
+                    .roundToLong()
+                keyframe.copy(timeMs = scaled.coerceIn(0L, durationMs))
+            }
+        } else {
+            clip.keyframes
+        }
         val updated = clip.copy(
             durationMs = durationMs,
             sourceDurationMs = sourceMs,
+            keyframes = keyframes,
             speed = SpeedConfig(
                 speed = safeSpeed,
                 preservePitch = clip.speed.preservePitch,
@@ -508,14 +567,16 @@ object TimelineEditor {
                 .filter { track.type.accepts(it.type) && it.isValid() }
                 .sortedBy { it.startMs }
             var cursor = 0L
-            val repaired = valid.map { clip ->
+            val repaired = valid.mapNotNull { clip ->
                 val start = clip.startMs.coerceAtLeast(cursor)
-                cursor = if (start > Long.MAX_VALUE - clip.durationMs) {
-                    Long.MAX_VALUE
+                if (start > Long.MAX_VALUE - clip.durationMs) {
+                    // No room left on the timeline; dropping beats a clip stuck
+                    // at Long.MAX_VALUE that no later edit can ever touch.
+                    null
                 } else {
-                    start + clip.durationMs
+                    cursor = start + clip.durationMs
+                    if (start == clip.startMs) clip else clip.copy(startMs = start)
                 }
-                if (start == clip.startMs) clip else clip.copy(startMs = start)
             }
             track.copy(clips = repaired)
         }

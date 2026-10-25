@@ -124,7 +124,10 @@ private fun MaskBody(
                         if (shape == MaskShape.NONE) {
                             onMask(null)
                         } else {
-                            onMask(draft.copy(shape = shape))
+                            // Commit the draft and keep it in sync so the sliders
+                            // below do not overwrite the freshly picked shape.
+                            draft = draft.copy(shape = shape)
+                            onMask(draft)
                         }
                     }
                 )
@@ -135,7 +138,7 @@ private fun MaskBody(
         } else {
             ToolSlider(
                 label = "Feather",
-                value = activeMask.feather,
+                value = draft.feather,
                 valueRange = 0f..0.5f,
                 onValueChange = { draft = draft.copy(feather = it) },
                 onValueChangeFinished = { onMask(draft) },
@@ -143,7 +146,7 @@ private fun MaskBody(
             )
             ToolSlider(
                 label = "Position X",
-                value = activeMask.centerX,
+                value = draft.centerX,
                 valueRange = 0f..1f,
                 onValueChange = { draft = draft.copy(centerX = it) },
                 onValueChangeFinished = { onMask(draft) },
@@ -151,7 +154,7 @@ private fun MaskBody(
             )
             ToolSlider(
                 label = "Position Y",
-                value = activeMask.centerY,
+                value = draft.centerY,
                 valueRange = 0f..1f,
                 onValueChange = { draft = draft.copy(centerY = it) },
                 onValueChangeFinished = { onMask(draft) },
@@ -168,8 +171,11 @@ private fun MaskBody(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Switch(
-                    checked = activeMask.invert,
-                    onCheckedChange = { onMask(activeMask.copy(invert = it)) }
+                    checked = draft.invert,
+                    onCheckedChange = {
+                        draft = draft.copy(invert = it)
+                        onMask(draft)
+                    }
                 )
             }
         }

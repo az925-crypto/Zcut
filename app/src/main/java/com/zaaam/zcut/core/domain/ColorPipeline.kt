@@ -81,7 +81,7 @@ object ColorPipeline {
         pipe(filterMatrix(filter), adjustMatrix(color))
 
     fun adjustMatrix(color: ColorAdjustments): FloatArray = pipe(
-        brightnessOffset(color.brightness * 0.5f),
+        brightnessOffset(color.brightness.coerceIn(-1f, 1f) * 0.5f),
         contrast(1f + color.contrast.coerceIn(-1f, 1f)),
         saturation(1f + color.saturation.coerceIn(-1f, 1f)),
         temperature(color.temperature.coerceIn(-1f, 1f)),

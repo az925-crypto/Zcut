@@ -176,14 +176,110 @@ class TimelineEditorTest {
         assertEquals(1_000L, clips[1].sourceStartMs)
         assertNull(clips[0].transitionOut)
         assertNull(clips[1].transitionIn)
-        assertEquals(1, clips[0].keyframes.size)
-        // The right half is re-seeded with the left half's value at the cut (t = 0)
+        // Left keeps its keyframes plus a seam keyframe at the cut (sampled 0.5
+        // between 200ms=1.0 and 800ms=0.0) so the ramp is not truncated to a hold.
+        assertEquals(2, clips[0].keyframes.size)
+        assertEquals(500L, clips[0].keyframes.last().timeMs)
+        assertEquals(0.5f, clips[0].keyframes.last().value, 0.001f)
+        // The right half is re-seeded with the sampled value at the cut (t = 0)
         // so the animation is continuous, then keeps the later keyframe.
         assertEquals(2, clips[1].keyframes.size)
         assertEquals(0L, clips[1].keyframes.first().timeMs)
+        assertEquals(0.5f, clips[1].keyframes.first().value, 0.001f)
         assertEquals(300L, clips[1].keyframes.last().timeMs)
         assertEquals(0L, clips[0].audio.fadeOutMs)
         assertEquals(0L, clips[1].audio.fadeInMs)
+    }
+
+    @Test
+    fun retimeScalesKeyframesIntoTheNewDuration() {
+        val (timeline, videoId, _) = baseTimeline()
+        val source = clip().copy(
+            keyframes = listOf(
+                Keyframe(0L, AnimatableProperty.OPACITY, 1f),
+                Keyframe(800L, AnimatableProperty.OPACITY, 0f)
+            )
+        )
+        val withClip = TimelineEditor.addClip(timeline, videoId, source)
+        val retimed = TimelineEditor.retimeClip(withClip, source.id, 2f)
+        val result = retimed.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals(500L, result.durationMs)
+        assertEquals(400L, result.keyframes.last().timeMs)
+        assertTrue(result.keyframes.all { it.timeMs <= result.durationMs })
+    }
+
+    @Test
+    fun rippleDeleteRepairsDanglingTransitions() {
+        val (timeline, videoId, _) = baseTimeline()
+        val a = clip().copy(
+            id = "a",
+            transitionOut = TransitionConfig(TransitionType.FADE, 300L)
+        )
+        val b = clip().copy(
+            id = "b",
+            startMs = 1_000L,
+            transitionIn = TransitionConfig(TransitionType.FADE, 300L)
+        )
+        val withTwo = TimelineEditor.addClip(timeline, videoId, a)
+            .let { TimelineEditor.addClip(it, videoId, b) }
+        val after = TimelineEditor.rippleDelete(withTwo, "a")
+        val survivor = after.tracks.first { it.id == videoId }.clips.single()
+
+        // Its neighbour was deleted, so both transition slots must be gone.
+        assertNull(survivor.transitionIn)
+        assertNull(survivor.transitionOut)
+    }
+
+    @Test
+    fun duplicateDropsTransitionWithoutRightNeighbour() {
+        val (timeline, videoId, _) = baseTimeline()
+        val a = clip().copy(id = "a")
+        val b = clip().copy(id = "b", startMs = 1_000L)
+        val withTwo = TimelineEditor.addClip(timeline, videoId, a)
+            .let { TimelineEditor.addClip(it, videoId, b) }
+        val withTransition = TimelineEditor.setTransition(
+            withTwo,
+            "a",
+            TransitionSide.OUT,
+            TransitionConfig(TransitionType.FADE, 300L)
+        )
+        val duplicated = TimelineEditor.duplicateClip(withTransition, "a")
+        val clips = duplicated.tracks.first { it.id == videoId }.clips
+        val copy = clips.first { it.id != "a" && it.id != "b" }
+
+        // The original keeps its transition (b is still its right neighbour)...
+        assertEquals(300L, clips.first { it.id == "a" }.transitionOut?.durationMs)
+        // ...but the copy lands after b with no right neighbour, so its copied
+        // transitionOut cannot survive the repair.
+        assertNull(copy.transitionOut)
+    }
+
+    @Test
+    fun sanitizeDropsClipThatWouldOverflowTimelineEnd() {
+        val (timeline, _, _) = baseTimeline()
+        val nearEnd = clip().copy(
+            id = "near",
+            startMs = Long.MAX_VALUE - 100L,
+            durationMs = 50L
+        )
+        val noRoom = clip().copy(
+            id = "no-room",
+            startMs = Long.MAX_VALUE - 100L,
+            durationMs = 100L
+        )
+        val tracks = timeline.tracks.map { track ->
+            if (track.type == TrackType.VIDEO) {
+                track.copy(clips = listOf(nearEnd, noRoom))
+            } else {
+                track
+            }
+        }
+        val sanitized = TimelineEditor.sanitize(timeline.copy(tracks = tracks))
+        val clips = sanitized.tracks.first { it.type == TrackType.VIDEO }.clips
+
+        assertEquals(1, clips.size)
+        assertEquals("near", clips.single().id)
     }
 
     @Test

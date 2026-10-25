@@ -215,9 +215,21 @@ class EditorViewModel(
 
     fun trimClip(clipId: String, newStartMs: Long, newEndMs: Long) {
         editTimeline { timeline ->
+            val clip = timeline.clip(clipId) ?: return@editTimeline timeline
             val candidates = TimelineEditor.snapCandidates(timeline, clipId)
-            val start = TimelineEditor.snapPosition(newStartMs, candidates)
-            val end = TimelineEditor.snapPosition(newEndMs, candidates)
+            // Only snap the edge the gesture actually changed; snapping the
+            // untouched edge lets a trim pull its twin, or snap it back to the
+            // same position and swallow the whole gesture.
+            val start = if (newStartMs != clip.startMs) {
+                TimelineEditor.snapPosition(newStartMs, candidates)
+            } else {
+                newStartMs
+            }
+            val end = if (newEndMs != clip.endMs) {
+                TimelineEditor.snapPosition(newEndMs, candidates)
+            } else {
+                newEndMs
+            }
             TimelineEditor.trimClip(timeline, clipId, start, end)
         }
     }

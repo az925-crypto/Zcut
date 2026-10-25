@@ -10,9 +10,13 @@ import android.util.LruCache
 import android.util.Size
 import com.zaaam.zcut.core.model.MediaAsset
 import com.zaaam.zcut.core.model.MediaKind
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
 /**
@@ -31,6 +35,12 @@ class MediaThumbnails(
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
     }
 
+    /** One in-flight decode per key, so split/duplicated clips share a single load. */
+    private val inFlight = ConcurrentHashMap<String, CompletableDeferred<Bitmap?>>()
+
+    /** Native retriever/decoder instances are heavy; never fan out more than this. */
+    private val decoderGate = Semaphore(3)
+
     suspend fun load(asset: MediaAsset, sizePx: Int = 320): Bitmap? =
         withContext(Dispatchers.IO) {
             val source = asset.thumbnailPath ?: asset.localPath ?: asset.uri
@@ -39,30 +49,23 @@ class MediaThumbnails(
             // to the 720dp preview (and vice versa).
             val key = "$source@$sizePx"
             cache.get(key)?.let { return@withContext it }
-
-            val bitmap = safely {
-                val cached = if (sizePx <= THUMBNAIL_EDGE_PX || asset.localPath == null) {
-                    asset.thumbnailPath?.let { relative ->
-                        decodeFile(File(cacheDir, relative), sizePx)
-                    }
-                } else {
-                    null
-                }
-                if (sizePx <= THUMBNAIL_EDGE_PX) {
-                    cached ?: asset.localPath?.let { path ->
-                        ThumbnailFactory.fromFile(context, File(path), asset.kind, sizePx)
-                    } ?: loadUriInternal(asset.uri, sizePx)
-                } else {
-                    // Prefer the private copy for a large preview; the cached
-                    // JPEG is only 320px and would look soft when upscaled.
-                    asset.localPath?.let { path ->
-                        ThumbnailFactory.fromFile(context, File(path), asset.kind, sizePx)
-                    } ?: cached ?: loadUriInternal(asset.uri, sizePx)
-                }
+            inFlight[key]?.let { return@withContext it.await() }
+            val deferred = CompletableDeferred<Bitmap?>()
+            inFlight[key] = deferred
+            try {
+                val bitmap = decoderGate.withPermit { safely { decode(asset, sizePx) } }
+                if (bitmap != null) cache.put(key, bitmap)
+                deferred.complete(bitmap)
+                bitmap
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                deferred.complete(null)
+                throw cancel
+            } catch (error: Exception) {
+                deferred.complete(null)
+                null
+            } finally {
+                inFlight.remove(key)
             }
-
-            if (bitmap != null) cache.put(key, bitmap)
-            bitmap
         }
 
     suspend fun loadUri(uri: String, sizePx: Int = 320): Bitmap? =
@@ -75,6 +78,48 @@ class MediaThumbnails(
             bitmap
         }
 
+    /**
+     * A draft is untrusted input: `thumbnailPath` must resolve under
+     * `cacheDir` and `localPath` under `filesDir`, and only `content://`
+     * URIs are accepted. Anything else is skipped, never decoded.
+     */
+    private fun decode(asset: MediaAsset, sizePx: Int): Bitmap? {
+        val cached = if (sizePx <= THUMBNAIL_EDGE_PX) {
+            asset.thumbnailPath?.let { relative ->
+                containedIn(cacheDir, relative)?.let { decodeFile(it, sizePx) }
+            }
+        } else {
+            null
+        }
+        return if (sizePx <= THUMBNAIL_EDGE_PX) {
+            cached ?: localBitmap(asset, sizePx) ?: loadUriInternal(asset.uri, sizePx)
+        } else {
+            // Prefer the private copy for a large preview; the cached
+            // JPEG is only 320px and would look soft when upscaled.
+            localBitmap(asset, sizePx) ?: cached ?: loadUriInternal(asset.uri, sizePx)
+        }
+    }
+
+    private fun localBitmap(asset: MediaAsset, sizePx: Int): Bitmap? =
+        asset.localPath?.let { path ->
+            containedIn(context.filesDir, path)?.let { file ->
+                ThumbnailFactory.fromFile(context, file, asset.kind, sizePx)
+            }
+        }
+
+    /** Resolves [childPath] under [root]; null when it would escape the root. */
+    private fun containedIn(root: File, childPath: String): File? {
+        val rootCanonical = runCatching { root.canonicalFile }.getOrNull() ?: return null
+        val candidate = runCatching { File(root, childPath).canonicalFile }.getOrNull()
+            ?: return null
+        val prefix = rootCanonical.path + File.separator
+        return if (candidate.path == rootCanonical.path || candidate.path.startsWith(prefix)) {
+            candidate
+        } else {
+            null
+        }
+    }
+
     /** A broken thumbnail must never crash the screen; the next load retries. */
     private inline fun <T> safely(block: () -> T?): T? = try {
         block()
@@ -86,6 +131,8 @@ class MediaThumbnails(
 
     private fun loadUriInternal(uri: String, sizePx: Int): Bitmap? {
         val parsed = runCatching { Uri.parse(uri) }.getOrNull() ?: return null
+        // file:// and other provider-resolvable schemes are not sources we own.
+        if (parsed.scheme != "content") return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             runCatching {
                 context.contentResolver.loadThumbnail(parsed, Size(sizePx, sizePx), null)

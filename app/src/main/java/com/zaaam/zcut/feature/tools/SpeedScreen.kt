@@ -346,7 +346,7 @@ private fun SpeedCurveEditor(
             val fraction = step.toFloat() / samples
             val x = fraction * size.width
             val y = yForSpeed(
-                SpeedCurve.speedAt(points, fraction, fallbackSpeed),
+                SpeedCurve.speedAtNormalized(points, fraction, fallbackSpeed),
                 size.height
             )
             if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)

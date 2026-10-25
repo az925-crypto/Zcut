@@ -154,7 +154,7 @@ object Media3CompositionBuilder {
         override fun getSpeed(timeUs: Long): Float {
             if (points.isEmpty() || sourceDurationMs <= 0L) return fallbackSpeed
             val fraction = (timeUs / 1_000.0 / sourceDurationMs).toFloat()
-            return SpeedCurve.speedAt(points, fraction, fallbackSpeed)
+            return SpeedCurve.speedAtNormalized(points, fraction, fallbackSpeed)
         }
 
         override fun getNextSpeedChangeTimeUs(timeUs: Long): Long {
