@@ -4,6 +4,8 @@ import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.AudioConfig
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
+import com.zaaam.zcut.core.model.ColorAdjustments
+import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Keyframe
 import com.zaaam.zcut.core.model.SpeedConfig
 import com.zaaam.zcut.core.model.SpeedPoint
@@ -466,6 +468,35 @@ class TimelineEditorTest {
             result.tracks.first { it.id == videoId }
                 .clips.first { it.id == second.id }
                 .transitionIn
+        )
+    }
+
+    @Test
+    fun filterAndColorAreStoredPerClip() {
+        val (timeline, videoId, _) = baseTimeline()
+        val source = clip()
+        val withClip = TimelineEditor.addClip(timeline, videoId, source)
+
+        val filtered = TimelineEditor.setFilter(
+            withClip,
+            source.id,
+            FilterConfig("tokyo", intensity = 0.8f)
+        )
+        val colored = TimelineEditor.setColor(
+            filtered,
+            source.id,
+            ColorAdjustments(brightness = 0.2f, vignette = 0.3f)
+        )
+        val stored = colored.tracks.first { it.id == videoId }.clips.single()
+
+        assertEquals("tokyo", stored.filters.single().id)
+        assertEquals(0.8f, stored.filters.single().intensity, 0.001f)
+        assertEquals(0.2f, stored.color.brightness, 0.001f)
+        assertEquals(0.3f, stored.color.vignette, 0.001f)
+
+        val cleared = TimelineEditor.setFilter(colored, source.id, null)
+        assertTrue(
+            cleared.tracks.first { it.id == videoId }.clips.single().filters.isEmpty()
         )
     }
 

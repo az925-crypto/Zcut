@@ -8,7 +8,9 @@ import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.domain.TransitionSide
 import com.zaaam.zcut.core.model.AnimatableProperty
 import com.zaaam.zcut.core.model.Clip
+import com.zaaam.zcut.core.model.ColorAdjustments
 import com.zaaam.zcut.core.model.Easing
+import com.zaaam.zcut.core.model.FilterConfig
 import com.zaaam.zcut.core.model.Project
 import com.zaaam.zcut.core.model.SpeedPoint
 import com.zaaam.zcut.core.model.Timeline
@@ -160,6 +162,16 @@ class ClipToolViewModel(
     fun setTransition(side: TransitionSide, config: TransitionConfig?) {
         val id = clipId ?: return
         edit { TimelineEditor.setTransition(it, id, side, config) }
+    }
+
+    fun setFilter(filter: FilterConfig?) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setFilter(it, id, filter) }
+    }
+
+    fun setColor(color: ColorAdjustments) {
+        val id = clipId ?: return
+        edit { TimelineEditor.setColor(it, id, color) }
     }
 
     fun editClip(transform: (Clip) -> Clip) {

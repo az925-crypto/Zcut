@@ -25,6 +25,8 @@ import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
+import com.zaaam.zcut.feature.tools.AdjustScreen
+import com.zaaam.zcut.feature.tools.FiltersScreen
 import com.zaaam.zcut.feature.tools.KeyframeScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
@@ -218,6 +220,25 @@ fun ZcutNavHost(
                     projectId = projectId,
                     clipId = clipId,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Filters) { projectId, clipId ->
+                FiltersScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            clipTool(ZcutRoutes.Adjust) { projectId, clipId ->
+                AdjustScreen(
+                    projectId = projectId,
+                    clipId = clipId,
+                    onBack = { navController.popBackStack() },
+                    onOpenFilters = {
+                        navController.navigate(ZcutRoutes.filters(projectId, clipId))
+                    }
                 )
             }
 

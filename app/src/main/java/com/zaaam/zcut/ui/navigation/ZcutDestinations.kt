@@ -41,7 +41,8 @@ object ZcutRoutes {
      * Grows one milestone at a time so a half-built panel still falls through to
      * the honest placeholder instead of navigating to an unregistered route.
      */
-    private val argToolRoutes: Set<String> = setOf(Trim, Speed, Keyframe, Transition)
+    private val argToolRoutes: Set<String> =
+        setOf(Trim, Speed, Keyframe, Transition, Filters, Adjust)
 
     fun isClipTool(route: String): Boolean = route in argToolRoutes
 
@@ -129,8 +130,8 @@ object ZcutDestinations {
         ZcutDestination("speed", "Speed & curve", "F05", implemented = true),
         ZcutDestination("keyframe", "Keyframe", "F06", implemented = true),
         ZcutDestination("transition", "Transisi", "F07", implemented = true),
-        ZcutDestination("filters", "Filter", "F08"),
-        ZcutDestination("adjust", "Adjust", "F08"),
+        ZcutDestination("filters", "Filter", "F08", implemented = true),
+        ZcutDestination("adjust", "Adjust", "F08", implemented = true),
         ZcutDestination("effects", "Efek", "F09"),
         ZcutDestination("mask", "Mask & chroma", "F10"),
         ZcutDestination("matting", "Cutout", "F11"),
