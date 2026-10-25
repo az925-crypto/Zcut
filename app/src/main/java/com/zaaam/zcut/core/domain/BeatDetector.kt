@@ -58,7 +58,10 @@ object BeatDetector {
             .toInt()
             .coerceAtLeast(1)
         val beats = ArrayList<Long>()
-        var lastBeatFrame = Int.MIN_VALUE
+        // Long so the "no beat yet" sentinel cannot overflow when subtracted
+        // from the first candidate frame (Int.MIN_VALUE would wrap and reject
+        // every peak).
+        var lastBeatFrame = Long.MIN_VALUE / 2
         for (frame in 1 until frameCount - 1) {
             val from = (frame - HISTORY_FRAMES).coerceAtLeast(0)
             var sum = 0f
@@ -70,7 +73,7 @@ object BeatDetector {
                 onset[frame] >= onset[frame + 1]
             if (isPeak && frame - lastBeatFrame >= minGapFrames) {
                 beats += frame.toLong() * HOP_SAMPLES * 1_000L / sampleRate
-                lastBeatFrame = frame
+                lastBeatFrame = frame.toLong()
             }
         }
         return beats
