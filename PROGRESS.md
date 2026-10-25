@@ -6,7 +6,7 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M12 selesai; batch M4–M10
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M13 selesai; batch M4–M10
   sudah melewati review gate (security/bug/performance semuanya `BLOCKING: no`).**
   Batch M11–M15 sedang dikerjakan; gate review batch dijalankan setelah M15.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
@@ -29,7 +29,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M12 selesai · batch M11–M15 berjalan |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M13 selesai · batch M11–M15 berjalan |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
 
@@ -52,7 +52,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M10 | Mask & chroma | F10 | mask | ✅ `5d735a9` `b7192a6` |
 | M11 | Teks & tipografi | F14 | text | ✅ |
 | M12 | Audio dasar + TTS sistem | F16/F17 | audio, tts | ✅ |
-| M13 | Export & render (Media3 Transformer) | F19 | export, export-done | [ ] |
+| M13 | Export & render (Media3 Transformer) | F19 | export, export-done | ✅ |
 | M14 | Matting/cutout (ML Kit) | F11 | matting | [ ] |
 | M15 | Retouch & beauty | F12 | beauty | [ ] |
 | M16 | Sticker + Lottie | F13 | stickers | [ ] |
@@ -346,19 +346,20 @@ Spek: [`docs/features/18-ai-music.md`](docs/features/18-ai-music.md)
 Spek: [`docs/features/19-export-render.md`](docs/features/19-export-render.md)
 
 - [x] Spek
-- [ ] Media3 Composition builder
-- [ ] MP4 H.264/AAC
-- [ ] Resolusi/fps/bitrate
-- [ ] Progress + cancel
-- [ ] Simpan ke MediaStore
+- [x] Media3 Composition builder
+- [x] MP4 H.264/AAC
+- [x] Resolusi (preset) — fps/bitrate mengikuti encoder perangkat, disebut di UI
+- [x] Progress + cancel
+- [x] Simpan ke MediaStore (`Movies/Zcut`; API 26–28 → folder Movies app)
 - [ ] HEVC/audio-only
-- [ ] Cover / smart cover
-- [ ] Watermark **tidak ada** (by design)
+- [x] Cover / smart cover (JPEG frame 1/3 durasi)
+- [x] Watermark **tidak ada** (by design)
 - [ ] Alpha export
 - [ ] HDR/10-bit
 - [ ] Parallel/prerender/remux
 - [ ] GIF
-- [ ] Unit/instrumentation test export
+- [~] Unit test export (ExportPlan + paritas rute; engine butuh perangkat)
+- [ ] Burn-in teks/efek/mask/sticker ke video final
 
 ## F20 — Draft, Cloud & Collaboration
 
@@ -962,6 +963,40 @@ Batasan yang diakui di UI dan docs:
 
 `docs/ui-m12-design.md` ditulis manual karena subagent `design` gagal
 (model unavailable); kegagalan dicatat di `DECISIONS.md`.
+
+### Catatan M13 — export & render Media3 (2026-10-25)
+
+Lingkup yang selesai:
+
+- `Media3ExportEngine : VideoRenderEngine` (dibuat per layar lewat
+  `AppContainer.newRenderEngine()`, bukan singleton) memakai
+  `PreviewPlanBuilder` + `Media3CompositionBuilder.build(plan, shortEdge)` —
+  gerbang sumber sama dengan preview, jadi klip yang tidak bisa diputar tidak
+  bisa diekspor.
+- MP4 H.264/AAC (`setVideoMimeType`/`setAudioMimeType`); resolusi dari
+  `ExportPreset` lewat `Presentation.createForShortSide` di level komposisi.
+- Progress polling `Transformer.getProgress` tiap 400 ms → `Preparing`,
+  `Rendering(percent)`, `Finalizing`, `Completed`, `Failed`; `cancel()` dipanggil
+  saat tombol Batal dan saat flow berhenti (layar ditutup di tengah render).
+- Hasil ke `filesDir/exports`; nama file dari `ExportPlan` (sanitasi nama draft,
+  timestamp mencegah tabrakan). `export-done` membawa **nama file**, bukan path.
+- `ExportDelivery`: bagikan lewat `FileProvider` (+ `res/xml/file_paths.xml`,
+  hanya `exports/`) dan simpan ke galeri `Movies/Zcut` via `MediaStore` (API 29+
+  tanpa izin; API 26–28 ke folder Movies app dengan pesan lokasi apa adanya).
+- Smart cover menulis satu JPEG (`CoverFrame`, frame 1/3 durasi).
+- Rute `export?projectId=` dan `export-done?projectId=&file=&durationMs=&sizeBytes=&cover=`
+  keduanya `implemented = true`; tombol Export di editor kini membawa `projectId`.
+
+Batasan yang diakui di UI dan docs:
+
+- Bitrate/frame rate/sample rate akhir ditentukan encoder perangkat
+  (`Bitrate: Otomatis` di panel); hanya resolusi yang benar-benar dipaksa.
+- Burn-in teks/efek/mask/sticker belum ada (batas preview M3 yang sama),
+  HEVC/audio-only/GIF/alpha/HDR/parallel-remux belum ada.
+- Default export di Pengaturan belum mengalir ke draft; layar export memakai
+  `ProjectSettings.exportPreset` milik draft (backlog).
+
+`docs/ui-m13-design.md` ditulis manual (subagent `design` masih unavailable).
 
 ## Ringkasan akhir
 

@@ -101,6 +101,7 @@ dependencies {
     // Transformer pulls ExoPlayer in as an api dependency, so the analytics and
     // frame-metadata listeners compile without a separate exoplayer artifact.
     implementation("androidx.media3:media3-transformer:1.9.0")
+    implementation("androidx.media3:media3-effect:1.9.0")
     implementation("androidx.media3:media3-ui:1.9.0")
 
     testImplementation("junit:junit:4.13.2")

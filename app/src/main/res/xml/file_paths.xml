@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Only finished renders are shareable, and only from the app's private export
+  folder. Nothing else in the app files dir is exposed.
+-->
+<paths>
+    <files-path
+        name="exports"
+        path="exports/" />
+</paths>

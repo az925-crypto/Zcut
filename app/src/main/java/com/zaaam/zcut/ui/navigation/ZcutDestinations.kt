@@ -23,6 +23,7 @@ object ZcutRoutes {
     const val Adjust = "adjust"
     const val Mask = "mask"
     const val Export = "export"
+    const val ExportDone = "export-done"
     const val Templates = "templates"
     const val AiStudio = "ai-studio"
     const val Profile = "profile"
@@ -37,6 +38,10 @@ object ZcutRoutes {
     const val ArgProjectId = "projectId"
     const val ArgClipId = "clipId"
     const val ArgAtMs = "atMs"
+    const val ArgFile = "file"
+    const val ArgCover = "cover"
+    const val ArgDurationMs = "durationMs"
+    const val ArgSizeBytes = "sizeBytes"
 
     /** Text is not a clip tool: it can create a clip, so it carries `atMs`. */
     const val TextPattern = "$Text?$ArgProjectId={$ArgProjectId}" +
@@ -48,6 +53,17 @@ object ZcutRoutes {
 
     /** TTS only inserts at a position; the clip is always new. */
     const val TtsPattern = "$Tts?$ArgProjectId={$ArgProjectId}&$ArgAtMs={$ArgAtMs}"
+
+    /** Export renders one draft; the result screen is a separate destination. */
+    const val ExportPattern = "$Export?$ArgProjectId={$ArgProjectId}"
+
+    /**
+     * The render result carries the output file name (never a path: the file
+     * always lives in the app export folder, so no slash has to survive a URL).
+     */
+    const val ExportDonePattern = "$ExportDone?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgFile={$ArgFile}&$ArgDurationMs={$ArgDurationMs}" +
+        "&$ArgSizeBytes={$ArgSizeBytes}&$ArgCover={$ArgCover}"
 
     /**
      * Tool panels whose route pattern already carries `projectId`/`clipId`.
@@ -108,6 +124,27 @@ object ZcutRoutes {
 
     fun tts(projectId: String, atMs: Long = 0L): String =
         "$Tts?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+
+    fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
+
+    /**
+     * `cover` is optional: without it the done screen simply shows no cover
+     * line. The file name is encoded like any other argument.
+     */
+    fun exportDone(
+        projectId: String,
+        fileName: String,
+        durationMs: Long,
+        sizeBytes: Long,
+        coverFileName: String? = null
+    ): String {
+        val base = "$ExportDone?$ArgProjectId=${encode(projectId)}" +
+            "&$ArgFile=${encode(fileName)}" +
+            "&$ArgDurationMs=${durationMs.coerceAtLeast(0L)}" +
+            "&$ArgSizeBytes=${sizeBytes.coerceAtLeast(0L)}"
+        val cover = coverFileName?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (cover == null) base else "$base&$ArgCover=$cover"
+    }
 
     /**
      * Tool routes carry the draft and clip as query arguments. Non-tool routes
@@ -172,8 +209,8 @@ object ZcutDestinations {
         ZcutDestination("audio", "Audio", "F16", implemented = true),
         ZcutDestination("tts", "Text to speech", "F17", implemented = true),
         ZcutDestination("ai-music", "AI Music", "F18"),
-        ZcutDestination("export", "Export", "F19"),
-        ZcutDestination("export-done", "Export selesai", "F19"),
+        ZcutDestination("export", "Export", "F19", implemented = true),
+        ZcutDestination("export-done", "Export selesai", "F19", implemented = true),
         ZcutDestination("drafts", "Kelola draft", "F20"),
         ZcutDestination("ai-clipper", "AI Clipper", "F22"),
         ZcutDestination("ai-agent", "Zcut Agent", "F23"),

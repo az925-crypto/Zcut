@@ -12,6 +12,7 @@ import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.media.VoiceoverRecorder
 import com.zaaam.zcut.core.render.AudioMixer
 import com.zaaam.zcut.core.render.EffectPipeline
+import com.zaaam.zcut.core.render.Media3ExportEngine
 import com.zaaam.zcut.core.render.Media3PreviewEngine
 import com.zaaam.zcut.core.render.MediaProbe
 import com.zaaam.zcut.core.render.PreviewEngine
@@ -23,7 +24,6 @@ import com.zaaam.zcut.core.render.UnavailableEffectPipeline
 import com.zaaam.zcut.core.render.UnavailableMediaProbe
 import com.zaaam.zcut.core.render.UnavailableSubjectSegmenter
 import com.zaaam.zcut.core.render.UnavailableThumbnailGenerator
-import com.zaaam.zcut.core.render.UnavailableVideoRenderEngine
 import com.zaaam.zcut.core.render.VideoRenderEngine
 import java.io.File
 
@@ -44,6 +44,9 @@ class AppContainer(context: Context) {
     /** Synthesised speech cache; survives "Bersihkan cache" on purpose. */
     val ttsCacheDir: File by lazy { File(appContext.filesDir, "tts") }
 
+    /** Finished renders; private to the app until the user shares or saves one. */
+    val exportDir: File by lazy { File(appContext.filesDir, "exports") }
+
     val mediaThumbnails: MediaThumbnails by lazy {
         MediaThumbnails(appContext, thumbnailDir)
     }
@@ -52,9 +55,8 @@ class AppContainer(context: Context) {
         MediaImporter(appContext, mediaDir, thumbnailDir)
     }
 
-    // Stage 3 replaces these with Media3, CameraX, and ML Kit implementations.
-    // Until then every missing capability fails honestly.
-    val renderEngine: VideoRenderEngine by lazy { UnavailableVideoRenderEngine() }
+    // Stage 3 replaces these with CameraX and ML Kit implementations. Until
+    // then every missing capability fails honestly.
     val mediaProbe: MediaProbe by lazy { UnavailableMediaProbe() }
     val thumbnailGenerator: ThumbnailGenerator by lazy { UnavailableThumbnailGenerator() }
     val audioMixer: AudioMixer by lazy { UnavailableAudioMixer() }
@@ -73,4 +75,10 @@ class AppContainer(context: Context) {
      * every editor screen gets its own engine and releases it in onCleared.
      */
     fun newPreviewEngine(): PreviewEngine = Media3PreviewEngine(appContext)
+
+    /**
+     * A Transformer must be driven from one thread and only one export may run
+     * at a time, so each export screen owns its engine.
+     */
+    fun newRenderEngine(): VideoRenderEngine = Media3ExportEngine(appContext)
 }

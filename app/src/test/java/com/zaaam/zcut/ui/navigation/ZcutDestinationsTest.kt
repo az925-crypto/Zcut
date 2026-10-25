@@ -105,6 +105,40 @@ class ZcutDestinationsTest {
         assertTrue(ZcutDestinations.get(ZcutRoutes.Tts)?.implemented == true)
     }
 
+    @Test
+    fun exportRoutesAreImplementedAndCarryTheProject() {
+        val route = ZcutRoutes.export("p 1")
+
+        assertTrue(route.startsWith("export?projectId=p%201"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Export)?.implemented == true)
+        assertTrue(ZcutDestinations.get(ZcutRoutes.ExportDone)?.implemented == true)
+    }
+
+    @Test
+    fun exportDoneRouteCarriesTheFileNameAndNeverAPath() {
+        val route = ZcutRoutes.exportDone(
+            projectId = "p1",
+            fileName = "Draft-123.mp4",
+            durationMs = 24_000L,
+            sizeBytes = 1_234_567L,
+            coverFileName = "Draft-123-cover.jpg"
+        )
+
+        assertTrue(route.startsWith("export-done?projectId=p1"))
+        assertTrue(route.contains("file=Draft-123.mp4"))
+        assertTrue(route.contains("durationMs=24000"))
+        assertTrue(route.contains("sizeBytes=1234567"))
+        assertTrue(route.contains("cover=Draft-123-cover.jpg"))
+        assertTrue("a path leaked into the route: $route", !route.contains("/"))
+    }
+
+    @Test
+    fun exportDoneRouteOmitsAnAbsentCover() {
+        val route = ZcutRoutes.exportDone("p1", "a.mp4", 0L, 1L)
+
+        assertTrue(!route.contains("cover="))
+    }
+
     private companion object {
         private val ID_PATTERN = Regex("""id:'([a-z0-9-]+)'""")
 

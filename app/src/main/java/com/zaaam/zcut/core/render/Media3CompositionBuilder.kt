@@ -7,9 +7,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
+import androidx.media3.transformer.Effects
 import com.zaaam.zcut.core.domain.SpeedCurve
 import com.zaaam.zcut.core.model.SpeedPoint
 import java.io.File
@@ -18,11 +20,17 @@ import java.io.File
  * Translates the pure [PreviewPlan] into a Media3 composition. Thin on purpose:
  * every decision that can be wrong (which clips, gaps, source ranges) lives in
  * [PreviewPlanBuilder] and is covered by JVM tests.
+ *
+ * [presentationShortSide] is export-only: the preview must show the source
+ * frames untouched, while the export scales the finished frame to the preset
+ * resolution. The effect sits on the composition (not per item) because scaling
+ * each clip on its own would give mixed-aspect clips different frame sizes and
+ * the muxer requires one size for the whole output.
  */
 @OptIn(ExperimentalApi::class, UnstableApi::class)
 object Media3CompositionBuilder {
 
-    fun build(plan: PreviewPlan): Composition {
+    fun build(plan: PreviewPlan, presentationShortSide: Int? = null): Composition {
         // A skipped trailing clip (missing asset, overlap, muted audio) would
         // otherwise make a sequence shorter than the timeline: CompositionPlayer
         // clamps seeks to its own duration and the playhead would jump backwards.
@@ -50,7 +58,18 @@ object Media3CompositionBuilder {
             }
         }
         require(sequences.isNotEmpty()) { "Preview plan has no playable items" }
-        return Composition.Builder(sequences).build()
+        val builder = Composition.Builder(sequences)
+        if (presentationShortSide != null && presentationShortSide > 0) {
+            builder.setEffects(
+                Effects(
+                    /* audioProcessors= */ emptyList(),
+                    /* videoEffects= */ listOf(
+                        Presentation.createForShortSide(presentationShortSide)
+                    )
+                )
+            )
+        }
+        return builder.build()
     }
 
     private fun sequence(

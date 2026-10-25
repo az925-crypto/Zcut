@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.feature.editor.EditorViewModel
+import com.zaaam.zcut.feature.export.ExportViewModel
 import com.zaaam.zcut.feature.home.HomeViewModel
 import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
@@ -132,6 +133,24 @@ fun ttsViewModelFactory(
                 repository = container.projectRepository,
                 speechEngine = container.speechEngine,
                 cacheDir = container.ttsCacheDir
+            )
+        }
+    }
+}
+
+/** Export is scoped to one draft and owns its render engine. */
+@Composable
+fun exportViewModelFactory(
+    container: AppContainer,
+    projectId: String
+): ViewModelProvider.Factory = remember(container, projectId) {
+    viewModelFactory {
+        initializer {
+            ExportViewModel(
+                projectId = projectId,
+                repository = container.projectRepository,
+                renderEngine = container.newRenderEngine(),
+                exportDir = container.exportDir
             )
         }
     }

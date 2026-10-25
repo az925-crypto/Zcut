@@ -155,3 +155,46 @@ fun validate(req: ExportRequest, draft: Draft): List<String> = buildList {
 - Apakah `enable_parallel_export` aktif default di device tertentu.
 - Watermark AIGC (`exportAIGCWaterMarkConfig`) punya aturan tersendiri yang
   tidak sepenuhnya terbaca.
+
+## Status implementasi Zcut (M13)
+
+Engine: `core/render/Media3ExportEngine` (`VideoRenderEngine`), dibangun per
+layar export seperti preview player — satu draft, satu `Transformer`.
+
+- **Komposisi**: `PreviewPlanBuilder` → `Media3CompositionBuilder.build(plan,
+  presentationShortSide = preset.resolution.shortEdge)`. Gerbang sumber sama
+  dengan preview, jadi klip yang tidak bisa diputar tidak bisa diekspor.
+- **Kontainer**: MP4, video H.264, audio AAC
+  (`Transformer.Builder.setVideoMimeType/setAudioMimeType`). Format lain di
+  `ExportPreset` (WebM/GIF/PNG) belum didukung dan disebut apa adanya di panel
+  setelan lewat labelnya.
+- **Resolusi**: `Presentation.createForShortSide(shortEdge)` sebagai effect
+  level-komposisi (bukan per item, supaya klip beda aspek tidak menghasilkan
+  ukuran frame berbeda).
+- **Progress**: polling `Transformer.getProgress(ProgressHolder)` tiap 400 ms →
+  `Preparing`/`Rendering(percent)`/`Finalizing`/`Completed`/`Failed`.
+- **Cancel**: `Transformer.cancel()` dipanggil saat pengguna menekan Batal dan
+  saat flow berhenti (layar ditutup di tengah render).
+- **Kelola file**: hasil ditulis ke `filesDir/exports/<nama>-<timestamp>.mp4`.
+  Nama file dibuat `ExportPlan.fileName` (nama draft disanitasi agar tidak bisa
+  keluar folder). "Simpan" menyalin ke galeri `Movies/Zcut` via `MediaStore`
+  (Android 10+ tanpa izin; Android 8–9 ke folder Movies milik app). "Bagikan"
+  memakai share sheet sistem lewat `FileProvider` yang hanya mengekspos
+  `exports/`.
+- **Smart cover**: `core/media/CoverFrame` menulis satu JPEG (frame 1/3 durasi)
+  bila toggle dinyalakan.
+
+Catatan jujur / belum ada:
+
+- Bitrate, frame rate video, dan sample rate audio akhir ditentukan encoder
+  perangkat (`Bitrate: Otomatis`), bukan angka di `ExportPreset`; hal ini
+  dinyatakan di hint layar export.
+- Teks, efek, mask/chroma, sticker, dan filter belum di-burn ke video final —
+  sama seperti batas preview M3; layer itu ditambahkan milestone-nya sendiri.
+- HEVC, audio-only, GIF, alpha, HDR/10-bit, parallel/prerender/remux belum ada.
+- Default export di Pengaturan (`export_resolution`, `export_frame_rate`,
+  `export_audio_sample_rate`) belum mengalir ke draft; layar export membaca
+  `ProjectSettings.exportPreset` milik draft itu sendiri (masuk backlog).
+
+Uji: `ExportPlanTest` (nama file aman, estimasi ukuran, label durasi),
+`ZcutDestinationsTest` (rute `export`/`export-done` + argumen nama file).

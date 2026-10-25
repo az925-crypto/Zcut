@@ -165,7 +165,7 @@ private fun EditorContent(
                 },
                 actions = {
                     TextButton(
-                        onClick = { onNavigate(ZcutRoutes.Export) },
+                        onClick = { project?.let { onNavigate(ZcutRoutes.export(it.id)) } },
                         enabled = project != null
                     ) {
                         Text("Export")

@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 data class RenderRequest(
     val project: Project,
-    val outputUri: String,
+    /** Absolute path of the output file; the engine never writes outside it. */
+    val outputPath: String,
     val preset: ExportPreset = project.settings.exportPreset
 )
 
@@ -22,7 +23,7 @@ sealed interface RenderProgress {
     ) : RenderProgress
     data object Finalizing : RenderProgress
     data class Completed(
-        val outputUri: String,
+        val outputPath: String,
         val durationMs: Long,
         val sizeBytes: Long
     ) : RenderProgress

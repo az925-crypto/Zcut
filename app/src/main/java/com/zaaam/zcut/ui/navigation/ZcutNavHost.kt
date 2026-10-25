@@ -17,6 +17,8 @@ import androidx.navigation.compose.rememberNavController
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.core.data.AppPreferences
 import com.zaaam.zcut.feature.editor.EditorScreen
+import com.zaaam.zcut.feature.export.ExportDoneScreen
+import com.zaaam.zcut.feature.export.ExportScreen
 import com.zaaam.zcut.feature.home.HomeScreen
 import com.zaaam.zcut.feature.media.MediaPickerScreen
 import com.zaaam.zcut.feature.onboarding.OnboardingScreen
@@ -335,6 +337,72 @@ fun ZcutNavHost(
                     projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
                     atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.ExportPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType }
+                )
+            ) { entry ->
+                val exportProjectId = entry.arguments
+                    ?.getString(ZcutRoutes.ArgProjectId)
+                    .orEmpty()
+                ExportScreen(
+                    projectId = exportProjectId,
+                    onBack = { navController.popBackStack() },
+                    onExported = { result ->
+                        // Pop the finished form first, then push the result: the
+                        // back stack keeps the editor underneath the result.
+                        navController.popBackStack()
+                        navController.navigate(
+                            ZcutRoutes.exportDone(
+                                projectId = exportProjectId,
+                                fileName = result.fileName,
+                                durationMs = result.durationMs,
+                                sizeBytes = result.sizeBytes,
+                                coverFileName = result.coverFileName
+                            )
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.ExportDonePattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgFile) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgDurationMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    },
+                    navArgument(ZcutRoutes.ArgSizeBytes) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    },
+                    navArgument(ZcutRoutes.ArgCover) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                ExportDoneScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    fileName = entry.arguments?.getString(ZcutRoutes.ArgFile).orEmpty(),
+                    durationMs = entry.arguments?.getLong(ZcutRoutes.ArgDurationMs) ?: 0L,
+                    sizeBytes = entry.arguments?.getLong(ZcutRoutes.ArgSizeBytes) ?: 0L,
+                    coverFileName = entry.arguments?.getString(ZcutRoutes.ArgCover),
+                    onBackHome = {
+                        navController.navigate(ZcutRoutes.Home) {
+                            popUpTo(ZcutRoutes.Home) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
 
