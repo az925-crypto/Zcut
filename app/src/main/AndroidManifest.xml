@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Voiceover recording only; the audio never leaves the device. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      Everything runs on-device, so the app must not be able to reach the
+      network at all. Some library manifests (Media3/ExoPlayer) declare INTERNET
+      for their streaming data sources; it is stripped from the merged manifest
+      because this app only ever plays and writes local files.
+    -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
 
     <application
         android:name=".ZcutApplication"
