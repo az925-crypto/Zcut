@@ -7,6 +7,7 @@ import com.zaaam.zcut.core.data.JsonProjectRepository
 import com.zaaam.zcut.core.data.PreferencesRepository
 import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.media.AndroidSpeechEngine
+import com.zaaam.zcut.core.media.DeviceSpeechTranscriber
 import com.zaaam.zcut.core.media.MediaImporter
 import com.zaaam.zcut.core.media.MediaThumbnails
 import com.zaaam.zcut.core.media.VoiceoverRecorder
@@ -82,6 +83,12 @@ class AppContainer(context: Context) {
      * and released by the screen that started it.
      */
     fun newVoiceoverRecorder(): VoiceoverRecorder = VoiceoverRecorder(appContext)
+
+    /**
+     * The platform recogniser also owns the microphone and needs a main-thread
+     * `Looper`, so a transcriber is per transcription session, not app-scoped.
+     */
+    fun newSpeechTranscriber(): DeviceSpeechTranscriber = DeviceSpeechTranscriber(appContext)
 
     /**
      * A player owns a GL pipeline and a surface, so it cannot be a singleton:

@@ -57,7 +57,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M14 | Matting/cutout (ML Kit) | F11 | matting | ✅ |
 | M15 | Retouch & beauty | F12 | beauty | ✅ |
 | M16 | Sticker + Lottie | F13 | stickers | ✅ |
-| M17 | Caption & speech lokal | F15 | captions | [ ] |
+| M17 | Caption & speech lokal | F15 | captions | ✅ |
 | M18 | AI music prosedural | F18 | ai-music | [ ] |
 | M19 | Template & CutSame | F21 | templates, template-detail, discover | [ ] |
 | M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | [ ] |
@@ -630,6 +630,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-26 | `87cbffc` | Review gate batch M11–M15: fix Critical tombol TTS mati, MediaRecorder bocor, clamp beauty/matting, guard recycle, status jujur model wajah, DSP ke Default |
 | 2026-10-26 | `dcf1422` `91955f8` | Tutup sisa Low gate: recycle `smooth`, inferensi gagal = model tak tersedia, hapus dead `unavailableReason`, buang gate `MIN_SIDE` FaceDetector |
 | 2026-10-26 | `a2603e2` | Fix rilis: buang izin `INTERNET` dari manifest gabungan (Media3 mendeklarasikannya) |
+| 2026-10-26 | `cacb0ae` | M16 sticker: `StickerCatalog` glyph lokal, `StickerEditor`, layar `stickers`, sanitize di `ProjectCodec`, 8 tes |
 | 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit (127 MB) |
 
 ## Backlog re-audit
@@ -1019,6 +1020,60 @@ Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
 Test baru: `StickerEditorTest` (8 kasus: penempatan, push-right, kunci tak
 dikenal, clamp transform + tolak klip non-stiker, hapus, sanitize draft rusak,
 rentang aktif, cakupan kategori) dan 2 tes rute di `ZcutDestinationsTest`.
+
+### Catatan M17 — caption & speech lokal (2026-10-26)
+
+Layar `captions` (F15) mengikuti mockup yang di-ACC: preview dengan strip
+caption + label jumlah baris, segmented **Auto/Manual/Style**, panel catatan
+backend, tombol "Transcribe locally", daftar transkrip, dan aksi **SRT** di bar
+atas.
+
+Yang diimplementasikan (lokal, gratis):
+
+- **Model**: `Project.transcript: Transcript` (additive — draft lama decode
+  dengan transkrip kosong, `CaptionCue`/`Transcript` sudah ada sejak Tahap 2b).
+- **Editor**: `CaptionEditor` (tambah/ubah/hapus/ganti/style/sanitize/`cuesAt`),
+  murni fungsi atas `Transcript` sehingga bisa diuji tanpa Android. Style cue
+  memakai `TextConfig` yang sudah ada; tidak ada struct gaya baru.
+- **Segmentasi**: `CaptionSegmenter` mengikuti aturan spek F15
+  (`AsrWordsPerLineConfig`): pecah baris per batas karakter (`maxChars=32`),
+  bukan hanya jeda; `segment()` membagi jendela waktu satu frasa **proporsional
+  panjang baris** (estimasi terdokumentasi) karena hasil frasa tidak membawa
+  waktu per kata.
+- **ASR lokal**: `DeviceSpeechTranscriber` memakai `SpeechRecognizer` platform.
+  Menyimak **mikrofon** (satu-satunya ASR on-device tanpa membundel model),
+  tiap frasa diberi cap waktu **terukur** (stopwatch sejak mulai mendengar) lalu
+  digeser ke posisi playhead panel dibuka. Kalau perangkat tidak punya layanan,
+  UI mengatakannya, bukan berpura-pura. Tidak ada upload.
+- **SRT**: `SrtFormat` baca/tulis SubRip standar. Aksi SRT di bar atas menulis
+  berkas ke `container.exportDir` dan membagikannya lewat `FileProvider`
+  (nama draft disanitasi agar tidak bisa keluar folder). Impor SRT memakai SAF.
+- **Overlay**: `CaptionOverlayLayer` menggambar cue aktif di bawah preview
+  editor (Compose, sama seperti teks). Sekaligus **melengkapi M16**:
+  `StickerOverlayLayer` kini menggambar stiker yang sudah ada di preview editor
+  (sebelumnya hanya tampil di preview tool).
+- **Decode**: `ProjectCodec.normalize` menambah `CaptionEditor.sanitize`
+  (buang cue kosong, rapikan waktu terbalik, urutkan; cue tidak pernah hilang
+  karena teksnya hilang).
+
+Bukti spek: `docs/features/15-captions-transcript.md` (`com.vega.transcriptedit`,
+`GenerateTranscriptInfo`/`CreateTranscriptEditSubtitle`, `AsrWordsPerLineConfig`,
+`libwhisper`). Yang **tidak** diambil dari bukti karena tidak terverifikasi:
+format file subtitle internal (Unknown di spek → dipakai SRT standar) dan
+apakah ASR default on-device atau cloud.
+
+Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
+
+- **Transkripsi akurat multi-bahasa / terjemahan / overdub / lyric / AI emoji /
+  diarisasi** = `BUTUH BACKEND`; bilingual dan per-kata timing tetap P1/P2.
+- Caption belum dibakar ke file export (batasan render Media3 yang sama dengan
+  teks/stiker).
+- Waktu cue dari ASR adalah hasil ukur (frasa), bukan waktu per kata yang
+  diciptakan.
+
+Test baru: `CaptionEditorTest` (11 kasus), `CaptionSegmenterTest` (7 kasus),
+`SrtFormatTest` (8 kasus), 2 kasus `ProjectCodecTest` (draft lama tanpa
+transcript + round-trip/sanitize), dan 1 tes rute di `ZcutDestinationsTest`.
 
 ### Catatan M11 — teks & tipografi (2026-10-25)
 

@@ -14,6 +14,7 @@ import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
 import com.zaaam.zcut.feature.tools.AudioViewModel
+import com.zaaam.zcut.feature.tools.CaptionViewModel
 import com.zaaam.zcut.feature.tools.ClipToolViewModel
 import com.zaaam.zcut.feature.tools.StickerViewModel
 import com.zaaam.zcut.feature.tools.TextViewModel
@@ -113,6 +114,22 @@ fun stickerViewModelFactory(
             StickerViewModel(
                 projectId = projectId,
                 initialClipId = clipId,
+                repository = container.projectRepository
+            )
+        }
+    }
+}
+
+/** Captions belong to the draft, so they only need its id. */
+@Composable
+fun captionViewModelFactory(
+    container: AppContainer,
+    projectId: String
+): ViewModelProvider.Factory = remember(container, projectId) {
+    viewModelFactory {
+        initializer {
+            CaptionViewModel(
+                projectId = projectId,
                 repository = container.projectRepository
             )
         }

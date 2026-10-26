@@ -19,6 +19,11 @@ data class Project(
      * M0/M1 decode with an empty list, so no schema bump is needed.
      */
     val assets: List<MediaAsset> = emptyList(),
+    /**
+     * Caption transcript (F15). Additive: drafts written before M17 decode with
+     * an empty transcript, so no schema bump is needed.
+     */
+    val transcript: Transcript = Transcript(),
     val schemaVersion: Int = 1
 ) {
     companion object {

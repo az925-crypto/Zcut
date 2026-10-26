@@ -269,6 +269,7 @@ private fun EditorBody(
             ZcutRoutes.Audio -> ZcutRoutes.audio(project.id, selectedClipId, playhead.value)
             ZcutRoutes.Stickers ->
                 ZcutRoutes.stickers(project.id, selectedClipId, playhead.value)
+            ZcutRoutes.Captions -> ZcutRoutes.captions(project.id, playhead.value)
             else -> ZcutRoutes.toolRoute(route, project.id, selectedClipId)
         }
         onNavigate(target)
@@ -463,6 +464,20 @@ private fun PreviewPanel(
             // Text is composited here, not by Media3; the overlay follows the
             // playhead so scrub and playback show the same animation.
             TextOverlayLayer(
+                project = project,
+                playhead = playhead,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Stickers and captions take the same route: Compose draws them over
+            // the preview frame, and they follow the playhead.
+            StickerOverlayLayer(
+                project = project,
+                playhead = playhead,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            CaptionOverlayLayer(
                 project = project,
                 playhead = playhead,
                 modifier = Modifier.fillMaxSize()
@@ -684,6 +699,7 @@ private val EditorTools = listOf(
     EditorTool("Edit", ZcutRoutes.Trim),
     EditorTool("Audio", ZcutRoutes.Audio),
     EditorTool("Teks", ZcutRoutes.Text),
+    EditorTool("Caption", ZcutRoutes.Captions),
     EditorTool("Sticker", ZcutRoutes.Stickers),
     EditorTool("Efek", ZcutRoutes.Effects),
     EditorTool("Filter", ZcutRoutes.Filters),

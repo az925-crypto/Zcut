@@ -157,6 +157,38 @@ class ProjectCodecTest {
     }
 
     @Test
+    fun legacyDocumentsWithoutATranscriptDecodeWithNoCues() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{"id":"p1"}]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+
+        assertEquals(0, decoded.transcript.cues.size)
+    }
+
+    @Test
+    fun captionsRoundTripAndAreSanitizedOnDecode() {
+        val raw = """
+            {"schemaVersion":1,"projects":[{"id":"p1","transcript":{
+              "language":"id",
+              "source":"IMPORTED_SRT",
+              "cues":[
+                {"id":"c1","startMs":5000,"endMs":4000,"text":"rusak"},
+                {"id":"c2","startMs":0,"endMs":1000,"text":"   "},
+                {"id":"c3","startMs":1000,"endMs":2000,"text":"oke"}
+              ]
+            }}]}
+        """.trimIndent()
+
+        val decoded = ProjectCodec.decode(raw).projects.single()
+
+        // Blank line dropped, inverted window repaired, order canonised.
+        assertEquals(listOf("oke", "rusak"), decoded.transcript.cues.map { it.text })
+        assertEquals(5_200L, decoded.transcript.cues.last().endMs)
+    }
+
+    @Test
     fun unusableAndDuplicateAssetsAreDroppedButTheirClipsAreKept() {
         val raw = """
             {"schemaVersion":1,"projects":[{

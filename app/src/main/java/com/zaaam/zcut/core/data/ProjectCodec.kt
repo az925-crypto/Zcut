@@ -1,6 +1,7 @@
 package com.zaaam.zcut.core.data
 
 import com.zaaam.zcut.core.domain.AudioEditor
+import com.zaaam.zcut.core.domain.CaptionEditor
 import com.zaaam.zcut.core.domain.StickerEditor
 import com.zaaam.zcut.core.domain.TextEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
@@ -97,6 +98,7 @@ object ProjectCodec {
                     TextEditor.sanitize(TimelineEditor.sanitize(project.timeline))
                 )
             ),
+            transcript = CaptionEditor.sanitize(project.transcript),
             // A snap switch with nothing to snap to is a dead control, so it is
             // turned off when the grid is empty.
             settings = project.settings.copy(

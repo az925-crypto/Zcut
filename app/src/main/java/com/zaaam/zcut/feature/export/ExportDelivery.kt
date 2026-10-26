@@ -22,18 +22,18 @@ object ExportDelivery {
     private const val MIME_VIDEO = "video/mp4"
 
     /** Opens the system chooser for [file]; false when no app can handle it. */
-    fun share(context: Context, file: File): Boolean = runCatching {
+    fun share(context: Context, file: File, mime: String = MIME_VIDEO): Boolean = runCatching {
         val uri = FileProvider.getUriForFile(
             context,
             context.packageName + ".fileprovider",
             file
         )
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = MIME_VIDEO
+            type = mime
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Bagikan video"))
+        context.startActivity(Intent.createChooser(intent, "Bagikan"))
         true
     }.getOrDefault(false)
 

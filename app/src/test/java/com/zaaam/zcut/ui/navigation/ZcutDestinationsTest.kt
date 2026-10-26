@@ -141,6 +141,16 @@ class ZcutDestinationsTest {
         assertTrue(!route.contains("clipId"))
     }
 
+    @Test
+    fun captionsRouteCarriesProjectAndPlayheadOnly() {
+        val route = ZcutRoutes.captions("p 1", 1_234L)
+
+        assertTrue(route.startsWith("captions?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue("captions are draft-level, not per clip", !route.contains("clipId"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Captions)?.implemented == true)
+    }
+
     /**
      * Regression for the M14/M15 bug where a panel was registered in the NavHost
      * with `clipTool(...)` but missing from `argToolRoutes`: the editor then

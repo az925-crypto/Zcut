@@ -18,6 +18,7 @@ object ZcutRoutes {
     const val Tts = "tts"
     const val Text = "text"
     const val Stickers = "stickers"
+    const val Captions = "captions"
     const val Effects = "effects"
     const val Filters = "filters"
     const val Adjust = "adjust"
@@ -59,6 +60,10 @@ object ZcutRoutes {
     /** Stickers can create a clip too, so they carry the selected clip and playhead. */
     const val StickersPattern = "$Stickers?$ArgProjectId={$ArgProjectId}" +
         "&$ArgClipId={$ArgClipId}&$ArgAtMs={$ArgAtMs}"
+
+    /** Captions belong to the draft, not a clip; the playhead anchors new cues. */
+    const val CaptionsPattern = "$Captions?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgAtMs={$ArgAtMs}"
 
     /** Export renders one draft; the result screen is a separate destination. */
     const val ExportPattern = "$Export?$ArgProjectId={$ArgProjectId}"
@@ -142,6 +147,9 @@ object ZcutRoutes {
         return if (clip == null) base else "$base&$ArgClipId=$clip"
     }
 
+    fun captions(projectId: String, atMs: Long = 0L): String =
+        "$Captions?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+
     fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
 
     /**
@@ -222,7 +230,7 @@ object ZcutDestinations {
         ZcutDestination("beauty", "Retouch", "F12", implemented = true),
         ZcutDestination("stickers", "Sticker", "F13", implemented = true),
         ZcutDestination("text", "Teks", "F14", implemented = true),
-        ZcutDestination("captions", "Caption", "F15"),
+        ZcutDestination("captions", "Caption", "F15", implemented = true),
         ZcutDestination("audio", "Audio", "F16", implemented = true),
         ZcutDestination("tts", "Text to speech", "F17", implemented = true),
         ZcutDestination("ai-music", "AI Music", "F18"),

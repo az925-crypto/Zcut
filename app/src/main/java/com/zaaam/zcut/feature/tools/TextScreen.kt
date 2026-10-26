@@ -427,7 +427,7 @@ private fun TextPreviewCard(project: Project, config: TextConfig) {
 }
 
 @Composable
-private fun ColorSwatch(argb: Long, selected: Boolean, onClick: () -> Unit) {
+internal fun ColorSwatch(argb: Long, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(44.dp)
@@ -455,7 +455,7 @@ private fun defaultDraft(): TextConfig = TextConfig(
     animation = TextAnimation.RISE
 )
 
-private fun styleLabel(preset: TextStylePreset): String = when (preset) {
+internal fun styleLabel(preset: TextStylePreset): String = when (preset) {
     TextStylePreset.NONE -> "Normal"
     TextStylePreset.BOLD -> "Bold"
     TextStylePreset.OUTLINE -> "Outline"
@@ -478,7 +478,7 @@ private fun animationLabel(animation: TextAnimation): String = when (animation) 
     TextAnimation.GLITCH -> "Glitch"
 }
 
-private val StylePresets = listOf(
+internal val StylePresets = listOf(
     TextStylePreset.BOLD,
     TextStylePreset.OUTLINE,
     TextStylePreset.SHADOW,
@@ -486,7 +486,7 @@ private val StylePresets = listOf(
     TextStylePreset.GRADIENT
 )
 
-private val TextColors = listOf(
+internal val TextColors = listOf(
     0xFFFFFFFF,
     0xFFC9FF4A,
     0xFFFF6B4A,
