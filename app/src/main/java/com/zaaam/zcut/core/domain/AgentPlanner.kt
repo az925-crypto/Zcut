@@ -63,7 +63,7 @@ object AgentPlanner {
     fun plan(prompt: String): Plan {
         val text = prompt.lowercase()
         val steps = buildList {
-            if (TIGHTEN_INTRO.matches(text)) {
+            if (Tool.TIGHTEN_INTRO.matches(text)) {
                 add(
                     Step(
                         tool = Tool.TIGHTEN_INTRO,
@@ -73,7 +73,7 @@ object AgentPlanner {
                     )
                 )
             }
-            if (ADD_MUSIC.matches(text)) {
+            if (Tool.ADD_MUSIC.matches(text)) {
                 add(
                     Step(
                         tool = Tool.ADD_MUSIC,
@@ -82,7 +82,7 @@ object AgentPlanner {
                     )
                 )
             }
-            if (AUTO_CUT.matches(text)) {
+            if (Tool.AUTO_CUT.matches(text)) {
                 add(
                     Step(
                         tool = Tool.AUTO_CUT,
@@ -93,7 +93,7 @@ object AgentPlanner {
                     )
                 )
             }
-            if (ADD_CAPTION.matches(text)) {
+            if (Tool.ADD_CAPTION.matches(text)) {
                 add(
                     Step(
                         tool = Tool.ADD_CAPTION,
