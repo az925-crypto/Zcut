@@ -13,6 +13,7 @@ import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
+import com.zaaam.zcut.feature.templates.TemplateDetailViewModel
 import com.zaaam.zcut.feature.tools.AiMusicViewModel
 import com.zaaam.zcut.feature.tools.AudioViewModel
 import com.zaaam.zcut.feature.tools.CaptionViewModel
@@ -194,6 +195,22 @@ fun aiMusicViewModelFactory(
     }
 }
 
+/** Template detail only reads the built-in catalogue; favourites are local. */
+@Composable
+fun templateDetailViewModelFactory(
+    container: AppContainer,
+    templateId: String
+): ViewModelProvider.Factory = remember(container, templateId) {
+    viewModelFactory {
+        initializer {
+            TemplateDetailViewModel(
+                templateId = templateId,
+                preferences = container.preferencesRepository
+            )
+        }
+    }
+}
+
 /** Export is scoped to one draft and owns its render engine. */
 @Composable
 fun exportViewModelFactory(
@@ -216,12 +233,14 @@ fun exportViewModelFactory(
 @Composable
 fun mediaPickerViewModelFactory(
     container: AppContainer,
-    projectId: String?
-): ViewModelProvider.Factory = remember(container, projectId) {
+    projectId: String?,
+    templateId: String? = null
+): ViewModelProvider.Factory = remember(container, projectId, templateId) {
     viewModelFactory {
         initializer {
             MediaPickerViewModel(
                 projectId = projectId,
+                templateId = templateId,
                 repository = container.projectRepository,
                 importer = container.mediaImporter
             )

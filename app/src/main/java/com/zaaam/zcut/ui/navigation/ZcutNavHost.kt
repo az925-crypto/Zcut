@@ -26,6 +26,9 @@ import com.zaaam.zcut.feature.placeholder.PlaceholderScreen
 import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
+import com.zaaam.zcut.feature.templates.DiscoverScreen
+import com.zaaam.zcut.feature.templates.TemplateDetailScreen
+import com.zaaam.zcut.feature.templates.TemplatesScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
 import com.zaaam.zcut.feature.tools.AdjustScreen
 import com.zaaam.zcut.feature.tools.AiMusicScreen
@@ -179,12 +182,18 @@ fun ZcutNavHost(
                         type = NavType.StringType
                         nullable = true
                         defaultValue = null
+                    },
+                    navArgument(ZcutRoutes.ArgTemplateId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
                 )
             ) { entry ->
                 val projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId)
                 MediaPickerScreen(
                     projectId = projectId,
+                    templateId = entry.arguments?.getString(ZcutRoutes.ArgTemplateId),
                     onBack = { navController.popBackStack() },
                     onOpenEditor = { id ->
                         if (projectId != null) {
@@ -478,6 +487,48 @@ fun ZcutNavHost(
                     onBackHome = {
                         navController.navigate(ZcutRoutes.Home) {
                             popUpTo(ZcutRoutes.Home) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.Templates) {
+                TemplatesScreen(
+                    currentRoute = ZcutRoutes.Templates,
+                    onNavigate = openRoute,
+                    onOpenTemplate = { templateId ->
+                        navController.navigate(ZcutRoutes.templateDetail(templateId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.TemplateDetailPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgTemplateId) { type = NavType.StringType }
+                )
+            ) { entry ->
+                TemplateDetailScreen(
+                    templateId = entry.arguments?.getString(ZcutRoutes.ArgTemplateId).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                    onUseTemplate = { templateId ->
+                        // No draft exists yet: the picker creates one from the
+                        // template once the user picks the slot media.
+                        navController.navigate(ZcutRoutes.mediaPicker(templateId = templateId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.Discover) {
+                DiscoverScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenTemplate = { templateId ->
+                        navController.navigate(ZcutRoutes.templateDetail(templateId)) {
                             launchSingleTop = true
                         }
                     }

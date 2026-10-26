@@ -67,4 +67,21 @@ class BeatDetectorTest {
         assertEquals(null, BeatDetector.bpm(listOf(0L, 500L)))
         assertEquals(null, BeatDetector.bpm(emptyList()))
     }
+
+    @Test
+    fun gridStartsAtZeroAndStepsByTheTempo() {
+        val grid = BeatDetector.grid(bpm = 120, durationMs = 5_000L)
+
+        assertEquals(0L, grid.first())
+        val step = (60_000.0 / 120).toLong()
+        grid.zipWithNext().forEach { (a, b) -> assertEquals(step, b - a) }
+        assertTrue("last marker must not pass the end", grid.last() <= 5_000L)
+    }
+
+    @Test
+    fun gridRejectsNonsenseInput() {
+        assertEquals(emptyList<Long>(), BeatDetector.grid(0, 5_000L))
+        assertEquals(emptyList<Long>(), BeatDetector.grid(120, 0L))
+        assertEquals(emptyList<Long>(), BeatDetector.grid(-60, 5_000L))
+    }
 }

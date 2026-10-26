@@ -78,4 +78,33 @@ class AppPreferencesTest {
             )
         }
     }
+
+    @Test
+    fun favouritesDefaultToEmptyAndDropBlankIds() {
+        assertEquals(
+            emptySet<String>(),
+            AppPreferences.fromStored(null, null, null, null, null, null).favoriteTemplateIds
+        )
+
+        val stored = AppPreferences.fromStored(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            setOf("neon-nights", "  ", "golden-hour")
+        )
+
+        assertEquals(setOf("neon-nights", "golden-hour"), stored.favoriteTemplateIds)
+    }
+
+    @Test
+    fun favouritesAreCappedSoACorruptStoreCannotGrowForever() {
+        val huge = (1..(AppPreferences.MAX_FAVORITES + 50)).map { "t$it" }.toSet()
+
+        val stored = AppPreferences.fromStored(null, null, null, null, null, null, huge)
+
+        assertEquals(AppPreferences.MAX_FAVORITES, stored.favoriteTemplateIds.size)
+    }
 }

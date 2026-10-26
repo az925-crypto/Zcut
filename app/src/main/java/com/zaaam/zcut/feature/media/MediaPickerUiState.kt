@@ -11,6 +11,9 @@ data class ImportProgress(val done: Int, val total: Int)
 data class MediaPickerUiState(
     val projectId: String? = null,
     val projectName: String? = null,
+    /** Set when the picker is filling a template's slots (cut-same flow). */
+    val templateName: String? = null,
+    val requiredSlots: Int? = null,
     val filter: MediaFilter = MediaFilter.PHOTOS,
     val selected: List<String> = emptyList(),
     val isImporting: Boolean = false,

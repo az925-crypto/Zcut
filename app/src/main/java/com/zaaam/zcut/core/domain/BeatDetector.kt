@@ -90,4 +90,23 @@ object BeatDetector {
         if (median <= 0L) return null
         return (60_000.0 / median).roundToInt().coerceIn(30, 300)
     }
+
+    /**
+     * Even beat markers for a *known* tempo, starting at zero.
+     *
+     * This is the shared single source for "markers from a BPM": the local music
+     * generator and templates both feed their tempo through here so a detected
+     * grid and a declared one cannot drift apart.
+     */
+    fun grid(bpm: Int, durationMs: Long): List<Long> {
+        if (bpm <= 0 || durationMs <= 0L) return emptyList()
+        val step = (60_000.0 / bpm).toLong().coerceAtLeast(1L)
+        val beats = ArrayList<Long>()
+        var time = 0L
+        while (time <= durationMs) {
+            beats += time
+            time += step
+        }
+        return beats
+    }
 }

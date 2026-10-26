@@ -39,13 +39,21 @@ data class AppPreferences(
     val language: AppLanguage = AppLanguage.ID,
     val exportResolution: Resolution = Resolution.FHD_1080,
     val exportFrameRate: Int = DEFAULT_FRAME_RATE,
-    val exportAudioSampleRate: Int = DEFAULT_AUDIO_SAMPLE_RATE
+    val exportAudioSampleRate: Int = DEFAULT_AUDIO_SAMPLE_RATE,
+    /**
+     * Template ids the user hearted on the template detail screen. Local only:
+     * nothing is published, uploaded or synced.
+     */
+    val favoriteTemplateIds: Set<String> = emptySet()
 ) {
     companion object {
         const val DEFAULT_FRAME_RATE = 30
         const val DEFAULT_AUDIO_SAMPLE_RATE = 48_000
         val ALLOWED_FRAME_RATES = setOf(24, 30, 60)
         val ALLOWED_AUDIO_SAMPLE_RATES = setOf(44_100, 48_000)
+
+        /** Keeps a corrupted favourites list from growing without bound. */
+        const val MAX_FAVORITES = 200
 
         /**
          * Builds preferences from raw stored values, dropping anything that is
@@ -58,7 +66,8 @@ data class AppPreferences(
             language: String?,
             exportResolution: String?,
             exportFrameRate: Int?,
-            exportAudioSampleRate: Int?
+            exportAudioSampleRate: Int?,
+            favoriteTemplateIds: Set<String>? = null
         ): AppPreferences = AppPreferences(
             onboardingSeen = onboardingSeen ?: false,
             themeMode = ThemeMode.fromStored(themeMode),
@@ -69,8 +78,15 @@ data class AppPreferences(
                 ?: DEFAULT_FRAME_RATE,
             exportAudioSampleRate = exportAudioSampleRate
                 ?.takeIf { it in ALLOWED_AUDIO_SAMPLE_RATES }
-                ?: DEFAULT_AUDIO_SAMPLE_RATE
+                ?: DEFAULT_AUDIO_SAMPLE_RATE,
+            favoriteTemplateIds = sanitizeFavorites(favoriteTemplateIds)
         )
+
+        private fun sanitizeFavorites(ids: Set<String>?): Set<String> =
+            ids.orEmpty()
+                .filter { it.isNotBlank() }
+                .take(MAX_FAVORITES)
+                .toSet()
 
         private fun resolutionFromStored(raw: String?): Resolution =
             Resolution.entries.firstOrNull { it.name == raw } ?: Resolution.FHD_1080

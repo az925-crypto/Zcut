@@ -53,13 +53,14 @@ import com.zaaam.zcut.ui.theme.ZcutSpacing
 @Composable
 fun MediaPickerScreen(
     projectId: String?,
+    templateId: String? = null,
     onBack: () -> Unit,
     onOpenEditor: (String) -> Unit
 ) {
     val container = LocalAppContainer.current
     val viewModel: MediaPickerViewModel = viewModel(
-        key = "media-picker:${projectId ?: "new"}",
-        factory = mediaPickerViewModelFactory(container, projectId)
+        key = "media-picker:${projectId ?: "new"}:${templateId.orEmpty()}",
+        factory = mediaPickerViewModelFactory(container, projectId, templateId)
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -87,7 +88,7 @@ fun MediaPickerScreen(
     MediaPickerContent(
         state = state,
         thumbnails = container.mediaThumbnails,
-        canStartEmpty = projectId == null,
+        canStartEmpty = projectId == null && templateId == null,
         onBack = onBack,
         onFilterChange = viewModel::setFilter,
         onPickGallery = pickGallery,
@@ -121,7 +122,8 @@ private fun MediaPickerContent(
         topBar = {
             ZcutTopBar(
                 title = "Tambah media",
-                subtitle = state.projectName?.let { "untuk $it" }
+                subtitle = state.templateName?.let { "untuk template $it" }
+                    ?: state.projectName?.let { "untuk $it" }
                     ?: "${state.selected.size} dipilih · workspace lokal",
                 navigationIcon = {
                     ZcutIconButton(
@@ -164,13 +166,27 @@ private fun MediaPickerContent(
                 verticalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
-                    MediaFilter.entries.forEach { filter ->
-                        ZcutChip(
-                            label = filter.label,
-                            selected = state.filter == filter,
-                            onClick = { onFilterChange(filter) }
-                        )
-                    }
+                    MediaFilter.entries
+                        // Template slots only take visual media, so audio is not
+                        // offered there and can never produce a dead draft.
+                        .filter { state.templateName == null || it != MediaFilter.AUDIO }
+                        .forEach { filter ->
+                            ZcutChip(
+                                label = filter.label,
+                                selected = state.filter == filter,
+                                onClick = { onFilterChange(filter) }
+                            )
+                        }
+                }
+
+                val templateName = state.templateName
+                if (templateName != null) {
+                    Text(
+                        text = "Template $templateName · butuh " +
+                            "${state.requiredSlots ?: 0} media, satu per slot.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
@@ -251,10 +267,10 @@ private fun MediaPickerContent(
                     verticalArrangement = Arrangement.spacedBy(ZcutSpacing.xs)
                 ) {
                     ZcutPrimaryButton(
-                        text = if (state.selected.isEmpty()) {
-                            "Tambahkan media ke timeline"
-                        } else {
-                            "Tambahkan ${state.selected.size} item ke timeline"
+                        text = when {
+                            state.templateName != null -> "Isi ${state.selected.size} slot"
+                            state.selected.isEmpty() -> "Tambahkan media ke timeline"
+                            else -> "Tambahkan ${state.selected.size} item ke timeline"
                         },
                         onClick = onImport,
                         enabled = state.selected.isNotEmpty() && !state.isImporting,

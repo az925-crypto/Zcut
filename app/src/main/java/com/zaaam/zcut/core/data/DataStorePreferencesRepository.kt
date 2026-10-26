@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.zaaam.zcut.core.model.Resolution
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class DataStorePreferencesRepository(
         val exportResolution = stringPreferencesKey("export_resolution")
         val exportFrameRate = intPreferencesKey("export_frame_rate")
         val exportAudioSampleRate = intPreferencesKey("export_audio_sample_rate")
+        val favoriteTemplates = stringSetPreferencesKey("favorite_templates")
     }
 
     override val preferences: Flow<AppPreferences> = context.appPreferencesDataStore.data
@@ -51,7 +53,8 @@ class DataStorePreferencesRepository(
                 language = stored[Keys.language],
                 exportResolution = stored[Keys.exportResolution],
                 exportFrameRate = stored[Keys.exportFrameRate],
-                exportAudioSampleRate = stored[Keys.exportAudioSampleRate]
+                exportAudioSampleRate = stored[Keys.exportAudioSampleRate],
+                favoriteTemplateIds = stored[Keys.favoriteTemplates]
             )
         }
         .flowOn(Dispatchers.IO)
@@ -77,6 +80,15 @@ class DataStorePreferencesRepository(
     override suspend fun setExportAudioSampleRate(sampleRate: Int) = edit {
         if (sampleRate in AppPreferences.ALLOWED_AUDIO_SAMPLE_RATES) {
             it[Keys.exportAudioSampleRate] = sampleRate
+        }
+    }
+
+    override suspend fun setTemplateFavorite(templateId: String, favorite: Boolean) = edit {
+        if (templateId.isBlank()) return@edit
+        val current = it[Keys.favoriteTemplates].orEmpty()
+        it[Keys.favoriteTemplates] = when {
+            favorite -> (current + templateId).take(AppPreferences.MAX_FAVORITES).toSet()
+            else -> current - templateId
         }
     }
 

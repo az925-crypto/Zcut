@@ -7,6 +7,8 @@ import com.zaaam.zcut.core.data.ProjectRepository
 import com.zaaam.zcut.core.domain.DraftSummaries
 import com.zaaam.zcut.core.domain.MediaAppender
 import com.zaaam.zcut.core.domain.ProjectFactory
+import com.zaaam.zcut.core.domain.TemplateCatalog
+import com.zaaam.zcut.core.domain.TemplateEditor
 import com.zaaam.zcut.core.media.MediaImporter
 import com.zaaam.zcut.core.model.MediaAsset
 import kotlinx.coroutines.CancellationException
@@ -22,12 +24,24 @@ import kotlinx.coroutines.launch
  */
 class MediaPickerViewModel(
     private val projectId: String?,
+    private val templateId: String? = null,
     private val repository: ProjectRepository,
     private val importer: MediaImporter
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(MediaPickerUiState(projectId = projectId))
+    private val template = TemplateCatalog.byId(templateId)
+
+    private val _uiState = MutableStateFlow(
+        MediaPickerUiState(
+            projectId = projectId,
+            templateName = template?.name,
+            requiredSlots = template?.slotCount
+        )
+    )
     val uiState: StateFlow<MediaPickerUiState> = _uiState.asStateFlow()
+
+    /** A template needs exactly one clip per slot; a free import caps higher. */
+    private val selectionCap: Int = template?.slotCount ?: MAX_SELECTION
 
     // Set synchronously, before the coroutine starts: two fast taps on the CTA
     // must not create two drafts or import the same batch twice.
@@ -50,10 +64,14 @@ class MediaPickerViewModel(
         if (uris.isEmpty()) return
         _uiState.update { state ->
             val merged = (state.selected + uris).distinct()
-            if (merged.size > MAX_SELECTION) {
+            if (merged.size > selectionCap) {
                 state.copy(
-                    selected = merged.take(MAX_SELECTION),
-                    notice = "Maksimal $MAX_SELECTION item per impor."
+                    selected = merged.take(selectionCap),
+                    notice = if (template != null) {
+                        "Template ${template.name} punya ${template.slotCount} slot."
+                    } else {
+                        "Maksimal $selectionCap item per impor."
+                    }
                 )
             } else {
                 state.copy(selected = merged)
@@ -114,14 +132,22 @@ class MediaPickerViewModel(
                     return@launch
                 }
 
-                val project = if (existing != null) {
-                    MediaAppender.append(existing, imported)
-                } else {
-                    ProjectFactory.fromAssets(nextName(), imported)
+                val project = when {
+                    template != null -> TemplateEditor.apply(
+                        template = template,
+                        assets = imported,
+                        name = template.name
+                    )
+
+                    existing != null -> MediaAppender.append(existing, imported)
+                    else -> ProjectFactory.fromAssets(nextName(), imported)
                 }
                 repository.upsert(project)
 
-                if (failed == 0) {
+                val emptySlots = template
+                    ?.let { (it.slotCount - imported.size).coerceAtLeast(0) }
+                    ?: 0
+                if (failed == 0 && emptySlots == 0) {
                     _uiState.update {
                         it.copy(
                             isImporting = false,
@@ -136,7 +162,7 @@ class MediaPickerViewModel(
                             isImporting = false,
                             progress = null,
                             selected = emptyList(),
-                            notice = "${imported.size} media ditambahkan, $failed gagal.",
+                            notice = importNotice(imported.size, failed, emptySlots),
                             pendingProjectId = project.id
                         )
                     }
@@ -179,6 +205,27 @@ class MediaPickerViewModel(
 
     private suspend fun nextName(): String =
         DraftSummaries.nextName(repository.summaries().map { it.name }.toSet())
+
+    /** One honest line for a partial import (failed files and/or empty slots). */
+    private fun importNotice(added: Int, failed: Int, emptySlots: Int): String =
+        buildString {
+            append(added)
+            append(" media ditambahkan")
+            if (failed > 0) {
+                append(", ")
+                append(failed)
+                append(" gagal")
+            }
+            if (emptySlots > 0) {
+                append(". Template punya ")
+                append(template?.slotCount ?: 0)
+                append(" slot; baru ")
+                append(added)
+                append(" terisi.")
+            } else {
+                append(".")
+            }
+        }
 
     private companion object {
         const val MAX_SELECTION = 20

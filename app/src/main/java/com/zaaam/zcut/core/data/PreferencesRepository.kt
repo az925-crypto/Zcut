@@ -16,4 +16,5 @@ interface PreferencesRepository {
     suspend fun setExportResolution(resolution: Resolution)
     suspend fun setExportFrameRate(frameRate: Int)
     suspend fun setExportAudioSampleRate(sampleRate: Int)
+    suspend fun setTemplateFavorite(templateId: String, favorite: Boolean)
 }

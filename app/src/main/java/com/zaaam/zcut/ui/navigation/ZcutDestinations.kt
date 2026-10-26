@@ -28,6 +28,8 @@ object ZcutRoutes {
     const val Export = "export"
     const val ExportDone = "export-done"
     const val Templates = "templates"
+    const val TemplateDetail = "template-detail"
+    const val Discover = "discover"
     const val AiStudio = "ai-studio"
     const val AiMusic = "ai-music"
     const val Profile = "profile"
@@ -36,10 +38,20 @@ object ZcutRoutes {
     /** NavHost pattern; the destination id itself stays `editor` for parity. */
     const val EditorPattern = "editor/{projectId}"
 
-    /** `projectId` is absent when the picker starts a brand-new draft. */
-    const val MediaPickerPattern = "media-picker?projectId={projectId}"
-
     const val ArgProjectId = "projectId"
+    const val ArgTemplateId = "templateId"
+
+    /**
+     * `projectId` is absent when the picker starts a brand-new draft and
+     * `templateId` is absent when the import is not filling a template's slots;
+     * both are optional query arguments.
+     */
+    const val MediaPickerPattern = "$MediaPicker?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgTemplateId={$ArgTemplateId}"
+
+    /** A template detail is addressed by its catalogue id, nothing else. */
+    const val TemplateDetailPattern = "$TemplateDetail?$ArgTemplateId={$ArgTemplateId}"
+
     const val ArgClipId = "clipId"
     const val ArgAtMs = "atMs"
     const val ArgFile = "file"
@@ -97,12 +109,19 @@ object ZcutRoutes {
 
     fun editor(projectId: String): String = "$Editor/${encode(projectId)}"
 
-    fun mediaPicker(projectId: String? = null): String =
-        if (projectId.isNullOrBlank()) {
-            MediaPicker
-        } else {
-            "$MediaPicker?$ArgProjectId=${encode(projectId)}"
+    fun mediaPicker(projectId: String? = null, templateId: String? = null): String {
+        val project = projectId?.takeIf { it.isNotBlank() }?.let(::encode)
+        val template = templateId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return when {
+            project == null && template == null -> MediaPicker
+            project == null -> "$MediaPicker?$ArgTemplateId=$template"
+            template == null -> "$MediaPicker?$ArgProjectId=$project"
+            else -> "$MediaPicker?$ArgProjectId=$project&$ArgTemplateId=$template"
         }
+    }
+
+    fun templateDetail(templateId: String): String =
+        "$TemplateDetail?$ArgTemplateId=${encode(templateId)}"
 
     fun trim(projectId: String, clipId: String?): String =
         toolRoute(Trim, projectId, clipId)
@@ -220,9 +239,9 @@ object ZcutDestinations {
         ZcutDestination("onboarding", "Selamat datang", null, implemented = true),
         ZcutDestination("home", "Home", "F01", implemented = true),
         ZcutDestination("projects", "Draft", "F20", implemented = true),
-        ZcutDestination("templates", "Template", "F21"),
-        ZcutDestination("template-detail", "Detail template", "F21"),
-        ZcutDestination("discover", "Discover", "F21"),
+        ZcutDestination("templates", "Template", "F21", implemented = true),
+        ZcutDestination("template-detail", "Detail template", "F21", implemented = true),
+        ZcutDestination("discover", "Discover", "F21", implemented = true),
         ZcutDestination("ai-studio", "AI Studio", "F23"),
         ZcutDestination("editor", "Editor", "F01", implemented = true),
         ZcutDestination("media-picker", "Tambah media", "F02", implemented = true),

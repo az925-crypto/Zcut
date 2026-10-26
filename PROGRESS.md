@@ -59,7 +59,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M16 | Sticker + Lottie | F13 | stickers | ✅ |
 | M17 | Caption & speech lokal | F15 | captions | ✅ |
 | M18 | AI music prosedural | F18 | ai-music | ✅ |
-| M19 | Template & CutSame | F21 | templates, template-detail, discover | [ ] |
+| M19 | Template & CutSame | F21 | templates, template-detail, discover | ✅ |
 | M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | [ ] |
 | M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | [ ] |
 | M22 | Digital human (BUTUH BACKEND) | F25 | digital-human | [ ] |
@@ -632,6 +632,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-26 | `a2603e2` | Fix rilis: buang izin `INTERNET` dari manifest gabungan (Media3 mendeklarasikannya) |
 | 2026-10-26 | `cacb0ae` | M16 sticker: `StickerCatalog` glyph lokal, `StickerEditor`, layar `stickers`, sanitize di `ProjectCodec`, 8 tes |
 | 2026-10-26 | `c8a2eae` | M17 caption: `CaptionEditor`/`CaptionSegmenter`/`SrtFormat`/`DeviceSpeechTranscriber`, layar `captions`, overlay caption+sticker, `Project.transcript` |
+| 2026-10-26 | `0e6d820` | M18 AI music: `MusicGenerator` WAV aditif lokal, `MusicCatalog` 5 mood, `AiMusicViewModel`/`AiMusicScreen`, chip rail editor, `beatGrid` + `settings.snapToBeat`, 9 tes |
 | 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit (127 MB) |
 
 ## Backlog re-audit
@@ -974,6 +975,71 @@ builder export (`PreviewPlanBuilder.build`/`Media3CompositionBuilder.build`) di
 dispatcher Main sebelum pindah ke `Main.immediate`. Composite bitmap hasil
 slider tidak di-`recycle()` (dibersihkan GC; pola sama dengan M14) juga dicatat
 sebagai churn, bukan leak.
+
+### Catatan M19 — template & CutSame (2026-10-26)
+
+Tiga layar F21 mengikuti mockup yang di-ACC:
+
+- `templates` — appbar "Templates" (sub "Local packs · tanpa gembok marketplace"),
+  ikon cari → Discover, chip kategori **For you/Trending/Vlog/Photo/Business**,
+  grid 2 kolom berisi kartu (art gradien lokal + badge **LOCAL** + nama +
+  `slotSummary`), panel catatan backend.
+- `template-detail` — hero art + badge LOCAL TEMPLATE + overlay nama/slot,
+  baris badge (NO WATERMARK / N SLOTS / BEAT SYNC / CAPTIONS), deskripsi, panel
+  **What is included**, tombol **Use template**, hint aset, dan tombol hati
+  (favorit lokal) di appbar.
+- `discover` — hero "Small city, big cut.", chip tag, grid kartu postingan lokal
+  + panel catatan; tiap kartu menuju `template-detail`.
+
+Yang diimplementasikan (lokal, gratis):
+
+- **Katalog**: `TemplateCatalog` — 10 pack bawaan (nama, kategori, art key, rasio,
+  slot, bpm opsional). Dibuat Zcut sendiri; tidak ada aset/merek CapCut.
+- **Slot**: `TemplateSlot(durationMs)` — bentuk slot minimal milik Zcut. Format
+  slot di artefak (`template.json`/`config.json` dalam `split_screen_*.zip`)
+  **Unknown**: tidak ada daftar slot eksplisit di sampel yang diperiksa, jadi
+  bentuknya ditandai inferred di spek, bukan diklaim hasil RE.
+- **Cut-same**: `TemplateEditor.fitToSlot` (sumber lebih panjang di-centre-crop,
+  lebih pendek dipakai utuh — sama seperti aturan `fitToSlot` artefak) dan
+  `TemplateEditor.apply` yang mengkloning template jadi draft nyata: slot diisi
+  berurutan pada `slotStartsMs()`, dan `bpm` template jadi `settings.beatGridMs` +
+  `snapToBeat`.
+- **Grid beat bersama**: `BeatDetector.grid(bpm, durationMs)` jadi satu-satunya
+  sumber marker dari tempo; `MusicGenerator.beatGrid` mendelegasikan ke sini
+  supaya grid "terdeteksi" dan grid "dideklarasikan" tidak bisa berbeda.
+- **Alur pakai**: "Use template" → `media-picker` mode template
+  (`mediaPicker(templateId = ...)`, `templateId` sebagai argumen navigasi). Jumlah
+  pilihan dibatasi `slotCount`, filter audio disembunyikan (slot hanya menerima
+  media visual), dan slot yang tak terisi dibiarkan kosong — bukan klip palsu.
+- **Favorit**: `AppPreferences.favoriteTemplateIds` (DataStore `stringSet`),
+  dibatasi `MAX_FAVORITES = 200` dan dibersihkan dari id kosong. Lokal, tanpa akun
+  maupun sinkronisasi.
+
+Bukti spek: `docs/features/21-templates-cutsame.md` (`com.vega.cutsameedit`,
+`edward/templatecore`, `TemplateClient`, `edit/templateselect`, `TemplateInstantiator`,
+`VideoHighlightcutClient`, `StdraftClient`). Yang **tidak** diambil dari bukti
+karena tidak terverifikasi: bentuk file template, nama field slot, ambang
+kecocokan materi, dan protokol marketplace/AI template.
+
+Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
+
+- **Marketplace, publikasi komunitas, AI template, smart vlog / highlight cut,
+  dan SplitScreen/Gameplay/LivePhoto berbasis template** = `BUTUH BACKEND` (P1/P2);
+  template bawaan tetap 100% lokal.
+- Baris **What is included** bersifat informasional (belum ada draft saat dibuka,
+  jadi tidak ada tujuan navigasi); hanya "Use template" yang bergerak maju.
+- Feed Discover adalah contoh lokal statis; tidak ada unduhan, unggahan, atau
+  telemetri.
+- Hero Discover memakai copy literal mockup yang sudah di-ACC sebagai teks
+  dekoratif.
+
+Test baru: `TemplateEditorTest` (9 kasus: centre-crop, sumber pendek utuh, durasi
+tak diketahui, slot degenerate, pengisian slot + offset sumber, grid beat dari
+tempo, template tanpa tempo, tanpa media visual, kelebihan media, nama kosong),
+`TemplateCatalogTest` (7 kasus: kelengkapan, id unik, lookup, filter kategori,
+`slotStartsMs`/`slotSummary`, postingan Discover, filter tag), 2 tes
+`BeatDetector.grid`, 2 tes favorit `AppPreferences`, dan 2 tes rute di
+`ZcutDestinationsTest`.
 
 ### Catatan M18 — AI music prosedural (2026-10-26)
 

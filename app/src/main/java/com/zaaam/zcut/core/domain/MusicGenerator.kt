@@ -84,18 +84,12 @@ object MusicGenerator {
     const val MAX_DURATION_MS = 60_000L
 
     /** Beat markers for the generated tempo, used as the draft's snap grid. */
-    fun beatGrid(bpm: Int, durationMs: Long): List<Long> {
-        if (bpm <= 0 || durationMs <= 0L) return emptyList()
-        val step = (60_000.0 / bpm).toLong().coerceAtLeast(1L)
-        val total = durationMs.coerceAtMost(MAX_DURATION_MS)
-        val beats = ArrayList<Long>()
-        var time = 0L
-        while (time <= total) {
-            beats += time
-            time += step
+    fun beatGrid(bpm: Int, durationMs: Long): List<Long> =
+        if (durationMs <= 0L) {
+            emptyList()
+        } else {
+            BeatDetector.grid(bpm, durationMs.coerceAtMost(MAX_DURATION_MS))
         }
-        return beats
-    }
 
     /** Renders a mono 16-bit WAV of [durationMs] for [style]. */
     fun wav(style: MusicStyle, durationMs: Long, seed: Int): ByteArray =

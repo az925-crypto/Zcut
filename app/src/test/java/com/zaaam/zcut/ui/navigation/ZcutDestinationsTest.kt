@@ -203,6 +203,31 @@ class ZcutDestinationsTest {
     }
 
     @Test
+    fun templatesRouteIsImplementedAndDetailCarriesTheTemplateId() {
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Templates)?.implemented == true)
+        assertTrue(ZcutDestinations.get(ZcutRoutes.TemplateDetail)?.implemented == true)
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Discover)?.implemented == true)
+
+        val detail = ZcutRoutes.templateDetail("neon nights")
+        assertTrue(detail.startsWith("template-detail?templateId=neon%20nights"))
+        assertTrue("detail must not carry a project", !detail.contains("projectId"))
+    }
+
+    @Test
+    fun mediaPickerCarriesAnOptionalTemplateInsteadOfAProject() {
+        assertEquals("media-picker", ZcutRoutes.mediaPicker())
+        assertTrue(ZcutRoutes.mediaPicker("p 1").startsWith("media-picker?projectId=p%201"))
+
+        val templateOnly = ZcutRoutes.mediaPicker(templateId = "neon-nights")
+        assertTrue(templateOnly.startsWith("media-picker?templateId=neon-nights"))
+        assertTrue("a fresh template draft has no project yet", !templateOnly.contains("projectId"))
+
+        val both = ZcutRoutes.mediaPicker("p1", "neon-nights")
+        assertTrue(both.contains("projectId=p1"))
+        assertTrue(both.contains("templateId=neon-nights"))
+    }
+
+    @Test
     fun exportRoutesAreImplementedAndCarryTheProject() {
         val route = ZcutRoutes.export("p 1")
 
