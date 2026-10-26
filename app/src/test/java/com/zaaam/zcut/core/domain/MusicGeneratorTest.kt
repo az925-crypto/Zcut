@@ -108,7 +108,10 @@ class MusicGeneratorTest {
             assertTrue("$name must be a plain file name", name.endsWith("_loop.wav"))
             assertTrue("$name must not contain a separator", !name.contains('/'))
             assertTrue("$name must not contain a separator", !name.contains('\\'))
-            assertTrue("$name must be lowercase ascii", name.all { it.isDigit() || it in 'a'..'z' })
+            assertTrue(
+                "$name must be lowercase ascii",
+                name.all { it.isDigit() || it in 'a'..'z' || it == '_' || it == '.' }
+            )
         }
         assertEquals("lofi_loop.wav", MusicGenerator.fileName(lofi))
     }
