@@ -13,6 +13,7 @@ import com.zaaam.zcut.feature.media.MediaPickerViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
+import com.zaaam.zcut.feature.tools.AiMusicViewModel
 import com.zaaam.zcut.feature.tools.AudioViewModel
 import com.zaaam.zcut.feature.tools.CaptionViewModel
 import com.zaaam.zcut.feature.tools.ClipToolViewModel
@@ -169,6 +170,25 @@ fun ttsViewModelFactory(
                 repository = container.projectRepository,
                 speechEngine = container.speechEngine,
                 cacheDir = container.ttsCacheDir
+            )
+        }
+    }
+}
+
+/** AI Music renders a loop locally and inserts it at the opening playhead. */
+@Composable
+fun aiMusicViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    atMs: Long
+): ViewModelProvider.Factory = remember(container, projectId, atMs) {
+    viewModelFactory {
+        initializer {
+            AiMusicViewModel(
+                projectId = projectId,
+                atMs = atMs,
+                repository = container.projectRepository,
+                musicDir = container.aiMusicDir
             )
         }
     }

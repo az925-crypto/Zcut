@@ -151,6 +151,16 @@ class ZcutDestinationsTest {
         assertTrue(ZcutDestinations.get(ZcutRoutes.Captions)?.implemented == true)
     }
 
+    @Test
+    fun aiMusicRouteCarriesProjectAndPlayheadOnly() {
+        val route = ZcutRoutes.aiMusic("p 1", 1_234L)
+
+        assertTrue(route.startsWith("ai-music?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue("the loop is inserted per draft, not per clip", !route.contains("clipId"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.AiMusic)?.implemented == true)
+    }
+
     /**
      * Regression for the M14/M15 bug where a panel was registered in the NavHost
      * with `clipTool(...)` but missing from `argToolRoutes`: the editor then

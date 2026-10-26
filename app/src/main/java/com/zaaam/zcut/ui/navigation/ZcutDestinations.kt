@@ -29,6 +29,7 @@ object ZcutRoutes {
     const val ExportDone = "export-done"
     const val Templates = "templates"
     const val AiStudio = "ai-studio"
+    const val AiMusic = "ai-music"
     const val Profile = "profile"
     const val Settings = "settings"
 
@@ -63,6 +64,10 @@ object ZcutRoutes {
 
     /** Captions belong to the draft, not a clip; the playhead anchors new cues. */
     const val CaptionsPattern = "$Captions?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgAtMs={$ArgAtMs}"
+
+    /** AI Music renders a loop for the draft; the playhead anchors the new clip. */
+    const val AiMusicPattern = "$AiMusic?$ArgProjectId={$ArgProjectId}" +
         "&$ArgAtMs={$ArgAtMs}"
 
     /** Export renders one draft; the result screen is a separate destination. */
@@ -150,6 +155,9 @@ object ZcutRoutes {
     fun captions(projectId: String, atMs: Long = 0L): String =
         "$Captions?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
 
+    fun aiMusic(projectId: String, atMs: Long = 0L): String =
+        "$AiMusic?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+
     fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
 
     /**
@@ -233,7 +241,7 @@ object ZcutDestinations {
         ZcutDestination("captions", "Caption", "F15", implemented = true),
         ZcutDestination("audio", "Audio", "F16", implemented = true),
         ZcutDestination("tts", "Text to speech", "F17", implemented = true),
-        ZcutDestination("ai-music", "AI Music", "F18"),
+        ZcutDestination("ai-music", "AI Music", "F18", implemented = true),
         ZcutDestination("export", "Export", "F19", implemented = true),
         ZcutDestination("export-done", "Export selesai", "F19", implemented = true),
         ZcutDestination("drafts", "Kelola draft", "F20"),

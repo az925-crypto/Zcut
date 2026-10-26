@@ -58,7 +58,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M15 | Retouch & beauty | F12 | beauty | ✅ |
 | M16 | Sticker + Lottie | F13 | stickers | ✅ |
 | M17 | Caption & speech lokal | F15 | captions | ✅ |
-| M18 | AI music prosedural | F18 | ai-music | [ ] |
+| M18 | AI music prosedural | F18 | ai-music | ✅ |
 | M19 | Template & CutSame | F21 | templates, template-detail, discover | [ ] |
 | M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | [ ] |
 | M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | [ ] |
@@ -631,6 +631,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-26 | `dcf1422` `91955f8` | Tutup sisa Low gate: recycle `smooth`, inferensi gagal = model tak tersedia, hapus dead `unavailableReason`, buang gate `MIN_SIDE` FaceDetector |
 | 2026-10-26 | `a2603e2` | Fix rilis: buang izin `INTERNET` dari manifest gabungan (Media3 mendeklarasikannya) |
 | 2026-10-26 | `cacb0ae` | M16 sticker: `StickerCatalog` glyph lokal, `StickerEditor`, layar `stickers`, sanitize di `ProjectCodec`, 8 tes |
+| 2026-10-26 | `c8a2eae` | M17 caption: `CaptionEditor`/`CaptionSegmenter`/`SrtFormat`/`DeviceSpeechTranscriber`, layar `captions`, overlay caption+sticker, `Project.transcript` |
 | 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit (127 MB) |
 
 ## Backlog re-audit
@@ -973,6 +974,55 @@ builder export (`PreviewPlanBuilder.build`/`Media3CompositionBuilder.build`) di
 dispatcher Main sebelum pindah ke `Main.immediate`. Composite bitmap hasil
 slider tidak di-`recycle()` (dibersihkan GC; pola sama dengan M14) juga dicatat
 sebagai churn, bukan leak.
+
+### Catatan M18 — AI music prosedural (2026-10-26)
+
+Layar `ai-music` (F18) mengikuti mockup yang di-ACC: hero "Set the mood.",
+textarea prompt, chip mood **Lo-fi/Cinematic/Pop/Ambient/Tense**, slider durasi
+(24 s default), panel readout **Tempo/Key/Engine**, tombol primer "Generate
+music", panel hasil (`<mood>_loop.wav` + badge READY + tombol "Insert to
+timeline"), catatan backend, dan badge appbar **NO CREDITS**.
+
+Yang diimplementasikan (lokal, gratis):
+
+- **Generator**: `MusicGenerator` — sintesis aditif murni Kotlin (pad triad,
+  bass pluck, kick/hat) yang menulis WAV mono 16-bit 22.05 kHz. Deterministik
+  per benih, jadi loop yang sama selalu terdengar sama. Rentang 8–60 s.
+- **Katalog**: `MusicCatalog` (5 mood) dengan tempo, tangga nada
+  (natural minor/Dorian/mayor), progresi akor, dan tekstur "vinyl" per mood.
+  Angka-angka ini **pilihan Zcut sendiri** (inferred): artefak asli tidak
+  mengekspos model maupun preset-nya — spek menandainya Unknown, jadi tidak
+  ditampilkan sebagai hasil reverse engineering.
+- **Render & insert**: `AiMusicViewModel` merender WAV di `Dispatchers.Default`,
+  menulisnya ke `filesDir/music` (privat), lalu `AudioEditor.insertAudio`
+  menaruhnya di posisi playhead panel dibuka. Tempo loop sekaligus disimpan
+  sebagai `settings.beatGridMs` dan `snapToBeat = true`, memakai kolom yang
+  sudah ada sejak M12.
+- **Tanpa unggahan, tanpa lisensi**: `INTERNET` tetap dibuang dari manifest.
+  Prompt hanya menentukan benih (`String.hashCode` → deterministik), bukan
+  model. Tidak ada kuota/kredit — badge appbar menegaskan itu.
+
+Bukti spek: `docs/features/18-ai-music.md` (`com.vega.audio.aimusic`,
+`GenerateAiMusicMv`, task API + polling, `AudioToBsInfoAlgorithm`, model
+`ai_music` dengan `bpm`/`beats`). Yang **tidak** diambil dari bukti karena tidak
+terverifikasi: nama model musik, batas durasi, dan apakah audio dihasilkan utuh
+atau per chunk.
+
+Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
+
+- **Text-to-music prosedural lokal** menggantikan model generatif; **video-to-
+  music, AI MV, lyric video, speech-to-song, song clone, AI sound, marketplace**
+  = `BUTUH BACKEND` (P1/P2).
+- Entry sementara lewat chip rail editor "AI Music"; titik masuk mockup
+  sesungguhnya (hub `ai-studio`) menyusul di M20.
+- Loop belum dibakar/di-mix khusus ke file export: klip audio biasa mengikuti
+  jalur mix M13.
+- Strip waveform di panel hasil adalah ornamen (bukan pengukuran berkas).
+
+Test baru: `MusicGeneratorTest` (9 kasus: header WAV PCM mono 16-bit, ukuran
+data, determinisme + sensitivitas benih, clamp durasi, grid beat
+0-ascending-tempo, input tak masuk akal, cakupan mood, nama berkas aman) dan 1
+tes rute di `ZcutDestinationsTest`.
 
 ### Catatan M16 — sticker (2026-10-26)
 

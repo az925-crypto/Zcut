@@ -28,6 +28,7 @@ import com.zaaam.zcut.feature.projects.ProjectsScreen
 import com.zaaam.zcut.feature.settings.SettingsScreen
 import com.zaaam.zcut.feature.splash.ZcutSplashScreen
 import com.zaaam.zcut.feature.tools.AdjustScreen
+import com.zaaam.zcut.feature.tools.AiMusicScreen
 import com.zaaam.zcut.feature.tools.AudioScreen
 import com.zaaam.zcut.feature.tools.BeautyScreen
 import com.zaaam.zcut.feature.tools.EffectsScreen
@@ -394,6 +395,23 @@ fun ZcutNavHost(
                 )
             ) { entry ->
                 CaptionScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.AiMusicPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgAtMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    }
+                )
+            ) { entry ->
+                AiMusicScreen(
                     projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
                     atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }

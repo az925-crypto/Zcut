@@ -270,6 +270,7 @@ private fun EditorBody(
             ZcutRoutes.Stickers ->
                 ZcutRoutes.stickers(project.id, selectedClipId, playhead.value)
             ZcutRoutes.Captions -> ZcutRoutes.captions(project.id, playhead.value)
+            ZcutRoutes.AiMusic -> ZcutRoutes.aiMusic(project.id, playhead.value)
             else -> ZcutRoutes.toolRoute(route, project.id, selectedClipId)
         }
         onNavigate(target)
@@ -712,5 +713,9 @@ private val EditorTools = listOf(
     // point for clip tools (same pattern as Keyframe/Transisi), so both get a
     // chip here — otherwise the panels would exist but be unreachable.
     EditorTool("Cutout", ZcutRoutes.Matting),
-    EditorTool("Retouch", ZcutRoutes.Beauty)
+    EditorTool("Retouch", ZcutRoutes.Beauty),
+    // AI Music ships with a procedural local generator while the AI Studio hub
+    // (its mockup entry point) lands in M20; this chip makes the panel reachable
+    // in the meantime.
+    EditorTool("AI Music", ZcutRoutes.AiMusic)
 )

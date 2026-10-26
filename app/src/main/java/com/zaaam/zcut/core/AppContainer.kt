@@ -50,6 +50,9 @@ class AppContainer(context: Context) {
     /** Finished renders; private to the app until the user shares or saves one. */
     val exportDir: File by lazy { File(appContext.filesDir, "exports") }
 
+    /** Locally generated music loops; private, never shared from here. */
+    val aiMusicDir: File by lazy { File(appContext.filesDir, "music") }
+
     val mediaThumbnails: MediaThumbnails by lazy {
         MediaThumbnails(appContext, thumbnailDir)
     }
