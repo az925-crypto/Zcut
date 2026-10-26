@@ -299,7 +299,7 @@ private fun WaveformStrip(modifier: Modifier = Modifier) {
         val heights = remember {
             List(WAVE_BARS) { index ->
                 val wave = abs(kotlin.math.sin(index * 1.7)) + abs(kotlin.math.cos(index * 0.9))
-                (0.25f + wave.coerceIn(0f, 2f) / 4f)
+                (0.25 + wave.coerceIn(0.0, 2.0) / 4.0).toFloat()
             }
         }
         heights.forEach { fraction ->
