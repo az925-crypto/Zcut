@@ -141,20 +141,29 @@ class AiMusicViewModel(
         _uiState.update { it.copy(busy = true, result = null, notice = null) }
         viewModelScope.launch {
             try {
-                val result = withContext(Dispatchers.Default) {
-                    val wav = MusicGenerator.wav(style, duration, seed)
-                    musicDir.mkdirs()
-                    val file = File(musicDir, MusicGenerator.fileName(style))
-                    file.writeBytes(wav)
-                    AiMusicResult(
-                        fileName = file.name,
-                        path = file.absolutePath,
-                        durationMs = duration,
-                        bpm = style.bpm,
-                        keyLabel = style.keyLabel,
-                        sizeBytes = file.length()
-                    )
+                val wav = withContext(Dispatchers.Default) {
+                    MusicGenerator.wav(style, duration, seed)
                 }
+                val base = MusicGenerator.fileName(style, duration, seed)
+                val file = withContext(Dispatchers.IO) {
+                    runCatching {
+                        MusicGenerator.writeUnique(musicDir, base, wav)
+                    }.getOrNull()
+                }
+                if (file == null) {
+                    _uiState.update {
+                        it.copy(busy = false, notice = "Gagal menulis berkas loop.")
+                    }
+                    return@launch
+                }
+                val result = AiMusicResult(
+                    fileName = file.name,
+                    path = file.absolutePath,
+                    durationMs = duration,
+                    bpm = style.bpm,
+                    keyLabel = style.keyLabel,
+                    sizeBytes = file.length()
+                )
                 _uiState.update {
                     it.copy(
                         busy = false,
@@ -206,21 +215,28 @@ class AiMusicViewModel(
                         atMs = atMs,
                         clipId = UUID.randomUUID().toString()
                     )
-                    val withGrid = inserted.copy(
-                        settings = inserted.settings.copy(
-                            beatGridMs = AudioEditor.sanitizeBeats(
-                                MusicGenerator.beatGrid(result.bpm, result.durationMs)
-                            ),
-                            snapToBeat = true
+                    // A grid the draft already carries (beat detection, a template)
+                    // outranks the loop's tempo, so it is never overwritten.
+                    val hadGrid = inserted.settings.beatGridMs.isNotEmpty()
+                    val withGrid = if (hadGrid) {
+                        inserted
+                    } else {
+                        inserted.copy(
+                            settings = inserted.settings.copy(
+                                beatGridMs = AudioEditor.sanitizeBeats(
+                                    MusicGenerator.beatGrid(result.bpm, result.durationMs)
+                                ),
+                                snapToBeat = true
+                            )
                         )
-                    )
+                    }
                     withGrid != project && runCatching { repository.upsert(withGrid) }.isSuccess
                 }
                 _uiState.update {
                     it.copy(
                         busy = false,
                         notice = if (stored) {
-                            "Loop masuk ke timeline. Snap ke beat aktif."
+                            "Loop masuk ke timeline."
                         } else {
                             "Loop siap, tapi gagal masuk ke timeline."
                         }

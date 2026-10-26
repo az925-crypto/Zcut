@@ -113,7 +113,10 @@ class AgentViewModel(
             "${plan.runnableSteps.size} tool call(s) ready. Review the plan before I " +
                 "touch the timeline."
         } else {
-            "Nothing here can run on device yet. Use the screen named in the step above."
+            // No step here can run and none has a screen to open (a caption-only
+            // plan needs a draft and a backend), so do not promise a button.
+            "Nothing here can run on device yet. The steps above say what each one " +
+                "still needs."
         }
         _uiState.update { current ->
             current.copy(
@@ -206,9 +209,10 @@ class AgentViewModel(
         val seed = project.id.hashCode()
         return withContext(Dispatchers.Default) {
             val bytes = MusicGenerator.wav(style, target, seed)
-            musicDir.mkdirs()
-            val file = File(musicDir, MusicGenerator.fileName(style))
-            file.writeBytes(bytes)
+            val base = MusicGenerator.fileName(style, target, seed)
+            val file = withContext(Dispatchers.IO) {
+                runCatching { MusicGenerator.writeUnique(musicDir, base, bytes) }.getOrNull()
+            } ?: return@withContext null
             MediaAsset(
                 id = UUID.randomUUID().toString(),
                 uri = "",

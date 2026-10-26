@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -32,11 +35,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,8 +75,8 @@ import com.zaaam.zcut.ui.components.ZcutTopBar
 import com.zaaam.zcut.ui.theme.ZcutLime
 import com.zaaam.zcut.ui.theme.ZcutSpacing
 import java.io.File
+import java.io.InputStreamReader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -90,13 +93,18 @@ fun CaptionScreen(
         factory = captionViewModelFactory(container, projectId)
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Kept as State and read only inside the manual rows, so a keystroke does not
+    // recompose the whole panel.
+    val draftsState = viewModel.drafts.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     // The platform recogniser owns the microphone and needs a Looper, so it
     // lives with the screen and is released when the screen goes away.
     val transcriber = remember { container.newSpeechTranscriber() }
-    val listening by transcriber.listening.collectAsStateWithLifecycle()
-    val partial by transcriber.partial.collectAsStateWithLifecycle()
+    // Kept as State, not values: only the Auto tab reads them, so a partial
+    // recognition result no longer recomposes the whole screen.
+    val listeningState = transcriber.listening.collectAsStateWithLifecycle()
+    val partialState = transcriber.partial.collectAsStateWithLifecycle()
     val transcriberNotice by transcriber.notice.collectAsStateWithLifecycle()
     val available = remember { transcriber.isAvailable }
     val anchorMs = atMs.coerceAtLeast(0L)
@@ -144,9 +152,22 @@ fun CaptionScreen(
         scope.launch {
             val text = withContext(Dispatchers.IO) {
                 runCatching {
-                    context.contentResolver.openInputStream(uri)
-                        ?.bufferedReader()
-                        ?.use { reader -> reader.readText() }
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        // Bounded read: a hand-made multi-megabyte .srt must not
+                        // be pulled into one String just to be truncated later.
+                        val reader = InputStreamReader(stream, Charsets.UTF_8)
+                        val buffer = CharArray(16 * 1024)
+                        val out = StringBuilder()
+                        var total = 0
+                        while (true) {
+                            val read = reader.read(buffer)
+                            if (read < 0) break
+                            total += read
+                            if (total > MAX_SRT_CHARS) break
+                            out.append(buffer, 0, read)
+                        }
+                        out.toString()
+                    }
                 }.getOrNull()
             }
             if (text.isNullOrBlank()) {
@@ -157,7 +178,7 @@ fun CaptionScreen(
                 localNotice = if (imported) {
                     "SRT diimpor."
                 } else {
-                    "Tidak ada baris caption yang terbaca di berkas itu."
+                    "SRT tidak diterapkan: tidak ada baris terbaca atau gagal disimpan."
                 }
             }
         }
@@ -250,18 +271,20 @@ fun CaptionScreen(
                 anchorMs = anchorMs,
                 tab = tab,
                 onTabChange = { tab = it },
-                listening = listening,
-                partial = partial,
+                listening = listeningState,
+                partial = partialState,
                 available = available,
                 notice = localNotice ?: transcriberNotice,
                 onTranscribe = onTranscribe,
                 onStop = { transcriber.stop() },
                 onAddCue = { text -> viewModel.addCue(text, anchorMs, anchorMs + 3_000L) },
-                onEditCue = { id, text -> viewModel.updateText(id, text) },
+                drafts = draftsState,
+                onMarkDraft = viewModel::markDraft,
                 onDeleteCue = viewModel::removeCue,
                 onApplyStyle = viewModel::setStyle,
                 onClearAll = viewModel::clearAll,
                 onImportSrt = { srtPicker.launch(arrayOf("text/plain", "application/x-subrip", "*/*")) },
+                onFlushDrafts = viewModel::flushDrafts,
                 modifier = modifier
             )
         }
@@ -287,18 +310,20 @@ private fun CaptionBody(
     anchorMs: Long,
     tab: Int,
     onTabChange: (Int) -> Unit,
-    listening: Boolean,
-    partial: String,
+    listening: State<Boolean>,
+    partial: State<String>,
     available: Boolean,
     notice: String?,
     onTranscribe: () -> Unit,
     onStop: () -> Unit,
     onAddCue: (String) -> Unit,
-    onEditCue: (String, String) -> Unit,
+    drafts: State<Map<String, String>>,
+    onMarkDraft: (String, String) -> Unit,
     onDeleteCue: (String) -> Unit,
     onApplyStyle: (TextConfig) -> Unit,
     onClearAll: () -> Unit,
     onImportSrt: () -> Unit,
+    onFlushDrafts: () -> Unit,
     modifier: Modifier
 ) {
     Column(
@@ -344,10 +369,12 @@ private fun CaptionBody(
                 cues = cues,
                 anchorMs = anchorMs,
                 onAddCue = onAddCue,
-                onEditCue = onEditCue,
+                drafts = drafts,
+                onMarkDraft = onMarkDraft,
                 onDeleteCue = onDeleteCue,
                 onImportSrt = onImportSrt,
-                onClearAll = onClearAll
+                onClearAll = onClearAll,
+                onFlushDrafts = onFlushDrafts
             )
 
             else -> CaptionStyleTab(seed = styleSeed, onApply = onApplyStyle)
@@ -362,12 +389,16 @@ private fun cueAt(cues: List<CaptionCue>, positionMs: Long): CaptionCue? =
 @Composable
 private fun CaptionAutoTab(
     cues: List<CaptionCue>,
-    listening: Boolean,
-    partial: String,
+    listening: State<Boolean>,
+    partial: State<String>,
     available: Boolean,
     onTranscribe: () -> Unit,
     onStop: () -> Unit
 ) {
+    // Read the live recognition state here, in the Auto tab's own scope.
+    val isListening = listening.value
+    val heard = partial.value
+
     ToolSection(title = "Transkripsi") {
         ToolHint(
             "Transkripsi akurat multi-bahasa BUTUH BACKEND. Tombol lokal memakai " +
@@ -376,14 +407,14 @@ private fun CaptionAutoTab(
         if (!available) {
             ToolHint("Perangkat ini tidak punya layanan pengenalan suara lokal.")
         }
-        if (listening) {
+        if (isListening) {
             ZcutSecondaryButton(
                 text = "Berhenti mendengarkan",
                 onClick = onStop,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (partial.isNotBlank()) {
-                ToolValueRow("Terdengar", partial)
+            if (heard.isNotBlank()) {
+                ToolValueRow("Terdengar", heard)
             }
         } else {
             ZcutPrimaryButton(
@@ -404,8 +435,14 @@ private fun CaptionAutoTab(
         if (cues.isEmpty()) {
             ToolHint("Belum ada caption. Pakai tab Manual untuk menulis sendiri.")
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                cues.forEach { cue -> CaptionLineRow(cue) }
+            // Lazy + keyed: a long SRT would otherwise compose every row at once.
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = MAX_LIST_HEIGHT),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(cues, key = { it.id }) { cue -> CaptionLineRow(cue) }
             }
         }
     }
@@ -416,12 +453,20 @@ private fun CaptionManualTab(
     cues: List<CaptionCue>,
     anchorMs: Long,
     onAddCue: (String) -> Unit,
-    onEditCue: (String, String) -> Unit,
+    drafts: State<Map<String, String>>,
+    onMarkDraft: (String, String) -> Unit,
     onDeleteCue: (String) -> Unit,
     onImportSrt: () -> Unit,
-    onClearAll: () -> Unit
+    onClearAll: () -> Unit,
+    onFlushDrafts: () -> Unit
 ) {
     var newText by remember { mutableStateOf("") }
+
+    // Leaving the tab (or the screen) must not drop a half-typed row: the
+    // ViewModel holds the pending text and is asked to write it right away.
+    DisposableEffect(Unit) {
+        onDispose { onFlushDrafts() }
+    }
 
     ToolSection(title = "Tambah baris") {
         OutlinedTextField(
@@ -457,15 +502,27 @@ private fun CaptionManualTab(
         if (cues.isEmpty()) {
             ToolHint("Belum ada baris untuk diedit.")
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                cues.forEach { cue ->
+            // Lazy + keyed: each manual row is a text field, so rendering the
+            // whole 2000-cue cap at once froze the panel.
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = MAX_LIST_HEIGHT),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(cues, key = { it.id }) { cue ->
+                    // Read the draft in the item's own scope: a keystroke
+                    // recomposes one row, not the panel.
+                    val draft = drafts.value[cue.id] ?: cue.text
                     CaptionEditRow(
                         cue = cue,
-                        onEdit = onEditCue,
+                        text = draft,
+                        onDraftChange = { text -> onMarkDraft(cue.id, text) },
                         onDelete = onDeleteCue
                     )
                 }
             }
+            ToolHint("Kosongkan teks sebuah baris untuk menghapusnya.")
             ZcutSecondaryButton(
                 text = "Hapus semua caption",
                 onClick = onClearAll,
@@ -563,18 +620,10 @@ private fun CaptionLineRow(cue: CaptionCue) {
 @Composable
 private fun CaptionEditRow(
     cue: CaptionCue,
-    onEdit: (String, String) -> Unit,
+    text: String,
+    onDraftChange: (String) -> Unit,
     onDelete: (String) -> Unit
 ) {
-    var draft by remember(cue.id) { mutableStateOf(cue.text) }
-    val latest by rememberUpdatedState(draft)
-    // Persist after a short idle; an empty field never deletes the cue.
-    LaunchedEffect(cue.id, draft) {
-        if (draft == cue.text || draft.isBlank()) return@LaunchedEffect
-        delay(400)
-        onEdit(cue.id, latest)
-    }
-
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(10.dp),
@@ -602,8 +651,8 @@ private fun CaptionEditRow(
                 )
             }
             OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it.take(CaptionEditor.MAX_LINE_LENGTH) },
+                value = text,
+                onValueChange = { onDraftChange(it.take(CaptionEditor.MAX_LINE_LENGTH)) },
                 minLines = 1,
                 maxLines = 3,
                 shape = MaterialTheme.shapes.small,
@@ -678,3 +727,9 @@ private fun CaptionPreviewCard(project: Project, cue: CaptionCue?, cueCount: Int
         }
     }
 }
+
+/** Bounded window for the lazy transcript/edit lists inside the scrolling page. */
+private val MAX_LIST_HEIGHT = 420.dp
+
+/** Ceiling on how much of a picked .srt file is read into memory. */
+private const val MAX_SRT_CHARS = 4 * 1024 * 1024

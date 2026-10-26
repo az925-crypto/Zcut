@@ -3,6 +3,8 @@ package com.zaaam.zcut.core.media
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -23,9 +25,11 @@ import kotlinx.coroutines.flow.StateFlow
  * windows come from a stopwatch, never from a guess. When the app can time a
  * phrase to the playhead it maps it back by subtracting the playhead at start.
  *
- * Nothing is uploaded by this class: `SpeechRecognizer` may use the device's own
- * service, and if none is installed [isAvailable] is false and the UI says so
- * instead of pretending to transcribe.
+ * Nothing is uploaded by this class: it asks the platform recogniser for local
+ * recognition (`EXTRA_PREFER_OFFLINE`) and never touches the network itself —
+ * this app has no `INTERNET` permission. Whether the device's recogniser service
+ * honours that request is the service's business, so if none is installed
+ * [isAvailable] is false and the UI says so instead of pretending to transcribe.
  *
  * All methods must be called from the main thread: the platform recogniser needs
  * a `Looper` and its callbacks arrive there.
@@ -39,7 +43,7 @@ class DeviceSpeechTranscriber(private val context: Context) {
         val endMs: Long
     )
 
-    private val _phrases = MutableSharedFlow<Phrase>(extraBufferCapacity = 64)
+    private val _phrases = MutableSharedFlow<Phrase>(extraBufferCapacity = PHRASE_BUFFER)
     val phrases: SharedFlow<Phrase> = _phrases
 
     private val _listening = MutableStateFlow(false)
@@ -55,6 +59,11 @@ class DeviceSpeechTranscriber(private val context: Context) {
     private var originElapsedMs = 0L
     private var segmentStartMs = 0L
     private var lastPhraseEndMs = 0L
+
+    /** Restarts are posted here so a persistent error cannot spin the CPU. */
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var errorStreak = 0
+    private var restartPending = false
 
     val isAvailable: Boolean get() = SpeechRecognizer.isRecognitionAvailable(context)
 
@@ -86,6 +95,9 @@ class DeviceSpeechTranscriber(private val context: Context) {
         if (!_listening.value && recognizer == null) return
         _listening.value = false
         _partial.value = ""
+        restartPending = false
+        errorStreak = 0
+        mainHandler.removeCallbacksAndMessages(null)
         runCatching { recognizer?.cancel() }
         runCatching { recognizer?.destroy() }
         recognizer = null
@@ -101,6 +113,9 @@ class DeviceSpeechTranscriber(private val context: Context) {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+            // Ask for on-device recognition; the service may ignore it, which is
+            // why the screen never promises that nothing leaves the device.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
         runCatching { active.startListening(intent) }.onFailure {
             _notice.value = "Pengenalan suara gagal dimulai."
@@ -110,7 +125,28 @@ class DeviceSpeechTranscriber(private val context: Context) {
 
     /** Restarts the engine, which stops after each utterance by design. */
     private fun restartIfListening() {
-        if (_listening.value) listen()
+        if (!_listening.value) return
+        // An immediate restart makes a queued backoff restart redundant; without
+        // this the engine could get two startListening calls in the same window.
+        mainHandler.removeCallbacksAndMessages(null)
+        restartPending = false
+        listen()
+    }
+
+    /**
+     * Restart after a growing pause. A missing microphone or a broken recogniser
+     * service answers every request with an error, and restarting at once turns
+     * that into a tight main-thread loop, so repeated errors back off instead.
+     */
+    private fun restartAfterError() {
+        if (!_listening.value || restartPending) return
+        restartPending = true
+        val delayMs = BACKOFF_MS[errorStreak.coerceAtMost(BACKOFF_MS.lastIndex)]
+        errorStreak++
+        mainHandler.postDelayed({
+            restartPending = false
+            restartIfListening()
+        }, delayMs)
     }
 
     private val listener = object : RecognitionListener {
@@ -129,14 +165,20 @@ class DeviceSpeechTranscriber(private val context: Context) {
         override fun onError(error: Int) {
             // ERROR_NO_MATCH/ERROR_SPEECH_TIMEOUT just mean "nothing said yet";
             // keep listening so a pause does not end the session.
-            if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+            if (error == SpeechRecognizer.ERROR_NO_MATCH ||
+                error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+            ) {
                 restartIfListening()
-            } else if (_listening.value) {
-                restartIfListening()
+            } else {
+                restartAfterError()
             }
         }
 
         override fun onResults(results: Bundle?) {
+            // A completed cycle means the engine is healthy again; a service that
+            // is always "ready" and then errors never reaches here, so its backoff
+            // keeps growing instead of being pinned at the first step.
+            errorStreak = 0
             val text = results
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 ?.firstOrNull()
@@ -146,7 +188,13 @@ class DeviceSpeechTranscriber(private val context: Context) {
                 val end = elapsed()
                 val start = segmentStartMs.coerceIn(lastPhraseEndMs, end)
                 lastPhraseEndMs = end
-                _phrases.tryEmit(Phrase(text, start, end))
+                // A dropped phrase would be a silent hole in the transcript, so
+                // say so instead of losing it quietly; a later success clears it.
+                if (_phrases.tryEmit(Phrase(text, start, end))) {
+                    if (_notice.value == DROP_NOTICE) _notice.value = null
+                } else {
+                    _notice.value = DROP_NOTICE
+                }
             }
             _partial.value = ""
             restartIfListening()
@@ -166,4 +214,18 @@ class DeviceSpeechTranscriber(private val context: Context) {
 
     private fun elapsed(): Long =
         (SystemClock.elapsedRealtime() - originElapsedMs).coerceAtLeast(0L)
+
+    private companion object {
+        /** Pause before retrying after consecutive errors; the last value sticks. */
+        val BACKOFF_MS = longArrayOf(250L, 500L, 1_000L, 2_000L, 4_000L)
+
+        /**
+         * Room for recognised phrases the collector has not picked up yet. Every
+         * drop is reported, so the buffer only needs to absorb a short burst.
+         */
+        const val PHRASE_BUFFER = 256
+
+        /** Shown while the buffer is dropping phrases; cleared on the next emit. */
+        const val DROP_NOTICE = "Beberapa frasa tidak tercatat (buffer penuh)."
+    }
 }

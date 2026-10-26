@@ -16,6 +16,9 @@ object CaptionSegmenter {
     const val DEFAULT_MAX_CHARS = 32
     const val DEFAULT_MAX_DURATION_MS = 5_000L
 
+    /** Hoisted: [splitIntoLines] runs once per recognised phrase. */
+    private val WHITESPACE = Regex("\\s+")
+
     /** One word with a measured time window (from a recogniser or SRT). */
     data class Word(
         val text: String,
@@ -36,7 +39,7 @@ object CaptionSegmenter {
      */
     fun splitIntoLines(text: String, maxChars: Int = DEFAULT_MAX_CHARS): List<String> {
         val budget = maxChars.coerceAtLeast(1)
-        val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val words = text.split(WHITESPACE).filter { it.isNotEmpty() }
         if (words.isEmpty()) return emptyList()
 
         val lines = mutableListOf<String>()

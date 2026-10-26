@@ -70,6 +70,8 @@ object CaptionEditor {
         endMs: Long? = null
     ): Transcript {
         if (transcript.cues.none { it.id == cueId }) return transcript
+        // Emptying a cue's text removes it, the same way [sanitize] drops blank
+        // cues and the Captions panel's per-row delete does; one rule, not two.
         val cues = transcript.cues.map { cue ->
             if (cue.id != cueId) {
                 cue
@@ -151,7 +153,9 @@ object CaptionEditor {
 
     /** Keeps a cue addressable: non-negative start, minimum duration, real style. */
     private fun normalize(cue: CaptionCue): CaptionCue {
-        val start = cue.startMs.coerceAtLeast(0L)
+        // Clamp the start so `start + MIN/MAX_DURATION_MS` cannot overflow if a
+        // hand-edited draft on disk carries a huge value.
+        val start = cue.startMs.coerceIn(0L, Long.MAX_VALUE - MAX_DURATION_MS)
         val end = cue.endMs.coerceAtLeast(start + MIN_DURATION_MS)
         val clampedEnd = if (end - start > MAX_DURATION_MS) start + MAX_DURATION_MS else end
         return cue.copy(

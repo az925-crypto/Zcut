@@ -50,20 +50,23 @@ object SrtFormat {
     /**
      * Tolerant reader: it accepts `,` or `.` before the milliseconds, `CRLF`,
      * missing/duplicated indexes and stray blank lines. A block without a valid
-     * time line is skipped rather than aborting the whole import.
+     * time line is skipped rather than aborting the whole import. It stops at
+     * [CaptionEditor.MAX_CUES] cues, so a huge hand-made file cannot grow an
+     * unbounded list before the editor's own cap applies.
      */
     fun parse(text: String): Transcript {
         val cues = mutableListOf<CaptionCue>()
         val blocks = text.replace("\r\n", "\n").replace('\r', '\n').split("\n\n")
-        blocks.forEach { block ->
+        for (block in blocks) {
+            if (cues.size >= CaptionEditor.MAX_CUES) break
             val lines = block.lines().map { it.trim() }.filter { it.isNotEmpty() }
             val timeIndex = lines.indexOfFirst { TIME_LINE.containsMatchIn(it) }
-            if (timeIndex < 0) return@forEach
-            val match = TIME_LINE.find(lines[timeIndex]) ?: return@forEach
+            if (timeIndex < 0) continue
+            val match = TIME_LINE.find(lines[timeIndex]) ?: continue
             val startMs = millis(match.groupValues, 1)
             val endMs = millis(match.groupValues, 5)
             val body = lines.drop(timeIndex + 1).joinToString("\n").trim()
-            if (body.isEmpty()) return@forEach
+            if (body.isEmpty()) continue
             cues += CaptionCue(
                 id = UUID.randomUUID().toString(),
                 startMs = startMs,

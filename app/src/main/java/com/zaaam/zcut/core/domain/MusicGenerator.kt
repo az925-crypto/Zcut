@@ -1,5 +1,6 @@
 package com.zaaam.zcut.core.domain
 
+import java.io.File
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.min
@@ -97,10 +98,35 @@ object MusicGenerator {
 
     /**
      * Result name shown in the UI and used on disk. Derived only from the mood,
-     * so the file name can never carry a path separator or user text.
+     * plus the length and seed so two different renders never overwrite each
+     * other's file; it can never carry a path separator or user text.
      */
-    fun fileName(style: MusicStyle): String =
-        style.label.lowercase().replace(Regex("[^a-z0-9]+"), "") + "_loop.wav"
+    fun fileName(style: MusicStyle, durationMs: Long, seed: Int): String {
+        val label = style.label.lowercase().replace(Regex("[^a-z0-9]+"), "")
+        // Full milliseconds, not whole seconds: two renders of the same mood a
+        // few hundred ms apart are different audio and must not share a file.
+        val ms = durationMs.coerceIn(MIN_DURATION_MS, MAX_DURATION_MS)
+        return "${label}_loop_${ms}ms_${seed.toUInt()}.wav"
+    }
+
+    /**
+     * First free name for [base] inside [dir]. Two callers (AI Music, the agent)
+     * pick their seeds independently, so a name collision must not silently make
+     * one render overwrite the other's audio.
+     */
+    fun writeUnique(dir: File, base: String, bytes: ByteArray): File {
+        dir.mkdirs()
+        val stem = base.substringBeforeLast('.')
+        val ext = base.substringAfterLast('.', "")
+        var candidate = File(dir, base)
+        var index = 2
+        while (candidate.exists()) {
+            candidate = File(dir, "$stem-$index.$ext")
+            index++
+        }
+        candidate.writeBytes(bytes)
+        return candidate
+    }
 
     private fun pcm(style: MusicStyle, durationMs: Long, seed: Int): ShortArray {
         val total = durationMs.coerceIn(MIN_DURATION_MS, MAX_DURATION_MS)

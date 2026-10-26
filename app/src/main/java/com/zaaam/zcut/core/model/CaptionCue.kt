@@ -28,5 +28,7 @@ enum class TranscriptSource {
     MANUAL,
     ON_DEVICE_SPEECH_RECOGNIZER,
     IMPORTED_SRT,
+    /** Cues estimated from a locally synthesised voice track (F25). */
+    SYNTHESIZED,
     BACKEND
 }

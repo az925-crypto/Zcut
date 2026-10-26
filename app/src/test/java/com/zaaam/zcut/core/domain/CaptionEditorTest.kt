@@ -37,6 +37,22 @@ class CaptionEditorTest {
     }
 
     @Test
+    fun aHugeStartCannotOverflowIntoAnInvertedWindow() {
+        // A hand-edited draft on disk can carry an absurd start; clamping it must
+        // keep the window ordered instead of overflowing into a negative span.
+        val transcript = CaptionEditor.addCue(
+            Transcript(),
+            "x",
+            Long.MAX_VALUE - 1L,
+            Long.MAX_VALUE
+        )
+
+        val cue = transcript.cues.single()
+        assertTrue(cue.endMs >= cue.startMs)
+        assertTrue(cue.endMs - cue.startMs >= CaptionEditor.MIN_DURATION_MS)
+    }
+
+    @Test
     fun updateCueEditsTextAndDropsAClearedLine() {
         val added = CaptionEditor.addCue(Transcript(), "halo", 0L, 1_000L)
         val id = added.cues.single().id

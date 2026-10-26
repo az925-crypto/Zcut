@@ -127,7 +127,6 @@ class AiClipperViewModel(
                     AiClipperUiState.MIN_TARGET_MS,
                     AiClipperUiState.MAX_TARGET_MS
                 ),
-                targetIsCustom = false,
                 windows = emptyList(),
                 notice = null
             )

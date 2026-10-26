@@ -104,8 +104,8 @@ class MusicGeneratorTest {
     @Test
     fun resultFileNamesAreStableAndNeverCarryAPath() {
         MusicMood.entries.forEach { mood ->
-            val name = MusicGenerator.fileName(MusicCatalog.style(mood))
-            assertTrue("$name must be a plain file name", name.endsWith("_loop.wav"))
+            val name = MusicGenerator.fileName(MusicCatalog.style(mood), 8_000L, 7)
+            assertTrue("$name must be a plain file name", name.endsWith(".wav"))
             assertTrue("$name must not contain a separator", !name.contains('/'))
             assertTrue("$name must not contain a separator", !name.contains('\\'))
             assertTrue(
@@ -113,7 +113,40 @@ class MusicGeneratorTest {
                 name.all { it.isDigit() || it in 'a'..'z' || it == '_' || it == '.' }
             )
         }
-        assertEquals("lofi_loop.wav", MusicGenerator.fileName(lofi))
+        assertEquals("lofi_loop_8000ms_7.wav", MusicGenerator.fileName(lofi, 8_000L, 7))
+    }
+
+    @Test
+    fun fileNameChangesWithSeedAndDurationSoFilesNeverCollide() {
+        // Two renders of the same mood differ once the length or the seed does,
+        // which is what keeps a later render from overwriting an earlier one.
+        val first = MusicGenerator.fileName(lofi, 8_000L, 1)
+        assertNotEquals(first, MusicGenerator.fileName(lofi, 8_000L, 2))
+        assertNotEquals(first, MusicGenerator.fileName(lofi, 30_000L, 1))
+        // Sub-second length changes are a different render, not the same file.
+        assertNotEquals(first, MusicGenerator.fileName(lofi, 8_400L, 1))
+        // Negative seeds must not leak a minus sign into the name.
+        assertTrue(
+            MusicGenerator.fileName(lofi, 8_000L, Int.MIN_VALUE)
+                .afterLast('_')
+                .removeSuffix(".wav")
+                .all { it.isDigit() }
+        )
+    }
+
+    @Test
+    fun writeUniqueNeverOverwritesAnExistingRender() {
+        val dir = java.nio.file.Files.createTempDirectory("zcut-music").toFile()
+        try {
+            val first = MusicGenerator.writeUnique(dir, "lofi_loop_8000ms_7.wav", byteArrayOf(1))
+            val second = MusicGenerator.writeUnique(dir, "lofi_loop_8000ms_7.wav", byteArrayOf(2))
+
+            assertNotEquals(first.name, second.name)
+            assertEquals(1, first.readBytes().single().toInt())
+            assertEquals(2, second.readBytes().single().toInt())
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     private fun headerDataSize(wav: ByteArray): Int = le32(wav, 40)

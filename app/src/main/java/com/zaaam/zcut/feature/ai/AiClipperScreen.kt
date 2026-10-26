@@ -164,7 +164,10 @@ private fun AiClipperBody(
                     ToolChip(
                         label = "${option / 1_000}s",
                         selected = !state.targetIsCustom && option == state.targetMs,
-                        onClick = { onTarget(option) },
+                        onClick = {
+                            onCustomTarget(false)
+                            onTarget(option)
+                        },
                         enabled = !state.analyzing
                     )
                 }
@@ -172,8 +175,8 @@ private fun AiClipperBody(
                     label = "Custom",
                     selected = state.targetIsCustom,
                     onClick = {
-                        onCustomTarget(true)
                         onTarget((customDraft * 1_000f).roundToLong())
+                        onCustomTarget(true)
                     },
                     enabled = !state.analyzing
                 )
