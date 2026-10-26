@@ -128,7 +128,7 @@ class MusicGeneratorTest {
         // Negative seeds must not leak a minus sign into the name.
         assertTrue(
             MusicGenerator.fileName(lofi, 8_000L, Int.MIN_VALUE)
-                .afterLast('_')
+                .substringAfterLast('_')
                 .removeSuffix(".wav")
                 .all { it.isDigit() }
         )
