@@ -5,11 +5,11 @@
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
-  Tahap 2b non-UI selesai, CI hijau, signed release `v0.6.0` sudah
+  Tahap 2b non-UI selesai, CI hijau, signed release `v0.7.0` sudah
   diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M15 selesai; batch M4–M10
   dan batch M11–M15 sudah melewati review gate (setelah perbaikan, ketiga
   reviewer `BLOCKING: no`).**
-  Rilis batch berikutnya menyusul di tag `v0.7.0`.
+  Batch M16–M20 menyusul; rilisnya di tag `v0.8.0`.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
   untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
@@ -30,9 +30,9 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M15 selesai · batch M11–M15 berjalan |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M15 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
-| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.6.0` sudah rilis; rilis fitur menyusul per tag |
+| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.7.0` sudah rilis; rilis fitur menyusul per tag |
 
 ## Tahap 3 — Milestone
 
@@ -627,6 +627,9 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `90bd3b5` | M13 export & render: Media3ExportEngine, ExportPlan, layar export/export-done, FileProvider + MediaStore |
 | 2026-10-25 | `b4ab340` | M14 matting & cutout: MlKitSubjectSegmenter, MattingComposer, MattingScreen, MattingConfig |
 | 2026-10-25 | `7e673f2` `36c7980` | M15 retouch & beauty: MlKitFaceDetector, BeautyProcessor, BeautyEditor, BeautyScreen, rail Cutout/Retouch |
+| 2026-10-26 | `87cbffc` | Review gate batch M11–M15: fix Critical tombol TTS mati, MediaRecorder bocor, clamp beauty/matting, guard recycle, status jujur model wajah, DSP ke Default |
+| 2026-10-26 | `dcf1422` `91955f8` | Tutup sisa Low gate: recycle `smooth`, inferensi gagal = model tak tersedia, hapus dead `unavailableReason`, buang gate `MIN_SIDE` FaceDetector |
+| 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit |
 
 ## Backlog re-audit
 
