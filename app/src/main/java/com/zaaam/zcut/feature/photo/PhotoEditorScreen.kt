@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -339,8 +340,9 @@ private fun PhotoStage(
         contentAlignment = Alignment.Center
     ) {
         if (preview != null) {
+            val image = remember(preview) { preview.asImageBitmap() }
             Image(
-                bitmap = preview,
+                bitmap = image,
                 contentDescription = "Pratinjau foto",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier

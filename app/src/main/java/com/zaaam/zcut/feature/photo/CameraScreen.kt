@@ -180,7 +180,10 @@ fun CameraScreen(
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
         val started = runCatching {
-            val pending = recorder.prepareRecording(context, FileOutputOptions(target))
+            val pending = recorder.prepareRecording(
+                context,
+                FileOutputOptions.Builder(target).build()
+            )
             if (audioGranted) pending.withAudioEnabled() else pending
         }
         if (started.isFailure) {

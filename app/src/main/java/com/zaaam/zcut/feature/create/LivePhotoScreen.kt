@@ -90,7 +90,7 @@ fun LivePhotoScreen(
                 actions = {
                     ZcutPrimaryButton(
                         text = if (state.busy) "…" else "Apply",
-                        onClick = { viewModel.combine(onOpenEditor) },
+                        onClick = { viewModel.combine { id -> id?.let(onOpenEditor) } },
                         enabled = state.canCombine
                     )
                 }
@@ -133,7 +133,7 @@ fun LivePhotoScreen(
                 )
                 ZcutSecondaryButton(
                     text = "Combine",
-                    onClick = { viewModel.combine(onOpenEditor) },
+                    onClick = { viewModel.combine { id -> id?.let(onOpenEditor) } },
                     enabled = state.canCombine,
                     modifier = Modifier.weight(1f)
                 )

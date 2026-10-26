@@ -182,7 +182,7 @@ fun AdMakerScreen(
 
             ZcutPrimaryButton(
                 text = if (state.busy) "Menyiapkan…" else "Generate ad draft",
-                onClick = { viewModel.generate(onOpenEditor) },
+                onClick = { viewModel.generate { id -> id?.let(onOpenEditor) } },
                 enabled = state.ready,
                 modifier = Modifier.fillMaxWidth()
             )

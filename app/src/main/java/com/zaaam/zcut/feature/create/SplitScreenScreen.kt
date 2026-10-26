@@ -83,7 +83,7 @@ fun SplitScreenScreen(
                 actions = {
                     ZcutPrimaryButton(
                         text = if (state.busy) "…" else "Apply",
-                        onClick = { viewModel.apply(onOpenEditor) },
+                        onClick = { viewModel.apply { id -> id?.let(onOpenEditor) } },
                         enabled = state.ready
                     )
                 }
