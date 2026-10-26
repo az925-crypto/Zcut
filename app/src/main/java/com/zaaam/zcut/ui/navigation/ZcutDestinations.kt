@@ -31,6 +31,8 @@ object ZcutRoutes {
     const val TemplateDetail = "template-detail"
     const val Discover = "discover"
     const val AiStudio = "ai-studio"
+    const val AiClipper = "ai-clipper"
+    const val AiAgent = "ai-agent"
     const val AiMusic = "ai-music"
     const val Profile = "profile"
     const val Settings = "settings"
@@ -81,6 +83,12 @@ object ZcutRoutes {
     /** AI Music renders a loop for the draft; the playhead anchors the new clip. */
     const val AiMusicPattern = "$AiMusic?$ArgProjectId={$ArgProjectId}" +
         "&$ArgAtMs={$ArgAtMs}"
+
+    /**
+     * The AI Studio hub opens the agent with no draft, so its `projectId` is
+     * optional: without one the agent targets the most recent draft.
+     */
+    const val AiAgentPattern = "$AiAgent?$ArgProjectId={$ArgProjectId}"
 
     /** Export renders one draft; the result screen is a separate destination. */
     const val ExportPattern = "$Export?$ArgProjectId={$ArgProjectId}"
@@ -174,8 +182,21 @@ object ZcutRoutes {
     fun captions(projectId: String, atMs: Long = 0L): String =
         "$Captions?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
 
-    fun aiMusic(projectId: String, atMs: Long = 0L): String =
-        "$AiMusic?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+    fun aiMusic(projectId: String? = null, atMs: Long = 0L): String {
+        val at = atMs.coerceAtLeast(0L)
+        val id = projectId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (id == null) {
+            "$AiMusic?$ArgAtMs=$at"
+        } else {
+            "$AiMusic?$ArgProjectId=$id&$ArgAtMs=$at"
+        }
+    }
+
+    /** No draft id: the hub opened the agent standalone. */
+    fun aiAgent(projectId: String? = null): String {
+        val id = projectId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (id == null) AiAgent else "$AiAgent?$ArgProjectId=$id"
+    }
 
     fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
 
@@ -242,7 +263,7 @@ object ZcutDestinations {
         ZcutDestination("templates", "Template", "F21", implemented = true),
         ZcutDestination("template-detail", "Detail template", "F21", implemented = true),
         ZcutDestination("discover", "Discover", "F21", implemented = true),
-        ZcutDestination("ai-studio", "AI Studio", "F23"),
+        ZcutDestination("ai-studio", "AI Studio", "F23", implemented = true),
         ZcutDestination("editor", "Editor", "F01", implemented = true),
         ZcutDestination("media-picker", "Tambah media", "F02", implemented = true),
         ZcutDestination("trim", "Trim & split", "F04", implemented = true),
@@ -264,8 +285,8 @@ object ZcutDestinations {
         ZcutDestination("export", "Export", "F19", implemented = true),
         ZcutDestination("export-done", "Export selesai", "F19", implemented = true),
         ZcutDestination("drafts", "Kelola draft", "F20"),
-        ZcutDestination("ai-clipper", "AI Clipper", "F22"),
-        ZcutDestination("ai-agent", "Zcut Agent", "F23"),
+        ZcutDestination("ai-clipper", "AI Clipper", "F22", implemented = true),
+        ZcutDestination("ai-agent", "Zcut Agent", "F23", implemented = true),
         ZcutDestination("ai-generate", "Generate", "F24"),
         ZcutDestination("digital-human", "Digital Human", "F25"),
         ZcutDestination("camera", "Kamera", "F26"),

@@ -6,10 +6,10 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.7.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M15 selesai; batch M4–M10
-  dan batch M11–M15 sudah melewati review gate (setelah perbaikan, ketiga
+  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M20 selesai; batch M4–M10,
+  M11–M15 sudah melewati review gate (setelah perbaikan, ketiga
   reviewer `BLOCKING: no`).**
-  Batch M16–M20 menyusul; rilisnya di tag `v0.8.0`.
+  Batch M16–M20 menunggu review gate; rilisnya di tag `v0.8.0`.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
   untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
@@ -30,7 +30,7 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M15 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M20 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
 | 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.7.0` sudah rilis; rilis fitur menyusul per tag |
 
@@ -60,7 +60,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M17 | Caption & speech lokal | F15 | captions | ✅ |
 | M18 | AI music prosedural | F18 | ai-music | ✅ |
 | M19 | Template & CutSame | F21 | templates, template-detail, discover | ✅ |
-| M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | [ ] |
+| M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | ✅ |
 | M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | [ ] |
 | M22 | Digital human (BUTUH BACKEND) | F25 | digital-human | [ ] |
 | M23 | Kamera + photo editor (CameraX) | F26 | camera, photo-editor | [ ] |
@@ -396,25 +396,26 @@ Spek: [`docs/features/21-templates-cutsame.md`](docs/features/21-templates-cutsa
 Spek: [`docs/features/22-ai-clipper-autocut.md`](docs/features/22-ai-clipper-autocut.md)
 
 - [x] Spek
-- [ ] AutoCut silence/scene lokal
-- [ ] Target duration + clip constraints
-- [ ] Highlight scoring heuristic
-- [ ] Arrange + caption + music
+- [x] AutoCut energy envelope lokal (`AutoCut.energyEnvelope`, 250 ms hop)
+- [x] Target duration + batas klip (chip 15/30/60 s + custom 5–60 s; jendela di luar durasi aset dibuang/dipendekkan)
+- [x] Highlight scoring heuristic (RMS→skor 0–100, `AutoCut.select` greedy non-overlap, bias gaya)
+- [x] Arrange ke draft baru (`AutoCut.draft` + `AiClipperViewModel.createDraft`)
 - [!] ASR/AED/highlight penuh (BUTUH BACKEND)
-- [ ] AI Story/Vlog (lokal)
-- [ ] Unit test selection
+- [ ] AI Story/Vlog (lokal) — menunggu milestone berikut
+- [x] Unit test selection (`AutoCutTest`, 15 kasus)
 
 ## F23 — AI Agent & AI Writer
 
 Spek: [`docs/features/23-ai-lab-agent.md`](docs/features/23-ai-lab-agent.md)
 
 - [x] Spek
-- [ ] Chat UI + conversation state
-- [ ] Tool registry + preview/undo
-- [ ] Rule-based local assistant
-- [ ] AI writer lokal (template teks)
+- [x] Chat UI + conversation state (`AgentScreen`, `AgentViewModel`)
+- [x] Tool registry + preview (tiap langkah `runnable`→LOCAL / BACKEND, tombol "Apply plan")
+- [ ] Undo / riwayat penerapan rencana
+- [x] Rule-based local assistant (`AgentPlanner` keyword routing → `tighten_intro`/`add_music`; `auto_cut`/`add_caption` ditandai)
+- [ ] AI writer lokal (template teks) — menunggu milestone berikut
 - [!] LLM agent (BUTUH BACKEND)
-- [ ] Unit test tool validation
+- [x] Unit test tool validation (`AgentPlannerTest`, `AgentEditorTest`)
 
 ## F24 — AI Image/Video Generation
 
@@ -634,6 +635,7 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-26 | `c8a2eae` | M17 caption: `CaptionEditor`/`CaptionSegmenter`/`SrtFormat`/`DeviceSpeechTranscriber`, layar `captions`, overlay caption+sticker, `Project.transcript` |
 | 2026-10-26 | `0e6d820` | M18 AI music: `MusicGenerator` WAV aditif lokal, `MusicCatalog` 5 mood, `AiMusicViewModel`/`AiMusicScreen`, chip rail editor, `beatGrid` + `settings.snapToBeat`, 9 tes |
 | 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit (127 MB) |
+| 2026-10-26 | `a69b5df` `f8bd29e` | M19 template & CutSame: katalog 10 pack lokal (`TemplateCatalog`), cut-same (`TemplateEditor`), grid beat bersama (`BeatDetector.grid`), favorit DataStore, layar templates/template-detail/discover, 20 tes |
 
 ## Backlog re-audit
 
@@ -975,6 +977,83 @@ builder export (`PreviewPlanBuilder.build`/`Media3CompositionBuilder.build`) di
 dispatcher Main sebelum pindah ke `Main.immediate`. Composite bitmap hasil
 slider tidak di-`recycle()` (dibersihkan GC; pola sama dengan M14) juga dicatat
 sebagai churn, bukan leak.
+
+### Catatan M20 — AI clipper & agent lokal (2026-10-26)
+
+Tiga layar F22/F23 mengikuti mockup yang di-ACC:
+
+- `ai-studio` — hub: appbar "AI Studio" (sub "Local tools first · backend only
+  when needed", badge **NO CREDITS**), hero "Make the impossible cut." + tombol
+  **Ask Zcut Agent**, grid 2 kolom berisi 6 kartu (AI Clipper/Agent **LOCAL**,
+  Generate/Digital Human **BACKEND**, AI Music/Ad Maker **LOCAL\***), panel
+  catatan backend, dan daftar "Recently used".
+- `ai-clipper` — panel sumber (thumb + `mm:ss.d · Np · 1.2 GB` + ganti video),
+  chip **Target length** (15s/30s/60s/Custom → slider 5–60 s), chip **Style**
+  (Vlog/Funny/Cinematic/Product), tombol **Find highlights**, panel catatan
+  backend, daftar **Suggested cuts** (waktu `mm:ss.d · Ns` + label jenis + badge
+  skor), tombol sekunder **Create draft from all N**, dan hint batas 60 s.
+- `ai-agent` — chat (bubble user/bot + tag), chip saran
+  (**Tighten the intro / Add captions / Find a hook**), input + kirim, panel
+  **Tool calls** (tiap langkah berlabel LOCAL/BACKEND, langkah clipper punya
+  tautan "Buka layarnya"), panel **Target draft**, panel **LLM backend ·
+  OPTIONAL**, dan tombol **Apply plan to draft**.
+
+Yang diimplementasikan (lokal, gratis):
+
+- **Envelope energi**: `AutoCut.energyEnvelope` — RMS per frame 250 ms dari PCM
+  mono hasil `PcmDecoder`, dipetakan ke dBFS. Skor jendela = level RMS yang
+  dinormalkan ke 0–100 (`SILENCE_DBFS=-50` → 0, `LOUD_DBFS=-6` → 100).
+- **Seleksi**: `AutoCut.candidates` menyapu semua jendela `targetMs`;
+  `AutoCut.select` memilih maksimal 3 jendela non-overlap (greedy skor, bias
+  `PREFERRED_BONUS=8` untuk jenis yang cocok gaya). Pemetaan gaya→jenis
+  (`Vlog`=netral, `Funny`=`loud`, `Cinematic`=`steady`, `Product`=`calm`) adalah
+  milik Zcut dan ditandai **inferred** — artefak tidak mendokumentasikan semantik
+  chip gaya.
+- **Draft hasil**: `AutoCut.draft` menaruh tiap jendela jadi klip nyata pada
+  track VIDEO dengan `sourceStartMs` asli; jendela di luar durasi aset dibuang
+  dan yang melewati ujung dipendekkan.
+- **Agent rule-based**: `AgentPlanner` merutekan pesan ke tool set tetap:
+  `tighten_intro` (`AgentEditor.tightenIntro`: potong 0.8 s dari kepala klip
+  pertama + geser seluruh track ke kiri) dan `add_music` (render lo-fi lokal lalu
+  `AudioEditor.insertAudio`) benar-benar berjalan; `auto_cut` (menunjuk ke
+  `ai-clipper`) dan `add_caption` (ASR = `BUTUH BACKEND`) hanya tampil di rencana
+  dan **tidak** dijalankan. Pesan tanpa kata kunci jatuh ke dua tool lokal dan
+  mengatakannya.
+
+Bukti spek: `docs/features/22-ai-clipper-autocut.md` (`com.vega.edit.aiclipper`:
+`AiClipperTask`/`ASRNode`/`AEDNode`/`AIRecognitionHighlightNode`/`AIApplyDraftNode`)
+dan `docs/features/23-ai-lab-agent.md` (`com.vega.ailabagent`,
+`com.vega.edit.videoagent`: `AgentToolMessageHelper`/`sendTaskMessage`/
+`publishDeferredEditMore`/`onMessagePendingTask`). Yang **tidak** diklaim dari
+bukti: nama/ambang tool call asli, bobot skor highlight, dan format aksi agent —
+semuanya tidak terverifikasi sehingga Zcut memakai heuristik sendiri.
+
+Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
+
+- **ASR (transkripsi audio video), AED, highlight scoring penuh, dan LLM agent**
+  = `BUTUH BACKEND`; yang berjalan lokal hanya heuristik energi + routing kata
+  kunci, dan itu ditulis apa adanya di tiap layar.
+- **Clipper mandiri**: `ai-clipper` memilih videonya sendiri dan membuat draft
+  baru (tidak menerima `projectId`); `ai-agent`/`ai-music` menerima `projectId`
+  **opsional** supaya bisa dibuka dari hub tanpa draft — tanpa draft, tombol
+  terapkan/insert mati dan ada hint. Agen tanpa draft menyasar draft
+  terbaru dan menampilkannya sebagai "Target draft", tidak menyentuh draft yang
+  tak terlihat.
+- **Batas analisis 60 s**: analisis clipper hanya membaca
+  `PcmDecoder.MAX_DURATION_MS` (60 s) audio pertama; kalau video lebih panjang,
+  UI menandainya (`truncated`) alih-alih berpura-pura menganalisis seluruh berkas
+  (`ponytail:` di `AiClipperViewModel`).
+- **Bubble awal agent** hanya berisi sapaan bot (tanpa pesan user yang dibuat
+  buatan), beda dari mockup yang menampilkan satu contoh pesan user.
+
+Test baru: `AutoCutTest` (15 kasus: envelope senyap/nada/degenerate, sweep
+kandidat, sumber pendek, skor, jenis, seleksi non-overlap + bias gaya, draft
+offset sumber/klip di luar ujung/durasi tak diketahui/audio ditolak/nama kosong),
+`AgentPlannerTest` (10 kasus: sapaan & saran verbatim, routing tiap tool,
+campuran lokal+backend, fallback, case-insensitive), `AgentEditorTest` (7 kasus:
+pemangkasan + ripple lintas track, offset sumber, tanpa track video, clamp kepala,
+kepala kustom, tak melewati nol), dan 4 tes rute di `ZcutDestinationsTest`
+(implemented + drift guard rute clipper + rute opsional).
 
 ### Catatan M19 — template & CutSame (2026-10-26)
 

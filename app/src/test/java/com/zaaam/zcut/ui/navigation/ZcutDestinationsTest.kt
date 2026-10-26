@@ -1,5 +1,6 @@
 package com.zaaam.zcut.ui.navigation
 
+import com.zaaam.zcut.core.domain.AgentPlanner
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -259,6 +260,36 @@ class ZcutDestinationsTest {
         val route = ZcutRoutes.exportDone("p1", "a.mp4", 0L, 1L)
 
         assertTrue(!route.contains("cover="))
+    }
+
+    @Test
+    fun aiStudioClipperAndAgentAreImplemented() {
+        assertTrue(ZcutDestinations.get(ZcutRoutes.AiStudio)?.implemented == true)
+        assertTrue(ZcutDestinations.get(ZcutRoutes.AiClipper)?.implemented == true)
+        assertTrue(ZcutDestinations.get(ZcutRoutes.AiAgent)?.implemented == true)
+    }
+
+    @Test
+    fun theAgentKeepsTheClipperRouteInSyncWithItsNavigationConstant() {
+        assertEquals(
+            "the agent points at the AI Clipper screen, so both must name it the same",
+            ZcutRoutes.AiClipper,
+            AgentPlanner.ROUTE_CLIPPER
+        )
+    }
+
+    @Test
+    fun anAgentOpenedWithoutADraftStillHasAValidRoute() {
+        assertEquals("ai-agent", ZcutRoutes.aiAgent())
+        assertEquals("ai-agent?projectId=p%201", ZcutRoutes.aiAgent("p 1"))
+    }
+
+    @Test
+    fun aiMusicOpenedFromTheHubCarriesOnlyThePlayhead() {
+        // The hub can open the generator standalone; the draft id is optional.
+        assertEquals("ai-music?atMs=0", ZcutRoutes.aiMusic())
+        assertEquals("ai-music?atMs=1234", ZcutRoutes.aiMusic(atMs = 1_234L))
+        assertEquals("ai-music?projectId=p1&atMs=1234", ZcutRoutes.aiMusic("p1", 1_234L))
     }
 
     private companion object {

@@ -16,6 +16,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.core.data.AppPreferences
+import com.zaaam.zcut.feature.ai.AgentScreen
+import com.zaaam.zcut.feature.ai.AiClipperScreen
+import com.zaaam.zcut.feature.ai.AiStudioScreen
 import com.zaaam.zcut.feature.editor.EditorScreen
 import com.zaaam.zcut.feature.export.ExportDoneScreen
 import com.zaaam.zcut.feature.export.ExportScreen
@@ -413,7 +416,11 @@ fun ZcutNavHost(
             composable(
                 route = ZcutRoutes.AiMusicPattern,
                 arguments = listOf(
-                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgProjectId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                     navArgument(ZcutRoutes.ArgAtMs) {
                         type = NavType.LongType
                         defaultValue = 0L
@@ -421,9 +428,48 @@ fun ZcutNavHost(
                 )
             ) { entry ->
                 AiMusicScreen(
-                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId),
                     atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            // The AI Studio hub is a bottom-nav tab, so it takes the shared
+            // route opener rather than a pop.
+            composable(ZcutRoutes.AiStudio) {
+                AiStudioScreen(currentRoute = ZcutRoutes.AiStudio, onNavigate = openRoute)
+            }
+
+            composable(ZcutRoutes.AiClipper) {
+                AiClipperScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.AiAgentPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                AgentScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId),
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenRoute = openRoute
                 )
             }
 

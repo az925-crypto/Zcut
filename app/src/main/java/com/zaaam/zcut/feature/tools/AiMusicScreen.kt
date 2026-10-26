@@ -54,13 +54,13 @@ import kotlin.math.roundToLong
  */
 @Composable
 fun AiMusicScreen(
-    projectId: String,
+    projectId: String?,
     atMs: Long,
     onBack: () -> Unit
 ) {
     val container = LocalAppContainer.current
     val viewModel: AiMusicViewModel = viewModel(
-        key = "ai-music:$projectId:$atMs",
+        key = "ai-music:${projectId.orEmpty()}:$atMs",
         factory = aiMusicViewModelFactory(container, projectId, atMs)
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -101,7 +101,10 @@ fun AiMusicScreen(
                 )
             }
 
-            state.project == null -> Box(modifier, contentAlignment = Alignment.Center) {
+            state.project == null && !state.detached -> Box(
+                modifier,
+                contentAlignment = Alignment.Center
+            ) {
                 EmptyState(
                     title = "Draft tidak ditemukan",
                     message = "Draft ini mungkin sudah dihapus dari perangkat.",
@@ -119,6 +122,7 @@ fun AiMusicScreen(
                 busy = state.busy,
                 result = state.result,
                 notice = state.notice,
+                canInsert = state.project != null,
                 onPrompt = viewModel::setPrompt,
                 onMood = viewModel::setMood,
                 onDuration = viewModel::setDurationMs,
@@ -141,6 +145,8 @@ private fun AiMusicBody(
     busy: Boolean,
     result: AiMusicResult?,
     notice: String?,
+    /** False when the hub opened the panel without a draft. */
+    canInsert: Boolean,
     onPrompt: (String) -> Unit,
     onMood: (MusicMood) -> Unit,
     onDuration: (Long) -> Unit,
@@ -252,9 +258,15 @@ private fun AiMusicBody(
                 ZcutSecondaryButton(
                     text = "Insert to timeline",
                     onClick = onInsert,
-                    enabled = !busy,
+                    enabled = !busy && canInsert,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (!canInsert) {
+                    ToolHint(
+                        "Buka AI Music dari editor untuk memasukkan loop ke timeline. " +
+                            "Loop yang dirender di sini tetap tersimpan di perangkat."
+                    )
+                }
             }
         }
 

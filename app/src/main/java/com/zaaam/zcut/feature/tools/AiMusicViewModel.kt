@@ -39,6 +39,8 @@ data class AiMusicUiState(
     val isLoading: Boolean = true,
     val project: Project? = null,
     val notFound: Boolean = false,
+    /** True when the hub opened the panel with no draft to insert into. */
+    val detached: Boolean = false,
     val error: String? = null,
     val prompt: String = DEFAULT_PROMPT,
     val mood: MusicMood = MusicMood.LOFI,
@@ -65,7 +67,7 @@ data class AiMusicUiState(
  * app's private workspace and inserted as a normal audio clip.
  */
 class AiMusicViewModel(
-    private val projectId: String,
+    private val projectId: String?,
     private val atMs: Long,
     private val repository: ProjectRepository,
     private val musicDir: File
@@ -76,22 +78,28 @@ class AiMusicViewModel(
     val uiState: StateFlow<AiMusicUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            repository.projects
-                .catch { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Gagal memuat draft"
-                        )
+        if (projectId == null) {
+            // Opened from the AI Studio hub: the generator is fully usable, only
+            // the timeline insert has nowhere to go.
+            _uiState.update { it.copy(isLoading = false, detached = true) }
+        } else {
+            viewModelScope.launch {
+                repository.projects
+                    .catch { error ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = error.message ?: "Gagal memuat draft"
+                            )
+                        }
                     }
-                }
-                .collect { projects ->
-                    val project = projects.firstOrNull { it.id == projectId }
-                    _uiState.update {
-                        it.copy(isLoading = false, project = project, notFound = project == null)
+                    .collect { projects ->
+                        val project = projects.firstOrNull { it.id == projectId }
+                        _uiState.update {
+                            it.copy(isLoading = false, project = project, notFound = project == null)
+                        }
                     }
-                }
+            }
         }
     }
 
@@ -175,6 +183,7 @@ class AiMusicViewModel(
     fun insert(onDone: (Boolean) -> Unit = {}) {
         val snapshot = _uiState.value
         val result = snapshot.result ?: return onDone(false)
+        val draftId = projectId ?: return onDone(false)
         if (snapshot.busy) return
         _uiState.update { it.copy(busy = true, notice = null) }
         viewModelScope.launch {
@@ -190,7 +199,7 @@ class AiMusicViewModel(
                     localPath = result.path
                 )
                 val stored = editMutex.withLock {
-                    val project = repository.get(projectId) ?: return@withLock false
+                    val project = repository.get(draftId) ?: return@withLock false
                     val inserted = AudioEditor.insertAudio(
                         project = project,
                         asset = asset,

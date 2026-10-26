@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zaaam.zcut.core.AppContainer
+import com.zaaam.zcut.feature.ai.AgentViewModel
+import com.zaaam.zcut.feature.ai.AiClipperViewModel
 import com.zaaam.zcut.feature.editor.EditorViewModel
 import com.zaaam.zcut.feature.export.ExportViewModel
 import com.zaaam.zcut.feature.home.HomeViewModel
@@ -180,7 +182,7 @@ fun ttsViewModelFactory(
 @Composable
 fun aiMusicViewModelFactory(
     container: AppContainer,
-    projectId: String,
+    projectId: String?,
     atMs: Long
 ): ViewModelProvider.Factory = remember(container, projectId, atMs) {
     viewModelFactory {
@@ -243,6 +245,37 @@ fun mediaPickerViewModelFactory(
                 templateId = templateId,
                 repository = container.projectRepository,
                 importer = container.mediaImporter
+            )
+        }
+    }
+}
+
+/** The clipper is standalone: it picks its own video and creates the draft. */
+@Composable
+fun aiClipperViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                AiClipperViewModel(
+                    repository = container.projectRepository,
+                    importer = container.mediaImporter
+                )
+            }
+        }
+    }
+
+/** `projectId` is null when the AI Studio hub opens the agent by itself. */
+@Composable
+fun agentViewModelFactory(
+    container: AppContainer,
+    projectId: String?
+): ViewModelProvider.Factory = remember(container, projectId) {
+    viewModelFactory {
+        initializer {
+            AgentViewModel(
+                projectId = projectId,
+                repository = container.projectRepository,
+                musicDir = container.aiMusicDir
             )
         }
     }
