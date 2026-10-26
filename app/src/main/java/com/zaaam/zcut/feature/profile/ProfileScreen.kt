@@ -20,12 +20,18 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zaaam.zcut.BuildConfig
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
+import com.zaaam.zcut.core.i18n.ztf
 import com.zaaam.zcut.core.util.FileSizeFormat
 import com.zaaam.zcut.ui.LocalAppContainer
 import com.zaaam.zcut.ui.components.ListRow
@@ -63,15 +73,23 @@ fun ProfileScreen(
 
     LaunchedEffect(Unit) { viewModel.refreshStorage() }
 
-    ProfileContent(state = state, currentRoute = currentRoute, onNavigate = onNavigate)
+    ProfileContent(
+        state = state,
+        currentRoute = currentRoute,
+        onNavigate = onNavigate,
+        onSetDisplayName = viewModel::setDisplayName
+    )
 }
 
 @Composable
 private fun ProfileContent(
     state: ProfileUiState,
     currentRoute: String,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onSetDisplayName: (String) -> Unit
 ) {
+    val language = LocalZcutLanguage.current
+    var editingName by remember { mutableStateOf(false) }
     ZcutScaffold(
         topBar = {
             ZcutTopBar(
@@ -80,8 +98,8 @@ private fun ProfileContent(
                 actions = {
                     ZcutIconButton(
                         icon = Icons.Filled.Edit,
-                        contentDescription = "Pengaturan",
-                        onClick = { onNavigate(ZcutRoutes.Settings) }
+                        contentDescription = zt(ZcutText.EditProfile, language),
+                        onClick = { editingName = true }
                     )
                 }
             )
@@ -102,7 +120,7 @@ private fun ProfileContent(
             ),
             verticalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
         ) {
-            item { ProfileHead() }
+            item { ProfileHead(state.displayName) }
             item { UnlockBanner() }
 
             if (state.error != null) {
@@ -121,36 +139,40 @@ private fun ProfileContent(
                 ZcutCard {
                     Column {
                         ListRow(
-                            title = "Template",
-                            subtitle = "Paket lokal + impor sendiri",
+                            title = zt(ZcutText.TemplatesRow, language),
+                            subtitle = zt(ZcutText.TemplatesRowSubtitle, language),
                             leadingIcon = Icons.Filled.Star,
                             onClick = { onNavigate(ZcutRoutes.Templates) }
                         )
                         RowDivider()
                         ListRow(
-                            title = "Draft",
-                            subtitle = "Cadangkan dan pulihkan",
+                            title = zt(ZcutText.DraftsRow, language),
+                            subtitle = zt(ZcutText.DraftsRowSubtitle, language),
                             leadingIcon = Icons.Filled.List,
                             onClick = { onNavigate(ZcutRoutes.Projects) }
                         )
                         RowDivider()
                         ListRow(
-                            title = "AI Studio",
-                            subtitle = "Alat lokal + opsi backend",
+                            title = zt(ZcutText.AiStudioRow, language),
+                            subtitle = zt(ZcutText.AiStudioRowSubtitle, language),
                             leadingIcon = Icons.Filled.Build,
                             onClick = { onNavigate(ZcutRoutes.AiStudio) }
                         )
                         RowDivider()
                         ListRow(
-                            title = "Pengaturan",
-                            subtitle = "Tema, penyimpanan, privasi",
+                            title = zt(ZcutText.SettingsRow, language),
+                            subtitle = zt(ZcutText.SettingsRowSubtitle, language),
                             leadingIcon = Icons.Filled.Edit,
                             onClick = { onNavigate(ZcutRoutes.Settings) }
                         )
                         RowDivider()
                         ListRow(
-                            title = "Tentang Zcut",
-                            subtitle = "v${BuildConfig.VERSION_NAME} · clean-room build",
+                            title = zt(ZcutText.About, language),
+                            subtitle = ztf(
+                                ZcutText.AboutSubtitle,
+                                language,
+                                BuildConfig.VERSION_NAME
+                            ),
                             leadingIcon = Icons.Filled.Info,
                             onClick = { onNavigate(ZcutRoutes.Settings) }
                         )
@@ -160,17 +182,51 @@ private fun ProfileContent(
 
             item {
                 Text(
-                    text = "Tidak ada login, iklan, atau billing di build ini.",
+                    text = zt(ZcutText.NoLogin, language),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
+
+    if (editingName) {
+        var draftName by remember(state.displayName) { mutableStateOf(state.displayName) }
+        AlertDialog(
+            onDismissRequest = { editingName = false },
+            title = { Text(zt(ZcutText.EditProfile, language)) },
+            text = {
+                OutlinedTextField(
+                    value = draftName,
+                    onValueChange = {
+                        draftName = it.take(com.zaaam.zcut.core.data.AppPreferences.MAX_DISPLAY_NAME)
+                    },
+                    singleLine = true,
+                    label = { Text(zt(ZcutText.DisplayName, language)) }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onSetDisplayName(draftName)
+                        editingName = false
+                    }
+                ) {
+                    Text(zt(ZcutText.Save, language))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingName = false }) {
+                    Text(zt(ZcutText.Cancel, language))
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun ProfileHead() {
+private fun ProfileHead(displayName: String) {
+    val language = LocalZcutLanguage.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -184,29 +240,30 @@ private fun ProfileHead() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Z",
+                text = displayName.trim().take(1).uppercase().ifEmpty { "Z" },
                 style = MaterialTheme.typography.headlineSmall,
                 color = ZcutOnPrimary
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Kreator lokal",
+                text = displayName,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Hanya di perangkat ini",
+                text = zt(ZcutText.OnDeviceOnly, language),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        StatusBadge(text = "GRATIS")
+        StatusBadge(text = zt(ZcutText.Free, language))
     }
 }
 
 @Composable
 private fun UnlockBanner() {
+    val language = LocalZcutLanguage.current
     ZcutCard {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -221,12 +278,12 @@ private fun UnlockBanner() {
             )
             Column {
                 Text(
-                    text = "Semua fitur terbuka",
+                    text = zt(ZcutText.AllFeatures, language),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Tanpa langganan, kredit, atau watermark.",
+                    text = zt(ZcutText.NoSubscriptionWatermark, language),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -237,12 +294,21 @@ private fun UnlockBanner() {
 
 @Composable
 private fun StatsRow(state: ProfileUiState) {
+    val language = LocalZcutLanguage.current
     Row(horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
-        StatCard(value = state.draftCount.toString(), label = "Draft", modifier = Modifier.weight(1f))
-        StatCard(value = state.exportCount.toString(), label = "Ekspor", modifier = Modifier.weight(1f))
+        StatCard(
+            value = state.draftCount.toString(),
+            label = zt(ZcutText.StatDrafts, language),
+            modifier = Modifier.weight(1f)
+        )
+        StatCard(
+            value = state.exportCount.toString(),
+            label = zt(ZcutText.StatExports, language),
+            modifier = Modifier.weight(1f)
+        )
         StatCard(
             value = FileSizeFormat.format(state.storageBytes),
-            label = "Terpakai",
+            label = zt(ZcutText.StatUsed, language),
             modifier = Modifier.weight(1f)
         )
     }

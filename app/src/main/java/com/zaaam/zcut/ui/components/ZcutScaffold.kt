@@ -35,6 +35,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.zaaam.zcut.ui.navigation.ZcutDestinations
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutScreenText
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
 import com.zaaam.zcut.ui.navigation.ZcutRoutes
 
 /** Screen frame: opaque background, optional top bar, optional bottom nav. */
@@ -61,6 +65,9 @@ fun ZcutTopBar(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable () -> Unit = {}
 ) {
+    val language = LocalZcutLanguage.current
+    val shownTitle = ZcutScreenText.title(title, language)
+    val shownSubtitle = subtitle?.let { ZcutScreenText.subtitle(it, language) }
     Surface(
         color = MaterialTheme.colorScheme.background.copy(alpha = 0.94f),
         tonalElevation = 0.dp
@@ -79,15 +86,15 @@ fun ZcutTopBar(
                     .padding(horizontal = 6.dp)
             ) {
                 Text(
-                    text = title,
+                    text = shownTitle,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (subtitle != null) {
+                if (shownSubtitle != null) {
                     Text(
-                        text = subtitle,
+                        text = shownSubtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -139,6 +146,8 @@ private fun BottomNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val language = LocalZcutLanguage.current
+    val label = zt(bottomNavText(route), language)
     val tint = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -160,18 +169,26 @@ private fun BottomNavItem(
         Spacer(Modifier.height(4.dp))
         Icon(
             imageVector = bottomNavIcon(route),
-            contentDescription = ZcutDestinations.bottomNavTitle(route),
+            contentDescription = label,
             tint = tint,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            text = ZcutDestinations.bottomNavTitle(route),
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             color = tint,
             maxLines = 1
         )
     }
+}
+
+private fun bottomNavText(route: String): ZcutText = when (route) {
+    ZcutRoutes.Templates -> ZcutText.NavTemplates
+    ZcutRoutes.Projects -> ZcutText.NavDrafts
+    ZcutRoutes.AiStudio -> ZcutText.NavAi
+    ZcutRoutes.Profile -> ZcutText.NavProfile
+    else -> ZcutText.NavHome
 }
 
 private fun bottomNavIcon(route: String): ImageVector = when (route) {

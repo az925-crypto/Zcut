@@ -29,6 +29,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.zaaam.zcut.core.data.AppLanguage
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
 import com.zaaam.zcut.ui.components.ZcutGhostButton
 import com.zaaam.zcut.ui.components.ZcutPrimaryButton
 import com.zaaam.zcut.ui.theme.ZcutCoral
@@ -44,29 +48,31 @@ private data class OnboardingSlide(
     val colors: List<Color>
 )
 
-private val SLIDES = listOf(
+private fun onboardingSlides(language: AppLanguage) = listOf(
     OnboardingSlide(
-        title = "Semua fitur terbuka",
-        message = "Tidak ada langganan, kredit, iklan, atau watermark. Semua tool aktif sejak awal.",
+        title = zt(ZcutText.OnboardingOneTitle, language),
+        message = zt(ZcutText.OnboardingOneMessage, language),
         colors = listOf(ZcutLime, ZcutCyan)
     ),
     OnboardingSlide(
-        title = "Diproses di perangkat",
-        message = "Edit, render, dan simpan berjalan lokal. Draft tidak pernah dikirim ke server mana pun.",
+        title = zt(ZcutText.OnboardingTwoTitle, language),
+        message = zt(ZcutText.OnboardingTwoMessage, language),
         colors = listOf(ZcutCyan, ZcutViolet)
     ),
     OnboardingSlide(
-        title = "Siap dibagikan",
-        message = "Ekspor resolusi penuh lalu bagikan langsung ke aplikasi favoritmu.",
+        title = zt(ZcutText.OnboardingThreeTitle, language),
+        message = zt(ZcutText.OnboardingThreeMessage, language),
         colors = listOf(ZcutCoral, ZcutViolet)
     )
 )
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { SLIDES.size })
+    val language = LocalZcutLanguage.current
+    val slides = onboardingSlides(language)
+    val pagerState = rememberPagerState(pageCount = { slides.size })
     val scope = rememberCoroutineScope()
-    val isLast = pagerState.currentPage == SLIDES.lastIndex
+    val isLast = pagerState.currentPage == slides.lastIndex
 
     Column(
         modifier = Modifier
@@ -76,7 +82,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             Spacer(Modifier.weight(1f))
-            ZcutGhostButton(text = "Lewati", onClick = onFinish)
+            ZcutGhostButton(text = zt(ZcutText.Skip, language), onClick = onFinish)
         }
 
         HorizontalPager(
@@ -86,7 +92,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 .weight(1f),
             contentPadding = PaddingValues(vertical = ZcutSpacing.lg)
         ) { page ->
-            val slide = SLIDES[page]
+            val slide = slides[page]
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -122,7 +128,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SLIDES.indices.forEach { index ->
+            slides.indices.forEach { index ->
                 Surface(
                     modifier = Modifier
                         .padding(horizontal = 3.dp)
@@ -138,7 +144,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
         }
 
         ZcutPrimaryButton(
-            text = if (isLast) "Mulai" else "Lanjut",
+            text = zt(if (isLast) ZcutText.Start else ZcutText.Next, language),
             onClick = {
                 if (isLast) {
                     onFinish()

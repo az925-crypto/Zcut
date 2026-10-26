@@ -218,7 +218,7 @@ fun CaptionScreen(
         topBar = {
             ZcutTopBar(
                 title = "Captions",
-                subtitle = state.project?.let { "${it.name} · transkrip lokal" },
+                subtitle = state.project?.let { "${it.name} · transkrip perangkat" },
                 navigationIcon = {
                     ZcutIconButton(
                         icon = Icons.Filled.ArrowBack,
@@ -401,8 +401,10 @@ private fun CaptionAutoTab(
 
     ToolSection(title = "Transkripsi") {
         ToolHint(
-            "Transkripsi akurat multi-bahasa BUTUH BACKEND. Tombol lokal memakai " +
-                "SpeechRecognizer perangkat: putar audio klip lewat speaker lalu mulai."
+            "Transkripsi akurat multi-bahasa BUTUH BACKEND. Tombol ini memakai " +
+                "SpeechRecognizer perangkat: putar audio klip lewat speaker lalu mulai. " +
+                "Layanan pengenalan di perangkat bisa memakai jaringan operator; " +
+                "Zcut sendiri tidak mengunggah audio."
         )
         if (!available) {
             ToolHint("Perangkat ini tidak punya layanan pengenalan suara lokal.")
@@ -418,7 +420,7 @@ private fun CaptionAutoTab(
             }
         } else {
             ZcutPrimaryButton(
-                text = "Transcribe locally",
+                text = "Transkripsi perangkat",
                 onClick = onTranscribe,
                 enabled = available,
                 modifier = Modifier.fillMaxWidth()

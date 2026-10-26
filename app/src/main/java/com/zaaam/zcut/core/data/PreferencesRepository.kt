@@ -13,6 +13,7 @@ interface PreferencesRepository {
     suspend fun setOnboardingSeen(seen: Boolean)
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setLanguage(language: AppLanguage)
+    suspend fun setDisplayName(name: String)
     suspend fun setExportResolution(resolution: Resolution)
     suspend fun setExportFrameRate(frameRate: Int)
     suspend fun setExportAudioSampleRate(sampleRate: Int)

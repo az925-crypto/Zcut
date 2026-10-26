@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zaaam.zcut.core.data.DraftBackup
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
+import com.zaaam.zcut.core.i18n.ztf
 import com.zaaam.zcut.core.model.AspectRatio
 import com.zaaam.zcut.core.model.DraftSummary
 import com.zaaam.zcut.ui.LocalAppContainer
@@ -143,6 +147,7 @@ private fun ProjectsContent(
     onCreate: () -> Unit
 ) {
     val nowMs = System.currentTimeMillis()
+    val language = LocalZcutLanguage.current
     var menuForDraftId by remember { mutableStateOf<String?>(null) }
     var pendingDelete by remember { mutableStateOf<DraftSummary?>(null) }
     var pendingTrash by remember { mutableStateOf<DraftSummary?>(null) }
@@ -150,16 +155,16 @@ private fun ProjectsContent(
     ZcutScaffold(
         topBar = {
             ZcutTopBar(
-                title = if (state.trashMode) "Sampah" else "Draft",
+                title = zt(if (state.trashMode) ZcutText.TrashTitle else ZcutText.DraftsTitle, language),
                 subtitle = if (state.trashMode) {
-                    "${state.totalCount} draft di sampah"
+                    ztf(ZcutText.TrashCount, language, state.totalCount)
                 } else {
-                    "${state.totalCount} project tersimpan di perangkat"
+                    ztf(ZcutText.StoredCount, language, state.totalCount)
                 },
                 actions = {
-                    TextButton(onClick = onImport) { Text("Impor") }
+                    TextButton(onClick = onImport) { Text(zt(ZcutText.Import, language)) }
                     if (state.trashMode) {
-                        TextButton(onClick = onEmptyTrash) { Text("Kosongkan") }
+                        TextButton(onClick = onEmptyTrash) { Text(zt(ZcutText.EmptyTrash, language)) }
                     }
                 }
             )
@@ -176,7 +181,7 @@ private fun ProjectsContent(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Project baru"
+                        contentDescription = zt(ZcutText.NewProject, language)
                     )
                 }
             }
@@ -212,14 +217,14 @@ private fun ProjectsContent(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    placeholder = { Text("Cari draft") },
+                    placeholder = { Text(zt(ZcutText.SearchDrafts, language)) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
                 )
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
                     items(ZcutAspectFilters, key = { it?.name ?: "all" }) { aspect ->
                         ZcutChip(
-                            label = aspect?.label ?: "Semua",
+                            label = aspect?.label ?: zt(ZcutText.All, language),
                             selected = !state.trashMode && state.aspectRatio == aspect,
                             onClick = { onAspectChange(aspect) }
                         )
@@ -227,9 +232,9 @@ private fun ProjectsContent(
                     item(key = "trash") {
                         ZcutChip(
                             label = if (state.trashCount > 0) {
-                                "Sampah (${state.trashCount})"
+                                ztf(ZcutText.TrashChip, language, state.trashCount)
                             } else {
-                                "Sampah"
+                                zt(ZcutText.Trash, language)
                             },
                             selected = state.trashMode,
                             onClick = onToggleTrash
@@ -252,19 +257,19 @@ private fun ProjectsContent(
                 ) {
                     EmptyState(
                         title = when {
-                            state.trashMode -> "Sampah kosong"
-                            state.hasNoDraftsAtAll -> "Belum ada draft"
-                            else -> "Tidak ada hasil"
+                            state.trashMode -> zt(ZcutText.EmptyTrashTitle, language)
+                            state.hasNoDraftsAtAll -> zt(ZcutText.NoDraftsTitle, language)
+                            else -> zt(ZcutText.NoResults, language)
                         },
                         message = when {
                             state.trashMode ->
-                                "Draft yang dipindah ke sampah muncul di sini dan bisa dipulihkan."
+                                zt(ZcutText.EmptyTrashMessage, language)
                             state.hasNoDraftsAtAll ->
-                                "Semua draft tersimpan lokal di perangkat ini. Mulai project baru untuk menambah."
-                            else -> "Coba ubah kata kunci atau filter aspek."
+                                zt(ZcutText.NoDraftsMessage, language)
+                            else -> zt(ZcutText.NoResultsMessage, language)
                         },
                         actionLabel = if (!state.trashMode && state.hasNoDraftsAtAll) {
-                            "Project baru"
+                            zt(ZcutText.NewProject, language)
                         } else {
                             null
                         },
@@ -302,7 +307,7 @@ private fun ProjectsContent(
                             ) {
                                 if (state.trashMode) {
                                     DropdownMenuItem(
-                                        text = { Text("Pulihkan") },
+                                        text = { Text(zt(ZcutText.Restore, language)) },
                                         leadingIcon = {
                                             Icon(Icons.Filled.Check, contentDescription = null)
                                         },
@@ -312,7 +317,7 @@ private fun ProjectsContent(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Hapus permanen") },
+                                        text = { Text(zt(ZcutText.DeleteForever, language)) },
                                         leadingIcon = {
                                             Icon(Icons.Filled.Delete, contentDescription = null)
                                         },
@@ -323,7 +328,7 @@ private fun ProjectsContent(
                                     )
                                 } else {
                                     DropdownMenuItem(
-                                        text = { Text("Ganti nama") },
+                                        text = { Text(zt(ZcutText.Rename, language)) },
                                         leadingIcon = {
                                             Icon(Icons.Filled.Edit, contentDescription = null)
                                         },
@@ -333,7 +338,7 @@ private fun ProjectsContent(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Duplikat") },
+                                        text = { Text(zt(ZcutText.Duplicate, language)) },
                                         leadingIcon = {
                                             Icon(Icons.Filled.Add, contentDescription = null)
                                         },
@@ -343,14 +348,14 @@ private fun ProjectsContent(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Backup .zip") },
+                                        text = { Text(zt(ZcutText.BackupZip, language)) },
                                         onClick = {
                                             menuForDraftId = null
                                             onBackup(draft)
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Pindah ke sampah") },
+                                        text = { Text(zt(ZcutText.MoveToTrash, language)) },
                                         leadingIcon = {
                                             Icon(Icons.Filled.Delete, contentDescription = null)
                                         },
@@ -371,12 +376,9 @@ private fun ProjectsContent(
         pendingTrash?.let { draft ->
             AlertDialog(
                 onDismissRequest = { pendingTrash = null },
-                title = { Text("Pindah ke sampah?") },
+                title = { Text(zt(ZcutText.MoveTrashTitle, language)) },
                 text = {
-                    Text(
-                        "\"${draft.name}\" akan dipindah ke sampah dan bisa dipulihkan " +
-                            "dari tab Sampah."
-                    )
+                    Text(ztf(ZcutText.MoveTrashMessage, language, draft.name))
                 },
                 confirmButton = {
                     TextButton(
@@ -385,11 +387,13 @@ private fun ProjectsContent(
                             onTrash(draft.id)
                         }
                     ) {
-                        Text("Pindahkan")
+                        Text(zt(ZcutText.Move, language))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingTrash = null }) { Text("Batal") }
+                    TextButton(onClick = { pendingTrash = null }) {
+                        Text(zt(ZcutText.Cancel, language))
+                    }
                 }
             )
         }
@@ -397,8 +401,8 @@ private fun ProjectsContent(
         pendingDelete?.let { draft ->
             AlertDialog(
                 onDismissRequest = { pendingDelete = null },
-                title = { Text("Hapus permanen?") },
-                text = { Text("\"${draft.name}\" akan dihapus permanen dari perangkat ini.") },
+                title = { Text(zt(ZcutText.DeleteForeverTitle, language)) },
+                text = { Text(ztf(ZcutText.DeleteForeverMessage, language, draft.name)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -407,13 +411,15 @@ private fun ProjectsContent(
                         }
                     ) {
                         Text(
-                            text = "Hapus",
+                            text = zt(ZcutText.Delete, language),
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingDelete = null }) { Text("Batal") }
+                    TextButton(onClick = { pendingDelete = null }) {
+                        Text(zt(ZcutText.Cancel, language))
+                    }
                 }
             )
         }
@@ -426,16 +432,17 @@ private fun RenameDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    val language = LocalZcutLanguage.current
     var text by remember(draft.id) { mutableStateOf(draft.name) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ganti nama draft") },
+        title = { Text(zt(ZcutText.RenameDraftTitle, language)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(80) },
                 singleLine = true,
-                label = { Text("Nama") },
+                label = { Text(zt(ZcutText.Name, language)) },
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -444,11 +451,11 @@ private fun RenameDialog(
                 onClick = { onConfirm(text) },
                 enabled = text.isNotBlank()
             ) {
-                Text("Simpan")
+                Text(zt(ZcutText.Save, language))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Batal") }
+            TextButton(onClick = onDismiss) { Text(zt(ZcutText.Cancel, language)) }
         }
     )
 }
@@ -487,7 +494,9 @@ private fun Banner(
                     .padding(bottom = ZcutSpacing.xs)
             )
             if (onDismiss != null) {
-                TextButton(onClick = onDismiss) { Text("Tutup") }
+                TextButton(onClick = onDismiss) {
+                    Text(zt(ZcutText.Close, LocalZcutLanguage.current))
+                }
             }
         }
     }

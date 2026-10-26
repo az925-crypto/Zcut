@@ -63,7 +63,9 @@ data class GenerateUiState(
 class GenerateViewModel(
     private val repository: ProjectRepository,
     private val history: GenerationHistoryRepository,
-    private val importer: MediaImporter
+    private val importer: MediaImporter,
+    /** Files outside this directory are not results this app imported. */
+    private val mediaDir: File
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenerateUiState())
@@ -214,7 +216,10 @@ class GenerateViewModel(
         viewModelScope.launch {
             try {
                 val path = entry.asset.sourcePath
-                if (path == null || !File(path).isFile) {
+                val file = path?.let { File(it) }
+                // A history entry can outlive its file, and a tampered DataStore
+                // value must not let the draft builder read an arbitrary path.
+                if (file == null || !file.isFile || !insideMediaDir(file)) {
                     _uiState.update {
                         it.copy(
                             creatingDraft = false,
@@ -251,6 +256,12 @@ class GenerateViewModel(
             }
         }
     }
+
+    private fun insideMediaDir(file: File): Boolean = runCatching {
+        val root = mediaDir.canonicalFile
+        val target = file.canonicalFile
+        target.path.startsWith(root.path + File.separator)
+    }.getOrDefault(false)
 
     private fun draftName(entry: GenerationEntry, taken: Set<String>): String {
         val base = entry.prompt.substringBefore('\n').trim().take(28)

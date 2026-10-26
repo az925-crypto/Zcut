@@ -36,6 +36,7 @@ class DataStorePreferencesRepository(
         val onboardingSeen = booleanPreferencesKey("onboarding_seen")
         val themeMode = stringPreferencesKey("theme_mode")
         val language = stringPreferencesKey("language")
+        val displayName = stringPreferencesKey("display_name")
         val exportResolution = stringPreferencesKey("export_resolution")
         val exportFrameRate = intPreferencesKey("export_frame_rate")
         val exportAudioSampleRate = intPreferencesKey("export_audio_sample_rate")
@@ -54,7 +55,8 @@ class DataStorePreferencesRepository(
                 exportResolution = stored[Keys.exportResolution],
                 exportFrameRate = stored[Keys.exportFrameRate],
                 exportAudioSampleRate = stored[Keys.exportAudioSampleRate],
-                favoriteTemplateIds = stored[Keys.favoriteTemplates]
+                favoriteTemplateIds = stored[Keys.favoriteTemplates],
+                displayName = stored[Keys.displayName]
             )
         }
         .flowOn(Dispatchers.IO)
@@ -65,6 +67,10 @@ class DataStorePreferencesRepository(
 
     override suspend fun setLanguage(language: AppLanguage) = edit {
         it[Keys.language] = language.name
+    }
+
+    override suspend fun setDisplayName(name: String) = edit {
+        it[Keys.displayName] = AppPreferences.sanitizeDisplayName(name)
     }
 
     override suspend fun setExportResolution(resolution: Resolution) = edit {

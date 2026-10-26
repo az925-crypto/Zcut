@@ -8,6 +8,7 @@ object ZcutRoutes {
     const val Onboarding = "onboarding"
     const val Home = "home"
     const val Projects = "projects"
+    const val Drafts = "drafts"
     const val Editor = "editor"
     const val MediaPicker = "media-picker"
     const val Trim = "trim"
@@ -314,7 +315,7 @@ object ZcutDestinations {
         ZcutDestination("ai-music", "AI Music", "F18", implemented = true),
         ZcutDestination("export", "Export", "F19", implemented = true),
         ZcutDestination("export-done", "Export selesai", "F19", implemented = true),
-        ZcutDestination("drafts", "Kelola draft", "F20"),
+        ZcutDestination("drafts", "Kelola draft", "F20", implemented = true),
         ZcutDestination("ai-clipper", "AI Clipper", "F22", implemented = true),
         ZcutDestination("ai-agent", "Zcut Agent", "F23", implemented = true),
         ZcutDestination("ai-generate", "Generate", "F24", implemented = true),

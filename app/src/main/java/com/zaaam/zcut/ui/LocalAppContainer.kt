@@ -53,7 +53,8 @@ fun zcutViewModelFactory(container: AppContainer): ViewModelProvider.Factory = r
         initializer {
             ProfileViewModel(
                 repository = container.projectRepository,
-                storage = container.storage
+                storage = container.storage,
+                preferences = container.preferencesRepository
             )
         }
         initializer {
@@ -306,7 +307,8 @@ fun generateViewModelFactory(container: AppContainer): ViewModelProvider.Factory
                 GenerateViewModel(
                     repository = container.projectRepository,
                     history = container.generationHistoryRepository,
-                    importer = container.mediaImporter
+                    importer = container.mediaImporter,
+                    mediaDir = container.mediaDir
                 )
             }
         }

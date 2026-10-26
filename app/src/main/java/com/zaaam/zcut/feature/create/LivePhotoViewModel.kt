@@ -16,11 +16,13 @@ import com.zaaam.zcut.core.model.MediaKind
 import java.io.File
 import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class LivePhotoUiState(
     val asset: MediaAsset? = null,
@@ -158,26 +160,25 @@ class LivePhotoViewModel(
         _uiState.update { it.copy(busy = true, notice = null) }
         viewModelScope.launch {
             try {
-                val frame = thumbnails.load(asset, CompositeRenderer.DEFAULT_LONG_EDGE)
-                if (frame == null) {
+                val rendered = withContext(Dispatchers.IO) {
+                    val bitmap = thumbnails.load(asset, CompositeRenderer.DEFAULT_LONG_EDGE)
+                        ?: return@withContext null
+                    val output = File(
+                        compositeDir,
+                        "live_still_${asset.id}_${System.currentTimeMillis()}.jpg"
+                    )
+                    if (CompositeRenderer.saveJpeg(bitmap, output)) bitmap to output else null
+                }
+                if (rendered == null) {
                     _uiState.update {
                         it.copy(
                             busy = false,
-                            notice = "Gagal mengambil frame pertama dari video."
+                            notice = "Gagal mengambil atau menyimpan still dari video."
                         )
                     }
                     return@launch
                 }
-                val file = File(
-                    compositeDir,
-                    "live_still_${asset.id}_${System.currentTimeMillis()}.jpg"
-                )
-                if (!CompositeRenderer.saveJpeg(frame, file)) {
-                    _uiState.update {
-                        it.copy(busy = false, notice = "Gagal menyimpan still ke workspace.")
-                    }
-                    return@launch
-                }
+                val (frame, file) = rendered
                 _uiState.update {
                     it.copy(
                         still = file,

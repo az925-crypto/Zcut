@@ -19,6 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
 import com.zaaam.zcut.ui.components.StatusBadge
 import com.zaaam.zcut.ui.components.ZcutBottomNav
 import com.zaaam.zcut.ui.components.ZcutCard
@@ -94,6 +97,7 @@ fun AiStudioScreen(
     currentRoute: String,
     onNavigate: (String) -> Unit
 ) {
+    val language = LocalZcutLanguage.current
     ZcutScaffold(
         topBar = {
             ZcutTopBar(
@@ -156,15 +160,16 @@ fun AiStudioScreen(
                         verticalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
                     ) {
                         Text(
-                            text = "Model generatif, voice clone, dan lip sync membutuhkan " +
-                                "backend/model sendiri. Tool tetap terbuka; tidak ada " +
-                                "paywall atau kredit.",
+                            text = zt(ZcutText.AiStudioNote, language),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
                             StatusBadge(text = "LOCAL = on device", accent = ZcutLime)
-                            StatusBadge(text = "BACKEND = perlu server", accent = ZcutCoral)
+                            StatusBadge(
+                                text = zt(ZcutText.BackendNeedsServer, language),
+                                accent = ZcutCoral
+                            )
                         }
                     }
                 }

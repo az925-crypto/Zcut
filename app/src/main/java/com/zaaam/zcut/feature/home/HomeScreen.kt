@@ -23,6 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
 import com.zaaam.zcut.core.model.DraftSummary
 import com.zaaam.zcut.ui.LocalAppContainer
 import com.zaaam.zcut.ui.components.BackendBadge
@@ -62,6 +65,7 @@ private fun HomeContent(
 ) {
     val nowMs = System.currentTimeMillis()
     val recentDrafts = state.recentDrafts
+    val language = LocalZcutLanguage.current
 
     ZcutScaffold(
         topBar = {
@@ -88,9 +92,9 @@ private fun HomeContent(
         ) {
             item {
                 HeroBanner(
-                    title = "Edit video tanpa batas",
-                    message = "Semua fitur terbuka, diproses di perangkat, hasil tanpa watermark.",
-                    actionLabel = "Project baru",
+                    title = zt(ZcutText.HeroTitle, language),
+                    message = zt(ZcutText.HeroMessage, language),
+                    actionLabel = zt(ZcutText.NewProject, language),
                     onAction = { onNavigate(ZcutRoutes.mediaPicker()) }
                 )
             }
@@ -105,13 +109,13 @@ private fun HomeContent(
 
             // The mockup has standalone split-screen/gameplay/live-photo screens
             // but no in-app door; this row is that door (see DECISIONS.md).
-            item { SectionHeader(title = "Tool create") }
+            item { SectionHeader(title = zt(ZcutText.ToolCreate, language)) }
             item { CreateToolsRow(onNavigate = onNavigate) }
 
             item {
                 SectionHeader(
-                    title = "Draft terakhir",
-                    actionLabel = "Lihat semua",
+                    title = zt(ZcutText.RecentDrafts, language),
+                    actionLabel = zt(ZcutText.SeeAll, language),
                     onAction = { onNavigate(ZcutRoutes.Projects) }
                 )
             }
@@ -119,9 +123,9 @@ private fun HomeContent(
             if (recentDrafts.isEmpty() && !state.isLoading) {
                 item {
                     EmptyState(
-                        title = "Belum ada draft",
-                        message = "Mulai project baru untuk membuat draft pertama di perangkat ini.",
-                        actionLabel = "Project baru",
+                        title = zt(ZcutText.NoDraftsTitle, language),
+                        message = zt(ZcutText.NoDraftsMessage, language),
+                        actionLabel = zt(ZcutText.NewProject, language),
                         onAction = { onNavigate(ZcutRoutes.mediaPicker()) }
                     )
                 }
@@ -142,7 +146,7 @@ private fun HomeContent(
             }
 
             item {
-                SectionHeader(title = "Tool AI")
+                SectionHeader(title = zt(ZcutText.ToolAi, language))
             }
             item {
                 AiToolsRow(onNavigate = onNavigate)
@@ -154,11 +158,12 @@ private fun HomeContent(
 @Composable
 private fun QuickActionsRow(onNavigate: (String) -> Unit) {
     // Mockup order: Video, Photo, AI video, Templates.
+    val language = LocalZcutLanguage.current
     val actions = listOf(
-        "Video" to ZcutRoutes.mediaPicker(),
-        "Photo" to ZcutRoutes.PhotoEditor,
-        "AI video" to ZcutRoutes.AiGenerate,
-        "Template" to ZcutRoutes.Templates
+        zt(ZcutText.QuickVideo, language) to ZcutRoutes.mediaPicker(),
+        zt(ZcutText.QuickPhoto, language) to ZcutRoutes.PhotoEditor,
+        zt(ZcutText.QuickAiVideo, language) to ZcutRoutes.AiGenerate,
+        zt(ZcutText.QuickTemplate, language) to ZcutRoutes.Templates
     )
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -187,10 +192,23 @@ private fun QuickActionsRow(onNavigate: (String) -> Unit) {
 
 @Composable
 private fun CreateToolsRow(onNavigate: (String) -> Unit) {
+    val language = LocalZcutLanguage.current
     val tools = listOf(
-        Triple("Split screen", "Grid still", ZcutRoutes.SplitScreen),
-        Triple("Gameplay", "Facecam", ZcutRoutes.Gameplay),
-        Triple("Live photo", "Motion photo", ZcutRoutes.LivePhoto)
+        Triple(
+            zt(ZcutText.CreateSplit, language),
+            zt(ZcutText.CreateSplitBlurb, language),
+            ZcutRoutes.SplitScreen
+        ),
+        Triple(
+            zt(ZcutText.CreateGameplay, language),
+            zt(ZcutText.CreateGameplayBlurb, language),
+            ZcutRoutes.Gameplay
+        ),
+        Triple(
+            zt(ZcutText.CreateLivePhoto, language),
+            zt(ZcutText.CreateLivePhotoBlurb, language),
+            ZcutRoutes.LivePhoto
+        )
     )
     Row(
         modifier = Modifier.fillMaxWidth(),

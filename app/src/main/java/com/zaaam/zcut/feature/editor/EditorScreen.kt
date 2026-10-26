@@ -29,6 +29,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -620,6 +621,7 @@ private fun ToolStrip(onOpenTool: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(10.dp))
                     .clickable { onOpenTool(tool.route) }
             ) {
@@ -673,6 +675,7 @@ private fun FooterChip(
         color = if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
         border = if (primary) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = Modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(999.dp))
             .clickable(onClick = onClick)
     ) {

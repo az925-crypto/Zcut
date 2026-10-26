@@ -68,7 +68,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M25 | Split screen, gameplay, live photo | F30 | split-screen, gameplay, live-photo | ✅ |
 | M26 | Ad maker | F31 | ad-maker | ✅ |
 | M27 | Draft lanjutan: rename, trash, backup lokal | F20 | drafts | ✅ |
-| M28 | Polish: aksesibilitas, lokalisasi, audit akhir | cross-cutting | — | [ ] |
+| M28 | Polish: aksesibilitas, lokalisasi, audit akhir | cross-cutting | — | ✅ |
 
 Peta rute ↔ layar ↔ milestone ada di [`docs/ui-map.md`](docs/ui-map.md).
 
@@ -476,24 +476,24 @@ Spek: [`docs/features/27-share-publish.md`](docs/features/27-share-publish.md)
 Spek: [`docs/features/28-account-subscription-ads.md`](docs/features/28-account-subscription-ads.md)
 
 - [x] Spek
-- [ ] Profil lokal (nama/avatar)
-- [ ] Settings: tema, storage, bahasa, about
-- [ ] Export/import pengaturan
+- [x] Profil lokal (nama tampilan di DataStore + avatar inisial; tanpa upload)
+- [x] Settings: tema, storage, bahasa, about
+- [ ] Export/import pengaturan (v1.0 limitation; tidak ada entri di mockup ACC)
 - [x] **Tidak ada paywall / subscription / credit / ads / watermark**
 - [-] Billing, IAP, reward ads, trial, SKU, license check
-- [ ] Pastikan build tidak memuat SDK billing/ads
+- [x] Pastikan build tidak memuat SDK billing/ads (tidak ada dependensi/kelas billing-ads)
 
 ## F29 — Resource, Config & Analytics
 
 Spek: [`docs/features/29-resource-config-analytics.md`](docs/features/29-resource-config-analytics.md)
 
 - [x] Spek
-- [ ] Local config + feature flags
-- [ ] Bundled resource manifest
-- [ ] Import effect/font/template lokal
-- [ ] Local crash log + export
+- [~] Local config + feature flags (`FeatureRegistry` 31 fitur; flag runtime belum)
+- [ ] Bundled resource manifest (v1.0 limitation)
+- [ ] Import effect/font/template lokal (v1.0 limitation)
+- [ ] Local crash log + export (v1.0 limitation)
 - [!] Remote catalog/telemetry (BUTUH BACKEND, off by default)
-- [ ] Unit test manifest/checksum
+- [ ] Unit test manifest/checksum (belum ada manifest)
 
 ## F30 — Split Screen, Gameplay & Live Photo
 
@@ -526,13 +526,13 @@ Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-busine
 
 - [x] Design system Zcut (warna, tipografi, komponen)
 - [x] Navigation graph semua layar (42 rute; badan layar per milestone)
-- [ ] Permission flow (media, camera, mic, notification)
-- [ ] File provider + scoped storage
+- [x] Permission flow (media via SAF tanpa izin; kamera & mic runtime; tanpa notification)
+- [x] File provider + scoped storage (hanya `exports/` yang dibagikan)
 - [x] Error handling + empty/loading state (layar M0)
-- [ ] Accessibility (content description, touch target) — audit penuh di M28
-- [ ] Lokalisasi Indonesia + Inggris
+- [x] Accessibility (content description, touch target) — audit M28
+- [~] Lokalisasi Indonesia + Inggris — shell ID/EN; badan panel tool masih Indonesia
 - [x] Unit test core (model, timeline, export plan)
-- [ ] Instrumentation test alur utama
+- [ ] Instrumentation test alur utama (v1.0 limitation; verifikasi lewat unit test + CI)
 - [x] CI build + test
 - [x] Release signing via GitHub Secrets
 - [x] GitHub Release APK
@@ -588,9 +588,9 @@ fallback lokal di kolom ketiga tetap dikerjakan lebih dulu; dummy menutup sisany
       `ZCUT_KEY_ALIAS`, `ZCUT_KEY_PASSWORD`
 - [x] Upload APK ke GitHub Releases
 - [x] CI hijau
-- [x] Link release terbaru: <https://github.com/az925-crypto/Zcut/releases/tag/v0.5.0>
+- [x] Link release terbaru: <https://github.com/az925-crypto/Zcut/releases/tag/v1.0.0>
       (riwayat: `v0.1.0` scaffold, `v0.2.0` M0, `v0.3.0` M1, `v0.4.0` M2,
-      `v0.5.0` M3)
+      `v0.5.0` M3, `v0.6.0` M4–M10, `v0.7.0` M11–M15, `v1.0.0` M16–M28)
 - [x] Verifikasi signature: `apksigner verify --print-certs` →
       `CN=Zcut, OU=Mobile, O=Zcut, L=Local, ST=Local, C=ID`
 
@@ -1518,6 +1518,59 @@ backup lokal `.zcut.zip` (draft JSON + media, id di-remap saat impor). Backup
 ditulis/dibaca lewat SAF; entri dibatasi ukurannya. Cloud backup, shared draft,
 review, brand kit, dan enterprise tetap **BUTUH BACKEND**.
 
+## Catatan M28
+
+### Lokalisasi
+
+Preferensi bahasa ID/EN sekarang benar-benar mengubah copy lewat tabel
+`core/i18n/ZcutStrings.kt` (`ZcutText`, `zt`, `ztf`, `LocalZcutLanguage`) yang
+dipasang di `MainActivity`. Yang diterjemahkan: bottom nav, top bar, onboarding,
+Home, Draft, Template, AI Studio, Profil, dan Pengaturan, termasuk dialog dan
+empty state. Badan panel tool (Trim, Speed, Filter, Caption, dst.) masih
+Indonesia; ini batas v1.0 yang ditulis di sini, bukan klaim paritas penuh.
+Perpindahan bahasa langsung berlaku tanpa restart activity.
+
+### Profil lokal
+
+Nama tampilan disimpan di DataStore (`display_name`, maks 40 karakter, tidak
+pernah kosong) dan bisa diubah dari ikon edit di Profil. Avatar adalah inisial
+nama di atas gradien; tidak ada unggahan, akun, atau pemilih gambar.
+
+### Aksesibilitas
+
+- 33 `ZcutIconButton` punya `contentDescription`; ikon dekoratif memakai `null`.
+- `ZcutChip`, `ToolChip`, chip footer editor, dan strip tool memakai
+  `minimumInteractiveComponentSize()` (target sentuh 48dp).
+- `ListRow` sudah 48dp; bottom nav 60dp.
+- Audit ini statis (kode + unit test), bukan pengujian TalkBack di perangkat.
+
+### Perbaikan performa & keamanan
+
+- Render WAV Ad Maker, decode + JPEG Live Photo, dan buka/tutup stream SAF
+  backup dipindah ke `Dispatchers.IO`.
+- `GenerateViewModel` hanya menerima berkas History di dalam `mediaDir`
+  (canonical path), menutup jalur baca arbitrer dari DataStore yang rusak.
+- Copy ASR menyebut bahwa layanan pengenalan perangkat bisa memakai jaringan
+  operator; Zcut sendiri tidak mengunggah audio.
+
+### Rute
+
+`drafts` (mockup layar 28) sekarang membuka `ProjectsScreen` yang sama dengan
+tab Draft. Semua 42 rute mockup berstatus implemented; mekanisme placeholder
+tetap ada untuk rute baru.
+
 ## Ringkasan akhir
 
-Diisi setelah semua fitur selesai dan release sukses.
+Zcut v1.0.0 selesai: M0–M28, 31 area fitur, dan 42 layar mockup punya rute
+nyata. Build release ditandatangani dari GitHub Secrets dan dipublikasikan ke
+GitHub Releases lewat tag `v1.0.0` (`versionCode` 10). Semua fitur terbuka:
+tidak ada paywall, langganan, kredit, iklan, atau watermark. Aplikasi tidak
+meminta izin `INTERNET` (dihapus dari manifest gabungan), tidak memuat SDK
+billing/ads, dan tidak memanggil server CapCut.
+
+Batas yang diakui ada di [`DECISIONS.md`](DECISIONS.md) dan catatan
+M21–M28 di atas: model generatif/avatar/ASR akurat/publish langsung tetap
+BUTUH BACKEND dengan fallback lokal; split/gameplay/live photo menghasilkan
+still komposit; GIF, MediaProjection, chroma key, dan ekspor motion photo belum
+ada; terjemahan EN baru mencakup shell dan layar utama. Semua batas ditulis di
+UI atau dokumen ini, bukan disembunyikan di balik paywall.

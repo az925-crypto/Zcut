@@ -10,6 +10,7 @@ import com.zaaam.zcut.core.model.AspectRatio
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Draft list (F20): search/filter, rename, duplicate, trash/restore, and local
@@ -141,12 +143,16 @@ class ProjectsViewModel(
                 notice.value = "Draft tidak ditemukan."
                 return@launch
             }
-            val stream = runCatching(openOutput).getOrNull()
+            val stream = withContext(Dispatchers.IO) {
+                runCatching(openOutput).getOrNull()
+            }
             if (stream == null) {
                 notice.value = "Tidak bisa membuka berkas backup."
                 return@launch
             }
-            val ok = runCatching { DraftBackup.export(project, stream) }.getOrDefault(false)
+            val ok = withContext(Dispatchers.IO) {
+                runCatching { DraftBackup.export(project, stream) }.getOrDefault(false)
+            }
             notice.value = if (ok) {
                 "Backup ${DraftBackup.fileNameFor(project)} dibuat."
             } else {
@@ -157,12 +163,16 @@ class ProjectsViewModel(
 
     fun importBackup(openInput: () -> InputStream?) {
         viewModelScope.launch {
-            val stream = runCatching(openInput).getOrNull()
+            val stream = withContext(Dispatchers.IO) {
+                runCatching(openInput).getOrNull()
+            }
             if (stream == null) {
                 notice.value = "Tidak bisa membaca berkas backup."
                 return@launch
             }
-            val project = runCatching { DraftBackup.import(stream, mediaDir) }.getOrNull()
+            val project = withContext(Dispatchers.IO) {
+                runCatching { DraftBackup.import(stream, mediaDir) }.getOrNull()
+            }
             if (project == null) {
                 notice.value = "Backup tidak valid, rusak, atau kebesaran."
                 return@launch

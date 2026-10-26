@@ -80,6 +80,32 @@ class AppPreferencesTest {
     }
 
     @Test
+    fun displayNameIsTrimmedBoundedAndNeverBlank() {
+        assertEquals(
+            AppPreferences.DEFAULT_DISPLAY_NAME,
+            AppPreferences.fromStored(null, null, null, null, null, null, displayName = "   ")
+                .displayName
+        )
+        assertEquals(
+            "Rina",
+            AppPreferences.fromStored(null, null, null, null, null, null, displayName = "  Rina ")
+                .displayName
+        )
+        assertEquals(
+            AppPreferences.MAX_DISPLAY_NAME,
+            AppPreferences.fromStored(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                displayName = "x".repeat(100)
+            ).displayName.length
+        )
+    }
+
+    @Test
     fun favouritesDefaultToEmptyAndDropBlankIds() {
         assertEquals(
             emptySet<String>(),

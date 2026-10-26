@@ -233,11 +233,13 @@ class AdMakerViewModel(
                         MusicGenerator.MAX_DURATION_MS
                     )
                     val seed = (brief.product + brief.script).hashCode()
-                    val file = MusicGenerator.writeUnique(
-                        dir = musicDir,
-                        base = MusicGenerator.fileName(style, loopMs, seed),
-                        bytes = MusicGenerator.wav(style, loopMs, seed)
-                    )
+                    val file = withContext(Dispatchers.IO) {
+                        MusicGenerator.writeUnique(
+                            dir = musicDir,
+                            base = MusicGenerator.fileName(style, loopMs, seed),
+                            bytes = MusicGenerator.wav(style, loopMs, seed)
+                        )
+                    }
                     musicDurationMs = loopMs
                     musicAsset = MediaAsset(
                         id = UUID.randomUUID().toString(),

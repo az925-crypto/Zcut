@@ -15,10 +15,7 @@ enum class ThemeMode {
     }
 }
 
-/**
- * UI language. Only the preference is stored in M1; translated resources land in
- * M28 (see PROGRESS.md), so the app copy stays Indonesian until then.
- */
+/** UI language; the in-app copy table lives in `core/i18n/ZcutStrings`. */
 enum class AppLanguage(val tag: String, val label: String) {
     ID("id", "Bahasa Indonesia"),
     EN("en", "English");
@@ -37,6 +34,8 @@ data class AppPreferences(
     val onboardingSeen: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val language: AppLanguage = AppLanguage.ID,
+    /** Local display name; the avatar is just its initial, nothing is uploaded. */
+    val displayName: String = DEFAULT_DISPLAY_NAME,
     val exportResolution: Resolution = Resolution.FHD_1080,
     val exportFrameRate: Int = DEFAULT_FRAME_RATE,
     val exportAudioSampleRate: Int = DEFAULT_AUDIO_SAMPLE_RATE,
@@ -55,6 +54,9 @@ data class AppPreferences(
         /** Keeps a corrupted favourites list from growing without bound. */
         const val MAX_FAVORITES = 200
 
+        const val DEFAULT_DISPLAY_NAME = "Kreator lokal"
+        const val MAX_DISPLAY_NAME = 40
+
         /**
          * Builds preferences from raw stored values, dropping anything that is
          * missing or out of range. DataStore contents are a trust boundary: a
@@ -67,11 +69,13 @@ data class AppPreferences(
             exportResolution: String?,
             exportFrameRate: Int?,
             exportAudioSampleRate: Int?,
-            favoriteTemplateIds: Set<String>? = null
+            favoriteTemplateIds: Set<String>? = null,
+            displayName: String? = null
         ): AppPreferences = AppPreferences(
             onboardingSeen = onboardingSeen ?: false,
             themeMode = ThemeMode.fromStored(themeMode),
             language = AppLanguage.fromStored(language),
+            displayName = sanitizeDisplayName(displayName),
             exportResolution = resolutionFromStored(exportResolution),
             exportFrameRate = exportFrameRate
                 ?.takeIf { it in ALLOWED_FRAME_RATES }
@@ -81,6 +85,13 @@ data class AppPreferences(
                 ?: DEFAULT_AUDIO_SAMPLE_RATE,
             favoriteTemplateIds = sanitizeFavorites(favoriteTemplateIds)
         )
+
+        /** Trimmed, bounded and never blank, so the profile always has a label. */
+        fun sanitizeDisplayName(raw: String?): String =
+            raw?.trim()
+                ?.take(MAX_DISPLAY_NAME)
+                ?.ifBlank { DEFAULT_DISPLAY_NAME }
+                ?: DEFAULT_DISPLAY_NAME
 
         private fun sanitizeFavorites(ids: Set<String>?): Set<String> =
             ids.orEmpty()

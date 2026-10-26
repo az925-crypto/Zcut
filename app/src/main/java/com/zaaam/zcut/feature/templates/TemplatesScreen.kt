@@ -29,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import com.zaaam.zcut.core.domain.TemplateCatalog
 import com.zaaam.zcut.core.domain.TemplateCategory
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
 import com.zaaam.zcut.core.domain.VideoTemplate
 import com.zaaam.zcut.ui.components.BackendBadge
 import com.zaaam.zcut.ui.components.StatusBadge
@@ -54,6 +57,7 @@ fun TemplatesScreen(
 ) {
     var category by remember { mutableStateOf(TemplateCategory.FOR_YOU) }
     val templates = remember(category) { TemplateCatalog.inCategory(category) }
+    val language = LocalZcutLanguage.current
 
     ZcutScaffold(
         topBar = {
@@ -114,9 +118,7 @@ fun TemplatesScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)) {
                     Text(
-                        text = "Marketplace dan AI template tidak memanggil server asli. " +
-                            "Template bawaan tetap lokal; publikasi komunitas ditandai " +
-                            "BUTUH BACKEND.",
+                        text = zt(ZcutText.MarketplaceNote, language),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

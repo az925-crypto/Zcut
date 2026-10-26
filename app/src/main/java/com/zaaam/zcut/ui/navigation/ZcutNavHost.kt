@@ -160,6 +160,13 @@ fun ZcutNavHost(
                 ProjectsScreen(currentRoute = currentRoute, onNavigate = openRoute)
             }
 
+            // The mockup's library entry point ("Drafts", screen 28) manages the
+            // same local drafts as the Projects tab, so it reuses that screen and
+            // keeps the tab highlighted.
+            composable(ZcutRoutes.Drafts) {
+                ProjectsScreen(currentRoute = ZcutRoutes.Projects, onNavigate = openRoute)
+            }
+
             composable(ZcutRoutes.Profile) {
                 ProfileScreen(currentRoute = currentRoute, onNavigate = openRoute)
             }

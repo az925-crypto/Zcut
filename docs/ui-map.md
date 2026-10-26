@@ -10,9 +10,10 @@ mockup tanpa rute Android (atau sebaliknya), CI gagal.
 
 ## Kebijakan placeholder
 
-Rute yang milestone-nya belum selesai diarahkan ke `PlaceholderScreen`, yang
-menampilkan judul, ID fitur, dan badge **BUTUH BACKEND** bila relevan. Tidak ada
-layar yang disembunyikan atau dikunci di balik paywall — hanya belum dibangun.
+Semua 42 rute mockup sudah punya layar nyata pada v1.0.0. Mekanisme
+`PlaceholderScreen` tetap ada untuk rute baru di masa depan: rute yang belum
+selesai ditampilkan sebagai placeholder yang jujur, bukan layar palsu. Tidak ada
+layar yang disembunyikan atau dikunci di balik paywall.
 
 ## Layar
 
@@ -30,14 +31,14 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `ai-studio` | ai-studio | M20 | ✅ | `feature/ai/AiStudioScreen` |
 | `editor` | editor | M2–M3 | ✅ | `feature/editor/EditorScreen` |
 | `media-picker` | media-picker | M2 | ✅ | `feature/media/MediaPickerScreen` |
-| `trim` | trim | M4 | ⏳ | placeholder |
-| `speed` | speed | M5 | ⏳ | placeholder |
-| `keyframe` | keyframe | M6 | ⏳ | placeholder |
-| `transition` | transition | M7 | ⏳ | placeholder |
-| `filters` | filters | M8 | ⏳ | placeholder |
-| `adjust` | adjust | M8 | ⏳ | placeholder |
-| `effects` | effects | M9 | ⏳ | placeholder |
-| `mask` | mask | M10 | ⏳ | placeholder |
+| `trim` | trim | M4 | ✅ | `feature/tools/TrimScreen` |
+| `speed` | speed | M5 | ✅ | `feature/tools/SpeedScreen` |
+| `keyframe` | keyframe | M6 | ✅ | `feature/tools/KeyframeScreen` |
+| `transition` | transition | M7 | ✅ | `feature/tools/TransitionScreen` |
+| `filters` | filters | M8 | ✅ | `feature/tools/FiltersScreen` |
+| `adjust` | adjust | M8 | ✅ | `feature/tools/AdjustScreen` |
+| `effects` | effects | M9 | ✅ | `feature/tools/EffectsScreen` |
+| `mask` | mask | M10 | ✅ | `feature/tools/MaskScreen` |
 | `matting` | matting | M14 | ✅ | `feature/tools/MattingScreen` |
 | `beauty` | beauty | M15 | ✅ | `feature/tools/BeautyScreen` |
 | `stickers` | stickers | M16 | ✅ | `feature/tools/StickerScreen` |
@@ -48,7 +49,7 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `ai-music` | ai-music | M18 | ✅ | `feature/tools/AiMusicScreen` |
 | `export` | export | M13 | ✅ | `feature/export/ExportScreen` |
 | `export-done` | export-done | M13 | ✅ | `feature/export/ExportDoneScreen` |
-| `drafts` | drafts | M27 | ⏳ | placeholder |
+| `drafts` | drafts | M27 | ✅ | `feature/projects/ProjectsScreen` (sama dengan tab Draft) |
 | `ai-clipper` | ai-clipper | M20 | ✅ | `feature/ai/AiClipperScreen` |
 | `ai-agent` | ai-agent | M20 | ✅ | `feature/ai/AgentScreen` |
 | `ai-generate` | ai-generate | M21 | ✅ | prompt + History lokal (impor galeri, cap 60) → draft; generate = BUTUH BACKEND |
@@ -61,13 +62,13 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `split-screen` | split-screen | M25 | ✅ | 1/2/4/6/9 panel → still komposit → draft |
 | `gameplay` | gameplay | M25 | ✅ | facecam overlay (posisi/ukuran/border/shape) → still → draft; chroma/rekaman layar belum |
 | `live-photo` | live-photo | M25 | ✅ | split motion photo (scan `ftyp`) + combine still+video → draft; GIF/motion export belum |
-| `ad-maker` | ad-maker | M26 | ⏳ | placeholder |
+| `ad-maker` | ad-maker | M26 | ✅ | skrip → scene → TTS/musik lokal → caption → CTA → draft |
 
 ## Navigasi
 
 - `ZcutBottomNav` menampilkan lima tab: `home`, `templates`, `projects`,
   `ai-studio`, `profile`.
-- Tab tanpa milestone selesai tetap bisa dibuka dan menampilkan placeholder.
+- Semua tab membuka layar nyata; tidak ada tab placeholder di v1.0.0.
 - Layar non-tab menampilkan tombol kembali di `ZcutTopBar`.
 
 ## Komponen bersama
@@ -116,7 +117,8 @@ dokumen draft, supaya payload draft yang rusak tidak ikut menghapus setelan.
 |---|---|---|---|
 | `onboarding_seen` | Boolean | `false` | gerbang splash |
 | `theme_mode` | `DARK` / `LIGHT` / `SYSTEM` | `DARK` | `MainActivity` → `ZcutTheme` |
-| `language` | `ID` / `EN` | `ID` | disimpan; resource terjemahan menyusul di M28 |
+| `language` | `ID` / `EN` | `ID` | `LocalZcutLanguage` → tabel copy `core/i18n/ZcutStrings` (shell ID/EN; badan panel tool masih Indonesia) |
+| `display_name` | String (≤40, tidak kosong) | `Kreator lokal` | Profil lokal + inisial avatar |
 | `export_resolution` | `Resolution` | `FHD_1080` | default ekspor (M13) |
 | `export_frame_rate` | `24` / `30` / `60` | `30` | default ekspor (M13) |
 | `export_audio_sample_rate` | `44_100` / `48_000` | `48_000` | default ekspor (M13) |

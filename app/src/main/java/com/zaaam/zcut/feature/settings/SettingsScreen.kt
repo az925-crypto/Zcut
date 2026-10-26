@@ -39,6 +39,10 @@ import com.zaaam.zcut.BuildConfig
 import com.zaaam.zcut.core.data.AppLanguage
 import com.zaaam.zcut.core.data.ThemeMode
 import com.zaaam.zcut.core.domain.ExportDefaults
+import com.zaaam.zcut.core.i18n.LocalZcutLanguage
+import com.zaaam.zcut.core.i18n.ZcutText
+import com.zaaam.zcut.core.i18n.zt
+import com.zaaam.zcut.core.i18n.ztf
 import com.zaaam.zcut.core.model.Resolution
 import com.zaaam.zcut.core.util.FileSizeFormat
 import com.zaaam.zcut.ui.LocalAppContainer
@@ -88,6 +92,7 @@ private fun SettingsContent(
     onClearCache: () -> Unit
 ) {
     var dialog by remember { mutableStateOf(SettingsDialog.NONE) }
+    val language = LocalZcutLanguage.current
 
     ZcutScaffold(
         topBar = {
@@ -101,7 +106,7 @@ private fun SettingsContent(
                         onClick = onBack
                     )
                 },
-                actions = { StatusBadge(text = "TANPA IKLAN", accent = ZcutLime) }
+                actions = { StatusBadge(text = zt(ZcutText.NoAds, language), accent = ZcutLime) }
             )
         }
     ) { insets ->
@@ -127,20 +132,20 @@ private fun SettingsContent(
                 }
             }
 
-            item { SectionHeader(title = "Tampilan") }
+            item { SectionHeader(title = zt(ZcutText.Appearance, language)) }
             item {
                 ZcutCard {
                     Column {
                         ListRow(
-                            title = "Tema",
-                            subtitle = themeLabel(state.themeMode),
-                            trailing = { StatusBadge(text = themeBadge(state.themeMode)) },
+                            title = zt(ZcutText.Theme, language),
+                            subtitle = themeLabel(state.themeMode, language),
+                            trailing = { StatusBadge(text = themeBadge(state.themeMode, language)) },
                             onClick = { dialog = SettingsDialog.THEME }
                         )
                         RowDivider()
                         ListRow(
-                            title = "Bahasa",
-                            subtitle = "Indonesia · English",
+                            title = zt(ZcutText.Language, language),
+                            subtitle = zt(ZcutText.LanguageSubtitle, language),
                             trailing = { StatusBadge(text = state.language.tag.uppercase()) },
                             onClick = { dialog = SettingsDialog.LANGUAGE }
                         )
@@ -148,17 +153,17 @@ private fun SettingsContent(
                 }
             }
 
-            item { SectionHeader(title = "Penyimpanan") }
+            item { SectionHeader(title = zt(ZcutText.Storage, language)) }
             item {
                 ZcutCard {
                     Column {
                         ListRow(
-                            title = "Ruang kerja",
+                            title = zt(ZcutText.Workspace, language),
                             subtitle = "${FileSizeFormat.format(state.storageBytes)} · " +
-                                "${state.draftCount} draft",
+                                ztf(ZcutText.DraftCount, language, state.draftCount),
                             trailing = {
                                 ZcutSecondaryButton(
-                                    text = "Bersihkan",
+                                    text = zt(ZcutText.Clean, language),
                                     onClick = onClearCache,
                                     enabled = !state.isClearingCache
                                 )
@@ -166,26 +171,26 @@ private fun SettingsContent(
                         )
                         RowDivider()
                         ListRow(
-                            title = "Cadangan",
-                            subtitle = "Zip lokal · tanpa cloud",
-                            trailing = { StatusBadge(text = "LOKAL") }
+                            title = zt(ZcutText.Backup, language),
+                            subtitle = zt(ZcutText.BackupSubtitle, language),
+                            trailing = { StatusBadge(text = zt(ZcutText.Local, language)) }
                         )
                     }
                 }
             }
 
-            item { SectionHeader(title = "Default ekspor") }
+            item { SectionHeader(title = zt(ZcutText.ExportDefaults, language)) }
             item {
                 ZcutCard {
                     Column {
                         ListRow(
-                            title = "Resolusi",
+                            title = zt(ZcutText.Resolution, language),
                             subtitle = ExportDefaults.summary(state.resolution, state.frameRate),
                             onClick = { dialog = SettingsDialog.EXPORT }
                         )
                         RowDivider()
                         ListRow(
-                            title = "Audio",
+                            title = zt(ZcutText.Audio, language),
                             subtitle = ExportDefaults.audioLabel(state.audioSampleRate),
                             onClick = { dialog = SettingsDialog.AUDIO }
                         )
@@ -193,13 +198,13 @@ private fun SettingsContent(
                 }
             }
 
-            item { SectionHeader(title = "Privasi") }
+            item { SectionHeader(title = zt(ZcutText.Privacy, language)) }
             item {
                 ZcutCard {
                     Column {
                         ListRow(
-                            title = "Telemetri",
-                            subtitle = "Nonaktif · tanpa SDK analytics",
+                            title = zt(ZcutText.Telemetry, language),
+                            subtitle = zt(ZcutText.TelemetrySubtitle, language),
                             trailing = {
                                 Switch(
                                     checked = false,
@@ -210,9 +215,9 @@ private fun SettingsContent(
                         )
                         RowDivider()
                         ListRow(
-                            title = "Akses jaringan",
-                            subtitle = "Tidak ada izin jaringan di build ini",
-                            trailing = { StatusBadge(text = "TIDAK ADA") }
+                            title = zt(ZcutText.NetworkAccess, language),
+                            subtitle = zt(ZcutText.NoNetworkSubtitle, language),
+                            trailing = { StatusBadge(text = zt(ZcutText.None, language)) }
                         )
                     }
                 }
@@ -232,16 +237,15 @@ private fun SettingsContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Billing / iklan / kredit",
+                                text = zt(ZcutText.Billing, language),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f)
                             )
-                            StatusBadge(text = "DIHAPUS", accent = ZcutLime)
+                            StatusBadge(text = zt(ZcutText.Removed, language), accent = ZcutLime)
                         }
                         Text(
-                            text = "Modul monetisasi sengaja tidak direkonstruksi. " +
-                                "Semua fitur tetap terbuka.",
+                            text = zt(ZcutText.MonetizationNote, language),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -264,16 +268,16 @@ private fun SettingsContent(
         SettingsDialog.NONE -> Unit
 
         SettingsDialog.THEME -> ChoiceDialog(
-            title = "Tema",
+            title = zt(ZcutText.Theme, language),
             options = ThemeMode.entries,
             selected = state.themeMode,
-            label = ::themeLabel,
+            label = { themeLabel(it, language) },
             onSelect = onThemeChange,
             onDismiss = { dialog = SettingsDialog.NONE }
         )
 
         SettingsDialog.LANGUAGE -> ChoiceDialog(
-            title = "Bahasa",
+            title = zt(ZcutText.Language, language),
             options = AppLanguage.entries,
             selected = state.language,
             label = { it.label },
@@ -283,10 +287,10 @@ private fun SettingsContent(
 
         SettingsDialog.EXPORT -> AlertDialog(
             onDismissRequest = { dialog = SettingsDialog.NONE },
-            title = { Text("Resolusi & frame rate") },
+            title = { Text(zt(ZcutText.ResolutionAndFrameRate, language)) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    DialogGroupLabel("Resolusi")
+                    DialogGroupLabel(zt(ZcutText.Resolution, language))
                     Resolution.entries.forEach { resolution ->
                         ChoiceRow(
                             label = ExportDefaults.resolutionLabel(resolution),
@@ -295,7 +299,7 @@ private fun SettingsContent(
                         )
                     }
                     Spacer(Modifier.height(ZcutSpacing.sm))
-                    DialogGroupLabel("Frame rate")
+                    DialogGroupLabel(zt(ZcutText.FrameRate, language))
                     listOf(24, 30, 60).forEach { frameRate ->
                         ChoiceRow(
                             label = "$frameRate fps",
@@ -306,12 +310,12 @@ private fun SettingsContent(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { dialog = SettingsDialog.NONE }) { Text("Tutup") }
+                TextButton(onClick = { dialog = SettingsDialog.NONE }) { Text(zt(ZcutText.Close, language)) }
             }
         )
 
         SettingsDialog.AUDIO -> ChoiceDialog(
-            title = "Audio",
+            title = zt(ZcutText.Audio, language),
             options = AppPreferencesRates.ALL,
             selected = state.audioSampleRate,
             label = ExportDefaults::audioLabel,
@@ -350,7 +354,9 @@ private fun <T> ChoiceDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Tutup") }
+            TextButton(onClick = onDismiss) {
+                Text(zt(ZcutText.Close, LocalZcutLanguage.current))
+            }
         }
     )
 }
@@ -388,14 +394,14 @@ private fun RowDivider() {
     )
 }
 
-private fun themeLabel(mode: ThemeMode): String = when (mode) {
-    ThemeMode.DARK -> "Gelap"
-    ThemeMode.LIGHT -> "Terang"
-    ThemeMode.SYSTEM -> "Ikuti sistem"
+private fun themeLabel(mode: ThemeMode, language: AppLanguage): String = when (mode) {
+    ThemeMode.DARK -> zt(ZcutText.ThemeDark, language)
+    ThemeMode.LIGHT -> zt(ZcutText.ThemeLight, language)
+    ThemeMode.SYSTEM -> zt(ZcutText.ThemeSystem, language)
 }
 
-private fun themeBadge(mode: ThemeMode): String = when (mode) {
-    ThemeMode.DARK -> "GELAP"
-    ThemeMode.LIGHT -> "TERANG"
-    ThemeMode.SYSTEM -> "SISTEM"
+private fun themeBadge(mode: ThemeMode, language: AppLanguage): String = when (mode) {
+    ThemeMode.DARK -> zt(ZcutText.ThemeDarkBadge, language)
+    ThemeMode.LIGHT -> zt(ZcutText.ThemeLightBadge, language)
+    ThemeMode.SYSTEM -> zt(ZcutText.ThemeSystemBadge, language)
 }
