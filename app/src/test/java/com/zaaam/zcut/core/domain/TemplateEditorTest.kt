@@ -93,8 +93,10 @@ class TemplateEditorTest {
         assertEquals(ClipType.VIDEO, clips[0].type)
 
         assertEquals(2_000L, clips[1].startMs)
-        assertEquals(MediaAppender.DEFAULT_IMAGE_DURATION_MS, clips[1].durationMs)
-        assertEquals(0L, clips[1].sourceStartMs)
+        // The still is 3s by default, so its 2s slot centre-crops 500ms in.
+        assertEquals(MediaAppender.durationFor(assets[1]), MediaAppender.DEFAULT_IMAGE_DURATION_MS)
+        assertEquals(2_000L, clips[1].durationMs)
+        assertEquals(500L, clips[1].sourceStartMs)
         assertEquals(ClipType.IMAGE, clips[1].type)
 
         assertEquals(assets.map { it.id }, project.assets.map { it.id })
