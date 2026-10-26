@@ -28,19 +28,11 @@ class MlKitFaceDetector : FaceDetector {
     @Volatile
     private var client: com.google.mlkit.vision.face.FaceDetector? = null
 
-    /** Model load failed (unsupported ABI, missing native lib); say so, do not guess. */
-    @Volatile
-    var unavailableReason: String? = null
-        private set
-
     override suspend fun detect(frame: Bitmap): List<FaceGeometry>? =
         withContext(Dispatchers.Default) {
-            if (frame.width < MIN_SIDE || frame.height < MIN_SIDE) {
-                // Below this the model has nothing usable to work with.
-                return@withContext emptyList()
-            }
-            // null (not empty) so the screen can say "model unavailable" instead
-            // of blaming the frame for a model that never loaded.
+            // No size gate: an empty list must mean "the model ran and found no
+            // face", so a frame the model cannot handle has to come back as null
+            // (model unavailable) rather than a fake "no face".
             val detector = clientOrNull() ?: return@withContext null
             val faces = try {
                 detector.process(InputImage.fromBitmap(frame, 0)).awaitFaces()
@@ -74,14 +66,12 @@ class MlKitFaceDetector : FaceDetector {
                 )
             }.onFailure { error ->
                 Log.w(TAG, "ML Kit face detector unavailable", error)
-                unavailableReason = error.message ?: "Model deteksi wajah tidak tersedia"
             }.getOrNull()?.also { client = it }
         }
     }
 
     private companion object {
         const val TAG = "ZcutBeauty"
-        const val MIN_SIDE = 128
         const val MIN_FACE_FRACTION = 0.1f
 
         /**

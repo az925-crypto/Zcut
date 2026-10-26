@@ -26,11 +26,6 @@ class MlKitSubjectSegmenter : SubjectSegmenter {
     @Volatile
     private var client: Segmenter? = null
 
-    /** Model load failed (unsupported ABI, missing native lib); say so, do not guess. */
-    @Volatile
-    var unavailableReason: String? = null
-        private set
-
     override suspend fun segment(frame: Bitmap): SubjectMask? = withContext(Dispatchers.Default) {
         if (frame.width < MIN_SIDE || frame.height < MIN_SIDE) {
             // ML Kit asks for at least 256px; a smaller frame just produces noise.
@@ -72,7 +67,6 @@ class MlKitSubjectSegmenter : SubjectSegmenter {
                 )
             }.onFailure { error ->
                 Log.w(TAG, "ML Kit segmenter unavailable", error)
-                unavailableReason = error.message ?: "Model segmentasi tidak tersedia"
             }.getOrNull()?.also { client = it }
         }
     }
