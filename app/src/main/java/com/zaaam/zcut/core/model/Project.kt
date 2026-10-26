@@ -24,6 +24,11 @@ data class Project(
      * an empty transcript, so no schema bump is needed.
      */
     val transcript: Transcript = Transcript(),
+    /**
+     * Soft-delete marker (F20 trash). Additive: `null` means active, so drafts
+     * written before M27 decode as active and no schema bump is needed.
+     */
+    val trashedAtMs: Long? = null,
     val schemaVersion: Int = 1
 ) {
     companion object {

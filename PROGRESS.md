@@ -6,10 +6,10 @@
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
   Tahap 2b non-UI selesai, CI hijau, signed release `v0.7.0` sudah
-  diterbitkan. **Tahap 3 (UI Android) berjalan: M0–M20 selesai; batch M4–M10,
-  M11–M15 sudah melewati review gate (setelah perbaikan, ketiga
-  reviewer `BLOCKING: no`).**
-  Batch M16–M20 menunggu review gate; rilisnya di tag `v0.8.0`.
+  diterbitkan. **Tahap 3 (UI Android): M0–M27 selesai.** Batch M4–M10 dan
+  M11–M15 lulus review gate; security review M16–M25 keluar
+  `BLOCKING: no` (2 Medium + 2 Low dicatat, dua hardening sudah dikerjakan).
+  Gate bug/performance M21–M27 berjalan sebelum tag batch.
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
   untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
@@ -30,9 +30,9 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M20 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
+| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M27 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
-| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.7.0` sudah rilis; rilis fitur menyusul per tag |
+| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.7.0` sudah rilis; `v0.9.0` (M21–M27) dan rilis final menyusul |
 
 ## Tahap 3 — Milestone
 
@@ -61,13 +61,13 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M18 | AI music prosedural | F18 | ai-music | ✅ |
 | M19 | Template & CutSame | F21 | templates, template-detail, discover | ✅ |
 | M20 | AI clipper + agent lokal | F22/F23 | ai-clipper, ai-agent, ai-studio | ✅ |
-| M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | [ ] |
-| M22 | Digital human (BUTUH BACKEND) | F25 | digital-human | [ ] |
-| M23 | Kamera + photo editor (CameraX) | F26 | camera, photo-editor | [ ] |
-| M24 | Share & publish | F27 | share | [ ] |
-| M25 | Split screen, gameplay, live photo | F30 | split-screen, gameplay, live-photo | [ ] |
-| M26 | Ad maker | F31 | ad-maker | [ ] |
-| M27 | Draft lanjutan: rename, trash, backup lokal | F20 | drafts | [ ] |
+| M21 | AI generation (BUTUH BACKEND) | F24 | ai-generate | ✅ |
+| M22 | Digital human (BUTUH BACKEND) | F25 | digital-human | ✅ |
+| M23 | Kamera + photo editor (CameraX) | F26 | camera, photo-editor | ✅ |
+| M24 | Share & publish | F27 | share | ✅ |
+| M25 | Split screen, gameplay, live photo | F30 | split-screen, gameplay, live-photo | ✅ |
+| M26 | Ad maker | F31 | ad-maker | ✅ |
+| M27 | Draft lanjutan: rename, trash, backup lokal | F20 | drafts | ✅ |
 | M28 | Polish: aksesibilitas, lokalisasi, audit akhir | cross-cutting | — | [ ] |
 
 Peta rute ↔ layar ↔ milestone ada di [`docs/ui-map.md`](docs/ui-map.md).
@@ -368,9 +368,9 @@ Spek: [`docs/features/19-export-render.md`](docs/features/19-export-render.md)
 Spek: [`docs/features/20-draft-cloud.md`](docs/features/20-draft-cloud.md)
 
 - [x] Spek
-- [ ] Draft list/rename/delete
-- [ ] Duplicate/trash/restore
-- [ ] Local backup zip + import
+- [x] Draft list/rename/delete
+- [x] Duplicate/trash/restore (sampah soft-delete + pulihkan)
+- [x] Local backup zip + import (`DraftBackup`, media ikut, id di-remap)
 - [!] Cloud backup (BUTUH BACKEND; fallback folder lokal)
 - [!] Shared draft (BUTUH BACKEND)
 - [!] Review/komentar (BUTUH BACKEND)
@@ -422,9 +422,9 @@ Spek: [`docs/features/23-ai-lab-agent.md`](docs/features/23-ai-lab-agent.md)
 Spek: [`docs/features/24-ai-generation.md`](docs/features/24-ai-generation.md)
 
 - [x] Spek
-- [ ] Generation UI (prompt/aspect/seed)
-- [ ] History + import hasil
-- [ ] Local placeholder preview
+- [x] Generation UI (prompt/aspect/seed)
+- [x] History + import hasil (galeri → DataStore, cap 60)
+- [~] Local placeholder preview (tidak ada render lokal; panel jujur BUTUH BACKEND)
 - [!] Text-to-image (BUTUH BACKEND)
 - [!] Text-to-video/image-to-video (BUTUH BACKEND)
 - [!] Inpainting/outpainting (BUTUH BACKEND)
@@ -437,9 +437,9 @@ Spek: [`docs/features/24-ai-generation.md`](docs/features/24-ai-generation.md)
 Spek: [`docs/features/25-digital-human.md`](docs/features/25-digital-human.md)
 
 - [x] Spek
-- [ ] Template browser + preview
-- [ ] Script + TTS lokal
-- [ ] Subtitle + background
+- [x] Template browser + preview (katalog avatar lokal + latar gradien)
+- [x] Script + TTS lokal
+- [x] Subtitle + background (perkiraan berbobot panjang, ditandai SYNTHESIZED)
 - [!] Avatar render (BUTUH BACKEND)
 - [!] Lip sync (BUTUH BACKEND)
 - [!] Custom avatar/dressing (BUTUH BACKEND)
@@ -449,26 +449,26 @@ Spek: [`docs/features/25-digital-human.md`](docs/features/25-digital-human.md)
 Spek: [`docs/features/26-camera-photo.md`](docs/features/26-camera-photo.md)
 
 - [x] Spek
-- [ ] CameraX photo/video
-- [ ] Beauty/filter realtime
-- [ ] Timer/speed record
-- [ ] Photo crop/rotate/adjust/filter
-- [ ] Photo text/sticker/brush
-- [ ] Photo cutout/AI background
-- [ ] Export JPG/PNG/WebP
-- [ ] Unit/instrumentation test capture
+- [x] CameraX photo/video
+- [~] Beauty/filter realtime (diterapkan ke hasil, bukan preview realtime)
+- [x] Timer/speed record (slow-mo = rekam normal + retime 0.5×)
+- [x] Photo crop/rotate/adjust/filter
+- [x] Photo text/sticker/brush
+- [x] Photo cutout/AI background (matting; latar AI hanya menyimpan prompt)
+- [x] Export JPG/PNG/WebP
+- [~] Unit/instrumentation test capture (unit JVM ada; instrumentasi belum)
 
 ## F27 — Share & Publish
 
 Spek: [`docs/features/27-share-publish.md`](docs/features/27-share-publish.md)
 
 - [x] Spek
-- [ ] Android share sheet
-- [ ] Save to gallery
-- [ ] Caption/cover/hashtag
-- [ ] TikTok/IG/YouTube direct share
+- [x] Android share sheet (ACTION_SEND + chooser)
+- [x] Save to gallery (MediaStore `Movies/Zcut`, `Pictures/Zcut`)
+- [~] Caption/cover/hashtag (caption bisa disalin; cover/hashtag belum)
+- [x] TikTok/IG/YouTube direct share (intent ke paket, fallback chooser)
 - [!] Platform publish API (BUTUH BACKEND/SDK)
-- [ ] Template publish (lokal)
+- [!] Template publish (butuh backend komunitas)
 - [!] AI post/publish marketplace (BUTUH BACKEND)
 
 ## F28 — Profile & Settings (Monetization Removed)
@@ -500,23 +500,23 @@ Spek: [`docs/features/29-resource-config-analytics.md`](docs/features/29-resourc
 Spek: [`docs/features/30-split-gameplay-livephoto.md`](docs/features/30-split-gameplay-livephoto.md)
 
 - [x] Spek
-- [ ] Split screen 2–9 + center crop
-- [ ] Layout border/background/music
-- [ ] Gameplay overlay + facecam
-- [ ] Live photo split
-- [ ] Live photo combine/export
-- [ ] Unit test layout
+- [~] Split screen 1–9 + center crop (1/2/4/6/9; 3/5/7/8 belum)
+- [~] Layout border/background/music (border/latar ada; musik per layout belum)
+- [x] Gameplay overlay + facecam (still komposit)
+- [x] Live photo split (scan `ftyp` + verifikasi retriever)
+- [x] Live photo combine/export (video; GIF/Still+motion belum)
+- [x] Unit test layout
 
 ## F31 — Ad Maker & Script-to-Video
 
 Spek: [`docs/features/31-ad-maker-business.md`](docs/features/31-ad-maker-business.md)
 
 - [x] Spek
-- [ ] Script → scene → media
-- [ ] TTS voiceover + tone compare
-- [ ] Caption otomatis
-- [ ] Product card/CTA/logo/watermark
-- [ ] Product album → video
+- [~] Script → scene → media (scene + timing ada; pemilihan media per scene belum)
+- [~] TTS voiceover + tone compare (voiceover ada; A/B tone compare belum)
+- [x] Caption otomatis (dari skrip, sumber SYNTHESIZED)
+- [~] Product card/CTA/logo/watermark (kartu produk + CTA ada; logo/watermark belum)
+- [!] Product album → video (album AI BUTUH BACKEND)
 - [ ] Template iklan lokal
 - [!] Smart ad generatif (BUTUH BACKEND)
 
@@ -1460,6 +1460,63 @@ Batasan yang diakui di UI dan docs:
   consistency belum ada.
 
 `docs/ui-m15-design.md` ditulis manual (subagent `design` masih unavailable).
+
+## Catatan M21–M27
+
+Ringkasan keputusan lengkap ada di [`DECISIONS.md`](DECISIONS.md); ini catatan
+implementasi dan batas yang diakui.
+
+### M21 — AI generation (F24)
+
+`ai-generate` adalah layar **BUTUH BACKEND** yang jujur: "Generate" hanya
+membuka panel backend, tanpa panggilan jaringan. Kerja lokal nyata adalah
+impor hasil galeri ke History lokal (DataStore `zcut_generations`, cap 60) dan
+menjadikan entri History sebagai draft. Prompt awal memakai contoh brief mockup.
+
+### M22 — Digital human (F25)
+
+Draft persiapan lokal: TTS perangkat untuk skrip, still gradien 1080×1920,
+subtitle perkiraan berbobot panjang (`TranscriptSource.SYNTHESIZED`). Render
+avatar dan lip sync tetap **BUTUH BACKEND**.
+
+### M23 — Kamera & photo editor (F26)
+
+CameraX untuk foto/video; beauty/filter diterapkan ke hasil (bukan preview
+realtime); SLOW-MO merekam normal lalu retime 0.5×. Photo editor non-destruktif
+(`PhotoEditState`) memakai `ColorPipeline`, `BeautyProcessor`, dan
+`MattingComposer` yang sama dengan video, lalu mengekspor JPG/PNG/WebP.
+"Simpan ke galeri" memakai `ExportDelivery` (`Pictures/Zcut`).
+
+### M24 — Share (F27)
+
+Layar `share?file=` dari export-done: tile kanal mencoba `ACTION_SEND` ke paket
+aplikasi tujuan lalu jatuh ke chooser Android; "Copy" menyalin caption;
+"Simpan ke galeri" memakai `ExportDelivery`. Publikasi langsung (login,
+metadata, upload) tetap **BUTUH BACKEND**.
+
+### M25 — Split screen, gameplay, live photo (F30)
+
+Ketiganya merender **satu still komposit** resolusi tinggi lewat Canvas lalu
+memasukkannya sebagai draft nyata (bisa diedit/diekspor lewat pipeline biasa).
+Layout 1/2/4/6/9 panel; border/corner, ukuran/border facecam **inferred** dari
+slider mockup. Live photo dipecah dengan memindai box `ftyp` MP4 di ekor berkas
+(`MotionPhotoIndex`) dan diverifikasi `MediaMetadataRetriever`. Pemutaran
+beberapa video serentak, MediaProjection, chroma key, GIF, dan ekspor motion
+photo belum didukung dan ditulis di layar. Home mendapat baris "Tool create".
+
+### M26 — Ad maker (F31)
+
+Skrip → scene (hook/benefit/CTA) → voiceover TTS perangkat **atau** musik
+prosedural lokal → caption → overlay CTA → satu draft. Satu track audio per
+draft, jadi voiceover dan musik saling menggantikan (dijelaskan di UI). Smart
+ad generatif, product album AI, dan pixel/report **BUTUH BACKEND**.
+
+### M27 — Draft lanjutan (F20)
+
+Ganti nama, duplikat, sampah (soft delete) + pulihkan, hapus permanen, dan
+backup lokal `.zcut.zip` (draft JSON + media, id di-remap saat impor). Backup
+ditulis/dibaca lewat SAF; entri dibatasi ukurannya. Cloud backup, shared draft,
+review, brand kit, dan enterprise tetap **BUTUH BACKEND**.
 
 ## Ringkasan akhir
 

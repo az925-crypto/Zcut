@@ -99,6 +99,15 @@ private fun HomeContent(
                 item { ErrorBanner(state.error) }
             }
 
+            // The mockup's four quick actions: the Photo one is the way into the
+            // photo editor (which in turn can open the camera).
+            item { QuickActionsRow(onNavigate = onNavigate) }
+
+            // The mockup has standalone split-screen/gameplay/live-photo screens
+            // but no in-app door; this row is that door (see DECISIONS.md).
+            item { SectionHeader(title = "Tool create") }
+            item { CreateToolsRow(onNavigate = onNavigate) }
+
             item {
                 SectionHeader(
                     title = "Draft terakhir",
@@ -143,8 +152,79 @@ private fun HomeContent(
 }
 
 @Composable
-private fun AiToolsRow(onNavigate: (String) -> Unit) {
+private fun QuickActionsRow(onNavigate: (String) -> Unit) {
+    // Mockup order: Video, Photo, AI video, Templates.
+    val actions = listOf(
+        "Video" to ZcutRoutes.mediaPicker(),
+        "Photo" to ZcutRoutes.PhotoEditor,
+        "AI video" to ZcutRoutes.AiGenerate,
+        "Template" to ZcutRoutes.Templates
+    )
     Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
+    ) {
+        actions.forEach { (label, route) ->
+            ZcutCard(
+                modifier = Modifier.weight(1f),
+                onClick = { onNavigate(route) }
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = ZcutSpacing.md),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(ZcutSpacing.xs)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateToolsRow(onNavigate: (String) -> Unit) {
+    val tools = listOf(
+        Triple("Split screen", "Grid still", ZcutRoutes.SplitScreen),
+        Triple("Gameplay", "Facecam", ZcutRoutes.Gameplay),
+        Triple("Live photo", "Motion photo", ZcutRoutes.LivePhoto)
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
+    ) {
+        tools.forEach { (title, blurb, route) ->
+            ZcutCard(
+                modifier = Modifier.weight(1f),
+                onClick = { onNavigate(route) }
+            ) {
+                Column(
+                    modifier = Modifier.padding(ZcutSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = blurb,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiToolsRow(onNavigate: (String) -> Unit) {    Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ZcutSpacing.sm)
     ) {

@@ -19,21 +19,42 @@ object ExportDelivery {
     /** Public gallery album for exports; the mockup calls it Movies/Zcut. */
     private const val GALLERY_DIR = "Movies/Zcut"
 
-    private const val MIME_VIDEO = "video/mp4"
+    /** Photo exports land next to the movies, in Pictures/Zcut. */
+    private const val GALLERY_DIR_IMAGES = "Pictures/Zcut"
 
-    /** Opens the system chooser for [file]; false when no app can handle it. */
-    fun share(context: Context, file: File, mime: String = MIME_VIDEO): Boolean = runCatching {
+    private const val MIME_VIDEO = "video/mp4"
+    private const val MIME_IMAGE = "image/jpeg"
+
+    /**
+     * Opens the system chooser for [file]; false when no app can handle it.
+     *
+     * [targetPackage] tries one app first (the share screen's channel tiles).
+     * If that app is not installed the chooser still opens, so a channel tile
+     * can never dead-end. Zcut only hands the file to Android — it never
+     * uploads anything itself.
+     */
+    fun share(
+        context: Context,
+        file: File,
+        mime: String = MIME_VIDEO,
+        targetPackage: String? = null
+    ): Boolean = runCatching {
         val uri = FileProvider.getUriForFile(
             context,
             context.packageName + ".fileprovider",
             file
         )
-        val intent = Intent(Intent.ACTION_SEND).apply {
+        val base = Intent(Intent.ACTION_SEND).apply {
             type = mime
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Bagikan"))
+        if (targetPackage != null) {
+            val direct = Intent(base).setPackage(targetPackage)
+            val opened = runCatching { context.startActivity(direct) }.isSuccess
+            if (opened) return@runCatching true
+        }
+        context.startActivity(Intent.createChooser(base, "Bagikan"))
         true
     }.getOrDefault(false)
 
@@ -43,27 +64,51 @@ object ExportDelivery {
      * older devices the file lands in the app's own Movies folder instead of the
      * shared gallery, and the returned string says so.
      */
-    fun saveToGallery(context: Context, file: File): String? = runCatching {
+    fun saveToGallery(context: Context, file: File): String? =
+        saveMediaToGallery(context, file, isImage = false, mime = MIME_VIDEO)
+
+    /**
+     * Same contract as [saveToGallery] for a finished photo: the image
+     * collection and Pictures/Zcut on Android 10+, the app's own Pictures folder
+     * below that.
+     */
+    fun savePhotoToGallery(context: Context, file: File, mime: String = MIME_IMAGE): String? =
+        saveMediaToGallery(context, file, isImage = true, mime = mime)
+
+    private fun saveMediaToGallery(
+        context: Context,
+        file: File,
+        isImage: Boolean,
+        mime: String
+    ): String? = runCatching {
         if (!file.isFile) return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveViaMediaStore(context, file)
+            saveViaMediaStore(context, file, isImage, mime)
         } else {
-            saveToAppMovies(context, file)
+            saveToAppMedia(context, file, isImage)
         }
     }.getOrNull()
 
-    private fun saveViaMediaStore(context: Context, file: File): String? {
+    private fun saveViaMediaStore(
+        context: Context,
+        file: File,
+        isImage: Boolean,
+        mime: String
+    ): String? {
         val resolver = context.contentResolver
+        val collection = if (isImage) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }
+        val album = if (isImage) GALLERY_DIR_IMAGES else GALLERY_DIR
         val pending = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
-            put(MediaStore.MediaColumns.MIME_TYPE, MIME_VIDEO)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, GALLERY_DIR)
+            put(MediaStore.MediaColumns.MIME_TYPE, mime)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, album)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
-        val uri = resolver.insert(
-            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
-            pending
-        ) ?: return null
+        val uri = resolver.insert(collection, pending) ?: return null
 
         val out = resolver.openOutputStream(uri)
         if (out == null) {
@@ -82,11 +127,12 @@ object ExportDelivery {
 
         val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
         resolver.update(uri, ready, null, null)
-        return "$GALLERY_DIR/${file.name}"
+        return "$album/${file.name}"
     }
 
-    private fun saveToAppMovies(context: Context, file: File): String? {
-        val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES), "Zcut")
+    private fun saveToAppMedia(context: Context, file: File, isImage: Boolean): String? {
+        val type = if (isImage) Environment.DIRECTORY_PICTURES else Environment.DIRECTORY_MOVIES
+        val dir = File(context.getExternalFilesDir(type), "Zcut")
         if (!dir.isDirectory && !dir.mkdirs()) return null
         val target = File(dir, file.name)
         file.inputStream().use { source ->

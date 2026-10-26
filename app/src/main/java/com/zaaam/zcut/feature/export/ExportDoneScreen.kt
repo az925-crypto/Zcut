@@ -55,12 +55,19 @@ fun ExportDoneScreen(
     durationMs: Long,
     sizeBytes: Long,
     coverFileName: String?,
-    onBackHome: () -> Unit
+    onBackHome: () -> Unit,
+    onShare: () -> Unit
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val file = remember(fileName) { File(container.exportDir, fileName) }
+    val file = remember(fileName) {
+        runCatching {
+            val exportDir = container.exportDir.canonicalFile
+            val candidate = File(exportDir, fileName).canonicalFile
+            candidate.takeIf { it.parentFile == exportDir && it.isFile }
+        }.getOrNull()
+    }
     var notice by remember { mutableStateOf<String?>(null) }
 
     val project by produceState<Project?>(initialValue = null, projectId) {
@@ -139,26 +146,25 @@ fun ExportDoneScreen(
             ) {
                 ZcutPrimaryButton(
                     text = "Bagikan",
-                    onClick = {
-                        notice = if (ExportDelivery.share(context, file)) {
-                            null
-                        } else {
-                            "Tidak ada aplikasi yang bisa membagikan video ini."
-                        }
-                    },
+                    onClick = onShare,
                     modifier = Modifier.weight(1f)
                 )
                 ZcutSecondaryButton(
                     text = "Simpan",
                     onClick = {
-                        scope.launch {
-                            val location = withContext(Dispatchers.IO) {
-                                ExportDelivery.saveToGallery(context, file)
-                            }
-                            notice = if (location == null) {
-                                "Gagal menyimpan ke galeri."
-                            } else {
-                                "Tersimpan di $location"
+                        val target = file
+                        if (target == null) {
+                            notice = "Berkas export tidak ditemukan di workspace."
+                        } else {
+                            scope.launch {
+                                val location = withContext(Dispatchers.IO) {
+                                    ExportDelivery.saveToGallery(context, target)
+                                }
+                                notice = if (location == null) {
+                                    "Gagal menyimpan ke galeri."
+                                } else {
+                                    "Tersimpan di $location"
+                                }
                             }
                         }
                     },

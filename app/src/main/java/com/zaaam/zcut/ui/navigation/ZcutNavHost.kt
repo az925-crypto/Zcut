@@ -17,14 +17,23 @@ import androidx.navigation.compose.rememberNavController
 import com.zaaam.zcut.core.AppContainer
 import com.zaaam.zcut.core.data.AppPreferences
 import com.zaaam.zcut.feature.ai.AgentScreen
+import com.zaaam.zcut.feature.ai.AdMakerScreen
 import com.zaaam.zcut.feature.ai.AiClipperScreen
 import com.zaaam.zcut.feature.ai.AiStudioScreen
+import com.zaaam.zcut.feature.ai.DigitalHumanScreen
+import com.zaaam.zcut.feature.ai.GenerateScreen
+import com.zaaam.zcut.feature.create.GameplayScreen
+import com.zaaam.zcut.feature.create.LivePhotoScreen
+import com.zaaam.zcut.feature.create.SplitScreenScreen
 import com.zaaam.zcut.feature.editor.EditorScreen
 import com.zaaam.zcut.feature.export.ExportDoneScreen
 import com.zaaam.zcut.feature.export.ExportScreen
+import com.zaaam.zcut.feature.export.ShareScreen
 import com.zaaam.zcut.feature.home.HomeScreen
 import com.zaaam.zcut.feature.media.MediaPickerScreen
 import com.zaaam.zcut.feature.onboarding.OnboardingScreen
+import com.zaaam.zcut.feature.photo.CameraScreen
+import com.zaaam.zcut.feature.photo.PhotoEditorScreen
 import com.zaaam.zcut.feature.placeholder.PlaceholderScreen
 import com.zaaam.zcut.feature.profile.ProfileScreen
 import com.zaaam.zcut.feature.projects.ProjectsScreen
@@ -535,7 +544,30 @@ fun ZcutNavHost(
                             popUpTo(ZcutRoutes.Home) { inclusive = false }
                             launchSingleTop = true
                         }
+                    },
+                    onShare = {
+                        navController.navigate(
+                            ZcutRoutes.share(entry.arguments?.getString(ZcutRoutes.ArgFile))
+                        ) {
+                            launchSingleTop = true
+                        }
                     }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.SharePattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgFile) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                ShareScreen(
+                    fileName = entry.arguments?.getString(ZcutRoutes.ArgFile),
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -575,6 +607,111 @@ fun ZcutNavHost(
                     onBack = { navController.popBackStack() },
                     onOpenTemplate = { templateId ->
                         navController.navigate(ZcutRoutes.templateDetail(templateId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.AiGenerate) {
+                GenerateScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.DigitalHuman) {
+                DigitalHumanScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.AdMaker) {
+                AdMakerScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.Camera) {
+                CameraScreen(
+                    onClose = { navController.popBackStack() },
+                    onPhotoCaptured = { fileName ->
+                        navController.navigate(ZcutRoutes.photoEditor(fileName)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onDraftCreated = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenGallery = {
+                        navController.navigate(ZcutRoutes.mediaPicker()) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.PhotoEditorPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgFile) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                PhotoEditorScreen(
+                    photoFile = entry.arguments?.getString(ZcutRoutes.ArgFile),
+                    onBack = { navController.popBackStack() },
+                    onOpenCamera = {
+                        navController.navigate(ZcutRoutes.Camera) { launchSingleTop = true }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.SplitScreen) {
+                SplitScreenScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.Gameplay) {
+                GameplayScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ZcutRoutes.LivePhoto) {
+                LivePhotoScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEditor = { projectId ->
+                        navController.navigate(ZcutRoutes.editor(projectId)) {
                             launchSingleTop = true
                         }
                     }

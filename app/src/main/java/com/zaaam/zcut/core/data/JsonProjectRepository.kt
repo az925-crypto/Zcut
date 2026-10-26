@@ -31,7 +31,7 @@ class JsonProjectRepository(
 
     // ponytail: one JSON document per device is fine for the scaffold. Move to
     // Room or one file per project when the draft list or clip count grows.
-    override val projects: Flow<List<Project>> = context.projectDataStore.data
+    override val allProjects: Flow<List<Project>> = context.projectDataStore.data
         .catch { error ->
             if (error is IOException) emit(emptyPreferences()) else throw error
         }
@@ -41,14 +41,20 @@ class JsonProjectRepository(
         .flowOn(Dispatchers.IO)
 
     override suspend fun get(projectId: String): Project? =
-        projects.first().firstOrNull { it.id == projectId }
+        allProjects.first().firstOrNull { it.id == projectId }
 
     override suspend fun upsert(project: Project) {
         withContext(Dispatchers.IO) {
             context.projectDataStore.edit { preferences ->
                 val document = ProjectCodec.decode(preferences[documentKey])
                 val now = System.currentTimeMillis()
-                val updated = project.copy(updatedAtMs = now)
+                val existing = document.projects.firstOrNull { it.id == project.id }
+                val updated = project.copy(
+                    updatedAtMs = now,
+                    // Editing a draft never silently takes it out of the trash;
+                    // only [restore] does that.
+                    trashedAtMs = project.trashedAtMs ?: existing?.trashedAtMs
+                )
                 val next = (document.projects.filterNot { it.id == updated.id } + updated)
                     .sortedByDescending { it.updatedAtMs }
                 preferences[documentKey] = ProjectCodec.encode(document.copy(projects = next))
@@ -78,7 +84,8 @@ class JsonProjectRepository(
                     id = UUID.randomUUID().toString(),
                     name = "${source.name} copy",
                     createdAtMs = now,
-                    updatedAtMs = now
+                    updatedAtMs = now,
+                    trashedAtMs = null
                 )
                 val next = (document.projects + duplicate)
                     .sortedByDescending { it.updatedAtMs }
@@ -90,14 +97,70 @@ class JsonProjectRepository(
     }
 
     override suspend fun summaries(): List<DraftSummary> =
-        projects.first().map { project ->
-            DraftSummary(
-                id = project.id,
-                name = project.name,
-                updatedAtMs = project.updatedAtMs,
-                durationMs = project.timeline.durationMs,
-                aspectRatio = project.aspectRatio,
-                coverAssetId = project.coverAssetId
-            )
+        projects.first().map { it.toSummary() }
+
+    override suspend fun rename(projectId: String, name: String): Boolean {
+        val safe = name.trim().take(MAX_NAME_LENGTH)
+        if (safe.isBlank()) return false
+        return update(projectId) { it.copy(name = safe) }
+    }
+
+    override suspend fun trash(projectId: String): Boolean {
+        val now = System.currentTimeMillis()
+        return update(projectId) { it.copy(trashedAtMs = now) }
+    }
+
+    override suspend fun restore(projectId: String): Boolean =
+        update(projectId) { it.copy(trashedAtMs = null) }
+
+    override suspend fun emptyTrash(): Int {
+        var removed = 0
+        withContext(Dispatchers.IO) {
+            context.projectDataStore.edit { preferences ->
+                val document = ProjectCodec.decode(preferences[documentKey])
+                val keep = document.projects.filter { it.trashedAtMs == null }
+                removed = document.projects.size - keep.size
+                if (removed > 0) {
+                    preferences[documentKey] = ProjectCodec.encode(
+                        document.copy(projects = keep)
+                    )
+                }
+            }
         }
+        return removed
+    }
+
+    /** Applies [transform] to one stored draft; false when it is not there. */
+    private suspend fun update(
+        projectId: String,
+        transform: (Project) -> Project
+    ): Boolean {
+        var changed = false
+        withContext(Dispatchers.IO) {
+            context.projectDataStore.edit { preferences ->
+                val document = ProjectCodec.decode(preferences[documentKey])
+                val target = document.projects.firstOrNull { it.id == projectId }
+                    ?: return@edit
+                val updated = transform(target).copy(updatedAtMs = System.currentTimeMillis())
+                val next = (document.projects.filterNot { it.id == projectId } + updated)
+                    .sortedByDescending { it.updatedAtMs }
+                preferences[documentKey] = ProjectCodec.encode(document.copy(projects = next))
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    private fun Project.toSummary(): DraftSummary = DraftSummary(
+        id = id,
+        name = name,
+        updatedAtMs = updatedAtMs,
+        durationMs = timeline.durationMs,
+        aspectRatio = aspectRatio,
+        coverAssetId = coverAssetId
+    )
+
+    private companion object {
+        const val MAX_NAME_LENGTH = 80
+    }
 }

@@ -27,6 +27,10 @@ object ZcutRoutes {
     const val Beauty = "beauty"
     const val Export = "export"
     const val ExportDone = "export-done"
+    const val Share = "share"
+    const val SplitScreen = "split-screen"
+    const val Gameplay = "gameplay"
+    const val LivePhoto = "live-photo"
     const val Templates = "templates"
     const val TemplateDetail = "template-detail"
     const val Discover = "discover"
@@ -34,6 +38,11 @@ object ZcutRoutes {
     const val AiClipper = "ai-clipper"
     const val AiAgent = "ai-agent"
     const val AiMusic = "ai-music"
+    const val AdMaker = "ad-maker"
+    const val AiGenerate = "ai-generate"
+    const val DigitalHuman = "digital-human"
+    const val Camera = "camera"
+    const val PhotoEditor = "photo-editor"
     const val Profile = "profile"
     const val Settings = "settings"
 
@@ -92,6 +101,15 @@ object ZcutRoutes {
 
     /** Export renders one draft; the result screen is a separate destination. */
     const val ExportPattern = "$Export?$ArgProjectId={$ArgProjectId}"
+
+    /**
+     * The photo editor's `file` is a bare name inside the app's photo folder
+     * (a captured photo); without it the editor asks for one.
+     */
+    const val PhotoEditorPattern = "$PhotoEditor?$ArgFile={$ArgFile}"
+
+    /** The share screen only needs the finished file's name in the export folder. */
+    const val SharePattern = "$Share?$ArgFile={$ArgFile}"
 
     /**
      * The render result carries the output file name (never a path: the file
@@ -200,6 +218,18 @@ object ZcutRoutes {
 
     fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
 
+    /** Photo editor with an optional captured-photo name. */
+    fun photoEditor(fileName: String? = null): String {
+        val file = fileName?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (file == null) PhotoEditor else "$PhotoEditor?$ArgFile=$file"
+    }
+
+    /** Share screen for one finished export; without a file it shows an empty state. */
+    fun share(fileName: String? = null): String {
+        val file = fileName?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (file == null) Share else "$Share?$ArgFile=$file"
+    }
+
     /**
      * `cover` is optional: without it the done screen simply shows no cover
      * line. The file name is encoded like any other argument.
@@ -287,17 +317,17 @@ object ZcutDestinations {
         ZcutDestination("drafts", "Kelola draft", "F20"),
         ZcutDestination("ai-clipper", "AI Clipper", "F22", implemented = true),
         ZcutDestination("ai-agent", "Zcut Agent", "F23", implemented = true),
-        ZcutDestination("ai-generate", "Generate", "F24"),
-        ZcutDestination("digital-human", "Digital Human", "F25"),
-        ZcutDestination("camera", "Kamera", "F26"),
-        ZcutDestination("photo-editor", "Photo editor", "F26"),
-        ZcutDestination("share", "Bagikan", "F27"),
+        ZcutDestination("ai-generate", "Generate", "F24", implemented = true),
+        ZcutDestination("digital-human", "Digital Human", "F25", implemented = true),
+        ZcutDestination("camera", "Kamera", "F26", implemented = true),
+        ZcutDestination("photo-editor", "Photo editor", "F26", implemented = true),
+        ZcutDestination("share", "Bagikan", "F27", implemented = true),
         ZcutDestination("profile", "Profil", "F28", implemented = true),
         ZcutDestination("settings", "Pengaturan", "F29", implemented = true),
-        ZcutDestination("split-screen", "Split screen", "F30"),
-        ZcutDestination("gameplay", "Gameplay", "F30"),
-        ZcutDestination("live-photo", "Live photo", "F30"),
-        ZcutDestination("ad-maker", "Ad Maker", "F31")
+        ZcutDestination("split-screen", "Split screen", "F30", implemented = true),
+        ZcutDestination("gameplay", "Gameplay", "F30", implemented = true),
+        ZcutDestination("live-photo", "Live photo", "F30", implemented = true),
+        ZcutDestination("ad-maker", "Ad Maker", "F31", implemented = true)
     )
 
     private val byRoute: Map<String, ZcutDestination> = all.associateBy { it.route }

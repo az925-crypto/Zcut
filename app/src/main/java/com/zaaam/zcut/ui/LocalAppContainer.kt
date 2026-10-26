@@ -6,12 +6,20 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zaaam.zcut.core.AppContainer
+import com.zaaam.zcut.feature.ai.AdMakerViewModel
 import com.zaaam.zcut.feature.ai.AgentViewModel
 import com.zaaam.zcut.feature.ai.AiClipperViewModel
+import com.zaaam.zcut.feature.ai.DigitalHumanViewModel
+import com.zaaam.zcut.feature.ai.GenerateViewModel
+import com.zaaam.zcut.feature.create.GameplayViewModel
+import com.zaaam.zcut.feature.create.LivePhotoViewModel
+import com.zaaam.zcut.feature.create.SplitScreenViewModel
 import com.zaaam.zcut.feature.editor.EditorViewModel
 import com.zaaam.zcut.feature.export.ExportViewModel
 import com.zaaam.zcut.feature.home.HomeViewModel
 import com.zaaam.zcut.feature.media.MediaPickerViewModel
+import com.zaaam.zcut.feature.photo.CameraViewModel
+import com.zaaam.zcut.feature.photo.PhotoEditorViewModel
 import com.zaaam.zcut.feature.profile.ProfileViewModel
 import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
@@ -36,7 +44,12 @@ val LocalAppContainer = androidx.compose.runtime.staticCompositionLocalOf<AppCon
 fun zcutViewModelFactory(container: AppContainer): ViewModelProvider.Factory = remember(container) {
     viewModelFactory {
         initializer { HomeViewModel(container.projectRepository) }
-        initializer { ProjectsViewModel(container.projectRepository) }
+        initializer {
+            ProjectsViewModel(
+                repository = container.projectRepository,
+                mediaDir = container.mediaDir
+            )
+        }
         initializer {
             ProfileViewModel(
                 repository = container.projectRepository,
@@ -280,3 +293,135 @@ fun agentViewModelFactory(
         }
     }
 }
+
+/**
+ * AI Generate never talks to a server: it imports a gallery result into a local
+ * history, and the history can be turned into a draft.
+ */
+@Composable
+fun generateViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                GenerateViewModel(
+                    repository = container.projectRepository,
+                    history = container.generationHistoryRepository,
+                    importer = container.mediaImporter
+                )
+            }
+        }
+    }
+
+/** Digital Human synthesises the voice locally; the avatar render stays backend. */
+@Composable
+fun digitalHumanViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                DigitalHumanViewModel(
+                    repository = container.projectRepository,
+                    speechEngine = container.speechEngine,
+                    ttsCacheDir = container.ttsCacheDir,
+                    backgroundDir = container.backgroundDir
+                )
+            }
+        }
+    }
+
+/** The camera owns the pipeline but no state that outlives the screen. */
+@Composable
+fun cameraViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                CameraViewModel(
+                    repository = container.projectRepository,
+                    importer = container.mediaImporter
+                )
+            }
+        }
+    }
+
+/** The photo editor is scoped to one photo file, so its factory carries the path. */
+@Composable
+fun photoEditorViewModelFactory(
+    container: AppContainer,
+    sourcePath: String?
+): ViewModelProvider.Factory = remember(container, sourcePath) {
+    viewModelFactory {
+        initializer {
+            PhotoEditorViewModel(
+                sourcePath = sourcePath,
+                importer = container.mediaImporter,
+                faceDetector = container.faceDetector,
+                subjectSegmenter = container.subjectSegmenter,
+                exportDir = container.exportDir
+            )
+        }
+    }
+}
+
+/** Split screen composites first frames into a still draft. */
+@Composable
+fun splitScreenViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                SplitScreenViewModel(
+                    repository = container.projectRepository,
+                    importer = container.mediaImporter,
+                    thumbnails = container.mediaThumbnails,
+                    compositeDir = container.compositeDir
+                )
+            }
+        }
+    }
+
+/** Gameplay overlays a facecam frame on a gameplay frame. */
+@Composable
+fun gameplayViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                GameplayViewModel(
+                    repository = container.projectRepository,
+                    importer = container.mediaImporter,
+                    thumbnails = container.mediaThumbnails,
+                    compositeDir = container.compositeDir
+                )
+            }
+        }
+    }
+
+/** Live photo splits a motion photo and combines it into a draft. */
+@Composable
+fun livePhotoViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                LivePhotoViewModel(
+                    repository = container.projectRepository,
+                    importer = container.mediaImporter,
+                    thumbnails = container.mediaThumbnails,
+                    compositeDir = container.compositeDir
+                )
+            }
+        }
+    }
+
+/** Ad Maker composes a script into a real draft with local TTS/music. */
+@Composable
+fun adMakerViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    remember(container) {
+        viewModelFactory {
+            initializer {
+                AdMakerViewModel(
+                    repository = container.projectRepository,
+                    speechEngine = container.speechEngine,
+                    ttsCacheDir = container.ttsCacheDir,
+                    backgroundDir = container.backgroundDir,
+                    musicDir = container.aiMusicDir
+                )
+            }
+        }
+    }

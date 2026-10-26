@@ -111,6 +111,16 @@ dependencies {
     // Bundled face detection (landmarks) for the retouch sliders; on-device only.
     implementation("com.google.mlkit:face-detection:16.1.7")
 
+    // In-app viewfinder, photo capture and video recording for the camera tool
+    // (F26). CameraX is the platform's camera pipeline, so no proprietary SDK is
+    // involved and nothing leaves the device.
+    val cameraX = "1.4.1"
+    implementation("androidx.camera:camera-core:$cameraX")
+    implementation("androidx.camera:camera-camera2:$cameraX")
+    implementation("androidx.camera:camera-lifecycle:$cameraX")
+    implementation("androidx.camera:camera-view:$cameraX")
+    implementation("androidx.camera:camera-video:$cameraX")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }

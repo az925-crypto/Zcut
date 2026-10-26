@@ -51,16 +51,16 @@ Legenda milestone: lihat tabel milestone di `PROGRESS.md`.
 | `drafts` | drafts | M27 | ⏳ | placeholder |
 | `ai-clipper` | ai-clipper | M20 | ✅ | `feature/ai/AiClipperScreen` |
 | `ai-agent` | ai-agent | M20 | ✅ | `feature/ai/AgentScreen` |
-| `ai-generate` | ai-generate | M21 | ⏳ | placeholder |
-| `digital-human` | digital-human | M22 | ⏳ | placeholder |
-| `camera` | camera | M23 | ⏳ | placeholder |
-| `photo-editor` | photo-editor | M23 | ⏳ | placeholder |
-| `share` | share | M24 | ⏳ | placeholder |
+| `ai-generate` | ai-generate | M21 | ✅ | prompt + History lokal (impor galeri, cap 60) → draft; generate = BUTUH BACKEND |
+| `digital-human` | digital-human | M22 | ✅ | TTS + still gradien + subtitle perkiraan → draft persiapan; avatar/lip sync = BUTUH BACKEND |
+| `camera` | camera | M23 | ✅ | CameraX photo/video/slow-mo; beauty/filter diterapkan ke hasil |
+| `photo-editor` | photo-editor | M23 | ✅ | non-destruktif: crop/rotate/adjust/filter/beauty/matting + ekspor JPG/PNG/WebP |
+| `share` | share | M24 | ✅ | tile kanal → `ACTION_SEND`/chooser, copy caption, simpan galeri; publish langsung = BUTUH BACKEND |
 | `profile` | profile | M1 | ✅ | `feature/profile/ProfileScreen` |
 | `settings` | settings | M1 | ✅ | `feature/settings/SettingsScreen` |
-| `split-screen` | split-screen | M25 | ⏳ | placeholder |
-| `gameplay` | gameplay | M25 | ⏳ | placeholder |
-| `live-photo` | live-photo | M25 | ⏳ | placeholder |
+| `split-screen` | split-screen | M25 | ✅ | 1/2/4/6/9 panel → still komposit → draft |
+| `gameplay` | gameplay | M25 | ✅ | facecam overlay (posisi/ukuran/border/shape) → still → draft; chroma/rekaman layar belum |
+| `live-photo` | live-photo | M25 | ✅ | split motion photo (scan `ftyp`) + combine still+video → draft; GIF/motion export belum |
 | `ad-maker` | ad-maker | M26 | ⏳ | placeholder |
 
 ## Navigasi

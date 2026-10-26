@@ -6,6 +6,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!--
+      In-app camera (F26). Used only by the camera screen to preview, shoot and
+      record locally; the app has no network permission, so nothing is uploaded.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
+
+    <!--
       Everything runs on-device, so the app must not be able to reach the
       network at all. Some library manifests (Media3/ExoPlayer) declare INTERNET
       for their streaming data sources; it is stripped from the merged manifest

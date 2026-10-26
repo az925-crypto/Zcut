@@ -10,7 +10,12 @@ data class ProjectsUiState(
     val totalCount: Int = 0,
     val query: String = "",
     val aspectRatio: AspectRatio? = null,
-    val error: String? = null
+    val error: String? = null,
+    /** True while the trash view is open; the list then shows trashed drafts. */
+    val trashMode: Boolean = false,
+    /** Total trashed drafts, shown on the trash chip even outside trash mode. */
+    val trashCount: Int = 0,
+    val notice: String? = null
 ) {
     val isEmpty: Boolean get() = !isLoading && drafts.isEmpty()
 

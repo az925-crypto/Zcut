@@ -3,6 +3,8 @@ package com.zaaam.zcut.core
 import android.content.Context
 import com.zaaam.zcut.core.data.AppStorage
 import com.zaaam.zcut.core.data.DataStorePreferencesRepository
+import com.zaaam.zcut.core.data.GenerationHistoryRepository
+import com.zaaam.zcut.core.data.JsonGenerationHistoryRepository
 import com.zaaam.zcut.core.data.JsonProjectRepository
 import com.zaaam.zcut.core.data.PreferencesRepository
 import com.zaaam.zcut.core.data.ProjectRepository
@@ -41,7 +43,7 @@ class AppContainer(context: Context) {
 
     val storage: AppStorage by lazy { AppStorage(appContext.filesDir, appContext.cacheDir) }
 
-    private val mediaDir: File by lazy { File(appContext.filesDir, "media") }
+    val mediaDir: File by lazy { File(appContext.filesDir, "media") }
     private val thumbnailDir: File by lazy { File(appContext.cacheDir, "thumbs") }
 
     /** Synthesised speech cache; survives "Bersihkan cache" on purpose. */
@@ -52,6 +54,23 @@ class AppContainer(context: Context) {
 
     /** Locally generated music loops; private, never shared from here. */
     val aiMusicDir: File by lazy { File(appContext.filesDir, "music") }
+
+    /** Photos captured by the camera or imported into the photo editor. */
+    val photoDir: File by lazy { File(appContext.filesDir, "photos") }
+
+    /** Video recordings that the camera hands to the importer. */
+    val cameraDir: File by lazy { File(appContext.cacheDir, "camera") }
+
+    /** Gradient stills rendered for the Digital Human preparation draft. */
+    val backgroundDir: File by lazy { File(appContext.filesDir, "backgrounds") }
+
+    /** Split-screen/gameplay stills and live-photo derived media (F30). */
+    val compositeDir: File by lazy { File(appContext.filesDir, "composites") }
+
+    /** Imported AI-generation results (F24); no generation ever leaves the device. */
+    val generationHistoryRepository: GenerationHistoryRepository by lazy {
+        JsonGenerationHistoryRepository(appContext)
+    }
 
     val mediaThumbnails: MediaThumbnails by lazy {
         MediaThumbnails(appContext, thumbnailDir)

@@ -38,6 +38,11 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
         val active = ensureReady() ?: return emptyList()
         val reported = runCatching { active.voices }.getOrNull()
             .orEmpty()
+            // A network voice would send the user's script to a third-party
+            // service, which contradicts the "local TTS" promise on screen.
+            .filterNot { voice ->
+                runCatching { voice.isNetworkConnectionRequired }.getOrDefault(false)
+            }
             .map { voice ->
                 SpeechVoice(
                     id = voice.name,
