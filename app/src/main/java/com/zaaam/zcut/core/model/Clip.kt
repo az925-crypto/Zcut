@@ -93,6 +93,7 @@ data class Clip(
     val transitionOut: TransitionConfig? = null,
     val keyframes: List<Keyframe> = emptyList(),
     val text: TextConfig? = null,
+    val sticker: StickerConfig? = null,
     val mask: MaskConfig? = null,
     val chroma: ChromaConfig? = null,
     val matting: MattingConfig? = null,
@@ -257,6 +258,24 @@ data class TextConfig(
     /** Letter spacing in em (fraction of the font size). */
     val letterSpacingEm: Float = 0f,
     val lineHeight: Float = 1.2f
+)
+
+/**
+ * A sticker placed over the video, drawn from the app's own glyph catalogue
+ * ([com.zaaam.zcut.core.domain.StickerCatalog]); no original asset is used.
+ *
+ * Position, scale, rotation and flip live on the clip's [Transform] and its
+ * [Clip.opacity], so a sticker animates with the same keyframes as any other
+ * clip. Additive: drafts written before M16 decode with `null`.
+ */
+@Serializable
+data class StickerConfig(
+    /**
+     * Catalogue key, resolved by
+     * [com.zaaam.zcut.core.domain.StickerCatalog.canonical]. An unknown key
+     * degrades to the first entry instead of drawing nothing.
+     */
+    val stickerId: String = "trend-lol"
 )
 
 @Serializable

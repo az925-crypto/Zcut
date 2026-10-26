@@ -56,6 +56,10 @@ object ZcutRoutes {
     /** TTS only inserts at a position; the clip is always new. */
     const val TtsPattern = "$Tts?$ArgProjectId={$ArgProjectId}&$ArgAtMs={$ArgAtMs}"
 
+    /** Stickers can create a clip too, so they carry the selected clip and playhead. */
+    const val StickersPattern = "$Stickers?$ArgProjectId={$ArgProjectId}" +
+        "&$ArgClipId={$ArgClipId}&$ArgAtMs={$ArgAtMs}"
+
     /** Export renders one draft; the result screen is a separate destination. */
     const val ExportPattern = "$Export?$ArgProjectId={$ArgProjectId}"
 
@@ -131,6 +135,13 @@ object ZcutRoutes {
     fun tts(projectId: String, atMs: Long = 0L): String =
         "$Tts?$ArgProjectId=${encode(projectId)}&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
 
+    fun stickers(projectId: String, clipId: String?, atMs: Long = 0L): String {
+        val base = "$Stickers?$ArgProjectId=${encode(projectId)}" +
+            "&$ArgAtMs=${atMs.coerceAtLeast(0L)}"
+        val clip = clipId?.takeIf { it.isNotBlank() }?.let(::encode)
+        return if (clip == null) base else "$base&$ArgClipId=$clip"
+    }
+
     fun export(projectId: String): String = "$Export?$ArgProjectId=${encode(projectId)}"
 
     /**
@@ -153,9 +164,9 @@ object ZcutRoutes {
     }
 
     /**
-     * Tool routes carry the draft and clip as query arguments. Non-tool routes
-     * (Stickers) are returned unchanged until their milestone adds
-     * a real screen.
+     * Tool routes carry the draft and clip as query arguments. Routes with their
+     * own builder (text/audio/tts/stickers, which can create a clip) return the
+     * bare route here; they are not clip tools.
      */
     fun toolRoute(route: String, projectId: String, clipId: String?): String {
         if (!isClipTool(route)) return route
@@ -209,7 +220,7 @@ object ZcutDestinations {
         ZcutDestination("mask", "Mask & chroma", "F10", implemented = true),
         ZcutDestination("matting", "Cutout", "F11", implemented = true),
         ZcutDestination("beauty", "Retouch", "F12", implemented = true),
-        ZcutDestination("stickers", "Sticker", "F13"),
+        ZcutDestination("stickers", "Sticker", "F13", implemented = true),
         ZcutDestination("text", "Teks", "F14", implemented = true),
         ZcutDestination("captions", "Caption", "F15"),
         ZcutDestination("audio", "Audio", "F16", implemented = true),

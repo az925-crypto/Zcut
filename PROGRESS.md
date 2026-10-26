@@ -56,7 +56,7 @@ Satu milestone = satu commit = satu run CI. Urutan P0 dulu, lalu P1/P2.
 | M13 | Export & render (Media3 Transformer) | F19 | export, export-done | ✅ |
 | M14 | Matting/cutout (ML Kit) | F11 | matting | ✅ |
 | M15 | Retouch & beauty | F12 | beauty | ✅ |
-| M16 | Sticker + Lottie | F13 | stickers | [ ] |
+| M16 | Sticker + Lottie | F13 | stickers | ✅ |
 | M17 | Caption & speech lokal | F15 | captions | [ ] |
 | M18 | AI music prosedural | F18 | ai-music | [ ] |
 | M19 | Template & CutSame | F21 | templates, template-detail, discover | [ ] |
@@ -972,6 +972,53 @@ builder export (`PreviewPlanBuilder.build`/`Media3CompositionBuilder.build`) di
 dispatcher Main sebelum pindah ke `Main.immediate`. Composite bitmap hasil
 slider tidak di-`recycle()` (dibersihkan GC; pola sama dengan M14) juga dicatat
 sebagai churn, bukan leak.
+
+### Catatan M16 — sticker (2026-10-26)
+
+Layar `stickers` (F13) mengikuti mockup yang di-ACC: preview dengan stiker
+overlay + label jumlah, chip kategori (Trending/Emoji/Text/Shapes/GIF), grid
+stiker, panel "Track subject", dan hint "stiker dibuat sendiri, tidak ada aset
+CapCut".
+
+Yang diimplementasikan (lokal, gratis):
+
+- **Model**: `Clip.sticker: StickerConfig?` (additive — draft lama decode dengan
+  `null`). `StickerConfig` hanya menyimpan kunci katalog; posisi/skala/rotasi/
+  flip memakai `Clip.transform` dan `Clip.opacity` yang sudah ada, jadi stiker
+  ikut keyframe seperti klip lain.
+- **Katalog**: `StickerCatalog` — glyph sendiri (Unicode + badge teks pendek),
+  18 entri di 5 kategori. Tidak ada bitmap atau aset pihak lain yang dibundel.
+- **Editor**: `StickerEditor` (`addSticker`/`setSticker`/`removeSticker`/
+  `sanitize`), memakai satu track `STICKER` + `TimelineEditor.addClip` supaya
+  invarian durasi/overlap tetap di satu tempat. Rentang clamp transform
+  memakai `KeyframeEditor.rangeOf` (satu sumber kebenaran), bukan angka baru.
+- **Layar + VM**: `StickerScreen`/`StickerViewModel` (pola sama dengan teks:
+  bisa membuat klip, debounce persist 400 ms). Editor rail "Sticker" kini
+  membawa `projectId`/`clipId`/`atMs`; `ZcutRoutes.stickers(...)` baru, dan
+  `ZcutDestinations` menandai route `stickers` implemented.
+- **Decode**: `ProjectCodec.normalize` menambah `StickerEditor.sanitize`
+  (clamp transform tak terpercaya + kunci stiker tak dikenal → entri pertama,
+  klip tidak pernah dibuang).
+- **Timeline**: label klip stiker memakai label katalog
+  (`StickerEditor.label`).
+
+Bukti spek: `docs/features/13-sticker-tracking.md` (`com.vega.libsticker`,
+`segment_sticker`, `AddSticker`/`StartVideoTracking`, transform+tracking JSON).
+Yang **tidak** diambil dari bukti karena tidak bisa diverifikasi / dilarang:
+format peta tracking (Unknown di spek) dan aset stiker asli.
+
+Sengaja dibatasi (bukan temuan), dicatat di `DECISIONS.md`:
+
+- **Object tracking** = `BUTUH BACKEND`; switch-nya disabled dengan hint jujur
+  dan fallback lokal (keyframe manual di panel Keyframe) — bukan kontrol mati
+  tanpa penjelasan.
+- **Lottie/GIF** belum dianimasikan; entri kategori GIF adalah badge statis dan
+  dilabeli "(statis)" supaya tidak menjanjikan animasi.
+- Stiker belum dibakar ke file export (batasan render yang sama dengan teks).
+
+Test baru: `StickerEditorTest` (8 kasus: penempatan, push-right, kunci tak
+dikenal, clamp transform + tolak klip non-stiker, hapus, sanitize draft rusak,
+rentang aktif, cakupan kategori) dan 2 tes rute di `ZcutDestinationsTest`.
 
 ### Catatan M11 — teks & tipografi (2026-10-25)
 

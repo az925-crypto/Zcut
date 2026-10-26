@@ -123,6 +123,24 @@ class ZcutDestinationsTest {
         )
     }
 
+    @Test
+    fun stickersRouteCarriesProjectClipAndPlayhead() {
+        val route = ZcutRoutes.stickers("p 1", "c/1", 1_234L)
+
+        assertTrue(route.startsWith("stickers?projectId=p%201"))
+        assertTrue(route.contains("atMs=1234"))
+        assertTrue(route.contains("clipId=c%2F1"))
+        assertTrue(ZcutDestinations.get(ZcutRoutes.Stickers)?.implemented == true)
+    }
+
+    @Test
+    fun stickersRouteOmitsAnAbsentClip() {
+        val route = ZcutRoutes.stickers("p1", null, 0L)
+
+        assertTrue(route.startsWith("stickers?projectId=p1"))
+        assertTrue(!route.contains("clipId"))
+    }
+
     /**
      * Regression for the M14/M15 bug where a panel was registered in the NavHost
      * with `clipTool(...)` but missing from `argToolRoutes`: the editor then

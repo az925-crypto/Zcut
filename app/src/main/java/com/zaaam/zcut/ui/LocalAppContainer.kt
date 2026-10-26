@@ -15,6 +15,7 @@ import com.zaaam.zcut.feature.projects.ProjectsViewModel
 import com.zaaam.zcut.feature.settings.SettingsViewModel
 import com.zaaam.zcut.feature.tools.AudioViewModel
 import com.zaaam.zcut.feature.tools.ClipToolViewModel
+import com.zaaam.zcut.feature.tools.StickerViewModel
 import com.zaaam.zcut.feature.tools.TextViewModel
 import com.zaaam.zcut.feature.tools.TtsViewModel
 
@@ -92,6 +93,24 @@ fun textViewModelFactory(
     viewModelFactory {
         initializer {
             TextViewModel(
+                projectId = projectId,
+                initialClipId = clipId,
+                repository = container.projectRepository
+            )
+        }
+    }
+}
+
+/** Stickers can create a clip too, so they carry the optional selected clip. */
+@Composable
+fun stickerViewModelFactory(
+    container: AppContainer,
+    projectId: String,
+    clipId: String?
+): ViewModelProvider.Factory = remember(container, projectId, clipId) {
+    viewModelFactory {
+        initializer {
+            StickerViewModel(
                 projectId = projectId,
                 initialClipId = clipId,
                 repository = container.projectRepository

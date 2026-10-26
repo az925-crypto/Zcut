@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zaaam.zcut.core.media.MediaThumbnails
+import com.zaaam.zcut.core.domain.StickerEditor
 import com.zaaam.zcut.core.model.Clip
 import com.zaaam.zcut.core.model.ClipType
 import com.zaaam.zcut.core.model.MediaAsset
@@ -504,6 +505,7 @@ private fun clipLabel(clip: Clip, asset: MediaAsset?): String =
         ?.map { it.trim() }
         ?.firstOrNull { it.isNotEmpty() }
         ?.take(40)
+        ?: clip.sticker?.let { StickerEditor.label(clip) }
         ?: asset?.displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }
         ?: if (clip.assetId != null) {
             "Media hilang"

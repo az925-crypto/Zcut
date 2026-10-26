@@ -267,6 +267,8 @@ private fun EditorBody(
         val target = when (route) {
             ZcutRoutes.Text -> ZcutRoutes.text(project.id, selectedClipId, playhead.value)
             ZcutRoutes.Audio -> ZcutRoutes.audio(project.id, selectedClipId, playhead.value)
+            ZcutRoutes.Stickers ->
+                ZcutRoutes.stickers(project.id, selectedClipId, playhead.value)
             else -> ZcutRoutes.toolRoute(route, project.id, selectedClipId)
         }
         onNavigate(target)

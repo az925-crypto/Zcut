@@ -36,6 +36,7 @@ import com.zaaam.zcut.feature.tools.KeyframeScreen
 import com.zaaam.zcut.feature.tools.MaskScreen
 import com.zaaam.zcut.feature.tools.MattingScreen
 import com.zaaam.zcut.feature.tools.SpeedScreen
+import com.zaaam.zcut.feature.tools.StickerScreen
 import com.zaaam.zcut.feature.tools.TextScreen
 import com.zaaam.zcut.feature.tools.TransitionScreen
 import com.zaaam.zcut.feature.tools.TrimScreen
@@ -353,6 +354,29 @@ fun ZcutNavHost(
             ) { entry ->
                 TtsScreen(
                     projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = ZcutRoutes.StickersPattern,
+                arguments = listOf(
+                    navArgument(ZcutRoutes.ArgProjectId) { type = NavType.StringType },
+                    navArgument(ZcutRoutes.ArgClipId) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument(ZcutRoutes.ArgAtMs) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    }
+                )
+            ) { entry ->
+                StickerScreen(
+                    projectId = entry.arguments?.getString(ZcutRoutes.ArgProjectId).orEmpty(),
+                    clipId = entry.arguments?.getString(ZcutRoutes.ArgClipId),
                     atMs = entry.arguments?.getLong(ZcutRoutes.ArgAtMs) ?: 0L,
                     onBack = { navController.popBackStack() }
                 )

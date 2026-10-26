@@ -1,6 +1,7 @@
 package com.zaaam.zcut.core.data
 
 import com.zaaam.zcut.core.domain.AudioEditor
+import com.zaaam.zcut.core.domain.StickerEditor
 import com.zaaam.zcut.core.domain.TextEditor
 import com.zaaam.zcut.core.domain.TimelineEditor
 import com.zaaam.zcut.core.model.MediaAsset
@@ -91,8 +92,10 @@ object ProjectCodec {
         val beats = AudioEditor.sanitizeBeats(project.settings.beatGridMs)
         return project.copy(
             assets = sanitizeAssets(project.assets),
-            timeline = AudioEditor.sanitize(
-                TextEditor.sanitize(TimelineEditor.sanitize(project.timeline))
+            timeline = StickerEditor.sanitize(
+                AudioEditor.sanitize(
+                    TextEditor.sanitize(TimelineEditor.sanitize(project.timeline))
+                )
             ),
             // A snap switch with nothing to snap to is a dead control, so it is
             // turned off when the grid is empty.
