@@ -629,7 +629,8 @@ berikutnya dibuat dengan push tag, mis. `git tag v0.2.0 && git push origin v0.2.
 | 2026-10-25 | `7e673f2` `36c7980` | M15 retouch & beauty: MlKitFaceDetector, BeautyProcessor, BeautyEditor, BeautyScreen, rail Cutout/Retouch |
 | 2026-10-26 | `87cbffc` | Review gate batch M11–M15: fix Critical tombol TTS mati, MediaRecorder bocor, clamp beauty/matting, guard recycle, status jujur model wajah, DSP ke Default |
 | 2026-10-26 | `dcf1422` `91955f8` | Tutup sisa Low gate: recycle `smooth`, inferensi gagal = model tak tersedia, hapus dead `unavailableReason`, buang gate `MIN_SIDE` FaceDetector |
-| 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit |
+| 2026-10-26 | `a2603e2` | Fix rilis: buang izin `INTERNET` dari manifest gabungan (Media3 mendeklarasikannya) |
+| 2026-10-26 | `v0.7.0` | versionCode 7 + tag `v0.7.0`; signed release APK terbit (127 MB) |
 
 ## Backlog re-audit
 
