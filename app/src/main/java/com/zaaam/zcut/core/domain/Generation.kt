@@ -122,9 +122,10 @@ object GenerationHistory {
     }
 
     /**
-     * Drops entries that cannot be opened (no id, no usable asset, no prompt) and
-     * clamps text so a hostile payload cannot blow up the list. Unknown entries
-     * are dropped rather than rendered as broken tiles.
+     * Drops entries that cannot be opened (no id, no usable asset) and clamps
+     * text so a hostile payload cannot blow up the list. Unknown entries are
+     * dropped rather than rendered as broken tiles; a blank prompt is allowed
+     * because the display name still identifies the result.
      */
     fun sanitize(
         entries: List<GenerationEntry>,

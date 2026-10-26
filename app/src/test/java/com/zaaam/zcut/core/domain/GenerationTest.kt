@@ -148,7 +148,9 @@ class GenerationTest {
 
         // Blank prompts are allowed (the display name fills in), but an unusable
         // asset is not: it could never become a draft.
-        assertEquals(listOf("ok"), result.map { it.id }.distinct())
+        // Both the clean entry and the blank-prompt entry survive; the blank id,
+        // the asset-less entry and the duplicate id are dropped.
+        assertEquals(listOf("ok", "noprompt"), result.map { it.id }.distinct())
         assertTrue(result.none { it.asset.sourcePath == null })
         assertEquals(1, result.count { it.id == "ok" })
         assertTrue(result.any { it.id == "noprompt" })
