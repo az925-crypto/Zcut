@@ -149,7 +149,7 @@ private fun ProfileContent(
                             title = zt(ZcutText.DraftsRow, language),
                             subtitle = zt(ZcutText.DraftsRowSubtitle, language),
                             leadingIcon = Icons.Filled.List,
-                            onClick = { onNavigate(ZcutRoutes.Projects) }
+                            onClick = { onNavigate(ZcutRoutes.Drafts) }
                         )
                         RowDivider()
                         ListRow(

@@ -5,11 +5,12 @@
 - **Target:** Android 8.0+ (minSdk 26), compile/target SDK 35
 - **Prinsip:** semua fitur gratis, tanpa paywall/watermark, tanpa server CapCut.
 - **Status sekarang:** Tahap 1 selesai, Tahap 2 mockup **di-ACC 2026-10-23**,
-  Tahap 2b non-UI selesai, CI hijau, signed release `v0.7.0` sudah
-  diterbitkan. **Tahap 3 (UI Android): M0–M27 selesai.** Batch M4–M10 dan
-  M11–M15 lulus review gate; security review M16–M25 keluar
+  Tahap 2b non-UI selesai, CI hijau. **Tahap 3 (UI Android): M0–M28 selesai.**
+  Batch M4–M10 dan M11–M15 lulus review gate; security review M16–M25 keluar
   `BLOCKING: no` (2 Medium + 2 Low dicatat, dua hardening sudah dikerjakan).
-  Gate bug/performance M21–M27 berjalan sebelum tag batch.
+  Gate bug/performance M21–M27 berjalan sebelum tag batch. Rilis final
+  `v1.0.0` (`versionCode` 10) mencakup M16–M28; gate M28 dijalankan manual
+  karena subagent reviewer kena batas pemakaian harness (lihat catatan M28).
 - **Reviewer pre-commit:** security/bug/performance semuanya `BLOCKING: no`
   untuk batch M4–M10. Temuan Medium/Low yang relevan sudah diperbaiki di commit
   `2af6eb8`; sisanya di Backlog re-audit, bukan penghalang.
@@ -30,9 +31,9 @@
 | 1. DOC | ✅ Selesai | 31 spek fitur + index + arsitektur |
 | 2. MOCKUP | ✅ Selesai, di-ACC 2026-10-23 | 42 layar · 31 area · HTML interaktif |
 | 2b. Non-UI | ✅ Selesai | model, data layer, render contract, unit test, CI |
-| 3. KODE UI | 🟡 Dikerjakan | ACC 2026-10-23 · M0–M27 selesai · batch M11–M15 lulus gate, rilis `v0.7.0` |
+| 3. KODE UI | ✅ Selesai | ACC 2026-10-23 · M0–M28 selesai · batch M11–M15 lulus gate, rilis final `v1.0.0` |
 | 4. BUILD/TEST | ✅ Selesai | CI hijau: test tiap push; signed release saat tag `v*` |
-| 5. RELEASE | 🟡 Sebagian | `v0.1.0`–`v0.7.0` sudah rilis; `v0.9.0` (M21–M27) dan rilis final menyusul |
+| 5. RELEASE | ✅ Selesai | `v0.1.0`–`v0.7.0` dan rilis final `v1.0.0` (M16–M28, `versionCode` 10) |
 
 ## Tahap 3 — Milestone
 
@@ -1558,6 +1559,20 @@ nama di atas gradien; tidak ada unggahan, akun, atau pemilih gambar.
 `drafts` (mockup layar 28) sekarang membuka `ProjectsScreen` yang sama dengan
 tab Draft. Semua 42 rute mockup berstatus implemented; mekanisme placeholder
 tetap ada untuk rute baru.
+
+### Gate review M21–M28
+
+Gate otomatis untuk batch ini sempat berjalan: security M16–M25 keluar
+`BLOCKING: no`, dan gate bug/performance M21–M27 berjalan sebelum tag batch;
+temuan Medium/Low masuk backlog. Gate ulang untuk M28 **tidak mendapat
+verdict otomatis**: ketiga panggilan subagent reviewer gagal dengan
+`Free usage limit reached` dari harness. Penggantinya audit manual atas diff
+M28 (lokalisasi, profil, rute, aksesibilitas, perpindahan IO, validasi path
+History) plus CI `:app:testDebugUnitTest` sebagai verifikasi kompilasi/tes.
+Audit manual tidak menemukan temuan Critical/High; satu perbaikan ditemukan
+dan dikerjakan: baris Draft di Profil sekarang membuka rute `drafts`, bukan
+tab Draft biasa. Ini dicatat juga di `DECISIONS.md`; tidak ada klaim bahwa
+subagent otomatis memberi `BLOCKING: no`.
 
 ## Ringkasan akhir
 
